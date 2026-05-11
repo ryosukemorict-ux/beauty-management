@@ -301,30 +301,34 @@ table { min-width: unset; }
       <button class="btn btn-red btn-sm" onclick="askDeleteStudent()">🗑 削除</button>
     </div>
     <div class="inline-form" id="add-form">
-      <div class="form-row"><span class="form-label">名前：</span><input class="text-inp" id="add-name" type="text" placeholder="例：田中 花子" maxlength="20"></div>
+      <div class="form-row"><span class="form-label">名前：</span><input class="text-inp" id="add-name" type="text" autocomplete="off" placeholder="例：田中 花子" maxlength="20"></div>
       <div class="form-row"><span class="form-label">店舗：</span>
         <select class="form-sel" id="add-store">
           <option value="エルズ">エルズ</option>
           <option value="soleil">soleil</option>
-          <option value="管理">管理</option>
+          <option value="エルズ（管理）">エルズ（管理）</option>
+          <option value="soleil（管理）">soleil（管理）</option>
+          <option value="管理（全体）">管理（全体）</option>
         </select>
       </div>
-      <div class="form-row"><span class="form-label">PW：</span><input class="text-inp" id="add-pw" type="password" placeholder="管理者用パスワード（任意）" maxlength="30" style="width:220px"></div>
+      <div class="form-row"><span class="form-label">PW：</span><input class="text-inp" id="add-pw" type="password" autocomplete="new-password" placeholder="管理者用パスワード（任意）" maxlength="30" style="width:220px"></div>
       <div class="form-btns">
         <button class="btn btn-dark btn-sm" onclick="doAdd()">追加</button>
         <button class="btn btn-ghost btn-sm" onclick="hideForm('add-form')">キャンセル</button>
       </div>
     </div>
     <div class="inline-form" id="rename-form">
-      <div class="form-row"><span class="form-label">名前：</span><input class="text-inp" id="rename-name" type="text" maxlength="20"></div>
+      <div class="form-row"><span class="form-label">名前：</span><input class="text-inp" id="rename-name" type="text" autocomplete="off" maxlength="20"></div>
       <div class="form-row"><span class="form-label">店舗：</span>
+        <select class="form-sel" id="rename-store">
         <select class="form-sel" id="rename-store">
           <option value="エルズ">エルズ</option>
           <option value="soleil">soleil</option>
-          <option value="管理">管理</option>
+          <option value="エルズ（管理）">エルズ（管理）</option>
+          <option value="soleil（管理）">soleil（管理）</option>
+          <option value="管理（全体）">管理（全体）</option>
         </select>
-      </div>
-      <div class="form-row"><span class="form-label">PW変更：</span><input class="text-inp" id="rename-pw" type="password" placeholder="空欄で変更なし" maxlength="30" style="width:220px"></div>
+      <div class="form-row"><span class="form-label">PW変更：</span><input class="text-inp" id="rename-pw" type="password" autocomplete="new-password" placeholder="空欄で変更なし" maxlength="30" style="width:220px"></div>
       <div class="form-btns">
         <button class="btn btn-dark btn-sm" onclick="doRename()">変更</button>
         <button class="btn btn-ghost btn-sm" onclick="hideForm('rename-form')">キャンセル</button>
@@ -473,7 +477,7 @@ let students=[], categories=[], curricula=[], progressRows=[];
 let CID=null, IS_ADMIN=false, ADMIN_ID=null;
 let currentView='individual';
 
-function managers(){ return students.filter(s=>s.store==='管理'); }
+function managers(){ return students.filter(s=>['管理（全体）','エルズ（管理）','soleil（管理）'].includes(s.store)); }
 function curStudent(){ return students.find(s=>s.id===CID); }
 
 async function loadAll(){
@@ -640,7 +644,7 @@ function askDeleteStudent(){
   });
 }
 function renderSels(){
-  const nonMgr=students.filter(s=>s.store!=='管理');
+  const nonMgr=students.filter(s=>!['管理（全体）','エルズ（管理）','soleil（管理）'].includes(s.store));
   const opts=nonMgr.map(s=>`<option value="${esc(s.id)}"${s.id===CID?' selected':''}>${esc(s.name)}　[${esc(s.store)}]</option>`).join('');
   const allOpts=students.map(s=>`<option value="${esc(s.id)}"${s.id===CID?' selected':''}>${esc(s.name)}　[${esc(s.store)}]</option>`).join('');
   document.getElementById('student-sel').innerHTML=allOpts;
@@ -816,7 +820,7 @@ function renderOverview(){
   const storeF=document.getElementById('ov-store-filter').value;
 
   // Filter students (exclude 管理)
-  let filteredStudents=students.filter(s=>s.store!=='管理');
+  let filteredStudents=students.filter(s=>!['管理（全体）','エルズ（管理）','soleil（管理）'].includes(s.store));
   if(storeF) filteredStudents=filteredStudents.filter(s=>s.store===storeF);
 
   // Build rows
