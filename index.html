@@ -369,13 +369,13 @@ table { min-width: unset; }
           <th style="min-width:120px">カテゴリ</th>
           <th style="min-width:160px">カリキュラム項目</th>
           <th style="min-width:90px">目安時間</th>
-          <th style="min-width:120px">担当講師</th>
           <th style="min-width:126px">練習開始予定日</th>
           <th style="min-width:120px">練習開始日</th>
           <th style="min-width:120px">試験日</th>
           <th style="min-width:80px">試験回数</th>
-          <th style="min-width:110px">ステータス</th>
           <th style="min-width:60px">点数</th>
+          <th style="min-width:110px">ステータス</th>
+          <th style="min-width:120px">担当講師</th>
           <th style="min-width:140px">メモ</th>
           <th style="width:38px" id="del-col-th"></th>
         </tr>
@@ -693,7 +693,7 @@ function getCatIdFromCurId(curId){ return curricula.find(c=>c.id===curId)?.categ
 function getGoalHoursFromCurId(curId){ return curricula.find(c=>c.id===curId)?.goal_hours||''; }
 function catOpts(val){ return categories.map(c=>`<option value="${esc(c.id)}"${c.id===val?' selected':''}>${esc(c.name)}</option>`).join(''); }
 function curOpts(catId,val){ return curricula.filter(c=>c.category_id===catId).map(c=>`<option value="${esc(c.id)}"${c.id===val?' selected':''}>${esc(c.name)}</option>`).join(''); }
-function teacherOpts(val){ const mgrs=managers(); if(!mgrs.length) return `<option value="${esc(val)}">${esc(val)||'（未設定）'}</option>`; return ['',...mgrs.map(m=>m.name)].map(m=>`<option value="${esc(m)}"${m===val?' selected':''}>${esc(m)||'（未定）'}</option>`).join(''); }
+function teacherOpts(val){ const mgrs=managers(); const staff=students.filter(s=>s.store!=="管理"); let opts=`<option value=""${!val?" selected":""}>（未定）</option>`; if(mgrs.length){ opts+=`<optgroup label="── 管理者 ──">`+mgrs.map(m=>`<option value="${esc(m.name)}"${m.name===val?" selected":""}>${esc(m.name)}</option>`).join("")+"</optgroup>"; } if(staff.length){ opts+=`<optgroup label="── スタッフ ──">`+staff.map(m=>`<option value="${esc(m.name)}"${m.name===val?" selected":""}>${esc(m.name)}</option>`).join("")+"</optgroup>"; } return opts; }
 function statusOpts(val){ return STATS.map(s=>`<option value="${esc(s)}"${s===val?' selected':''}>${esc(s)}</option>`).join(''); }
 
 async function loadProgressAndRender(){
@@ -726,7 +726,7 @@ function renderTable(){
     const plannedCell=adm?`<input type="date" class="date-inp" data-id="${r.id}" data-f="planned_start_date" value="${esc(r.planned_start_date||'')}">`:`<span class="plain-text">${esc(r.planned_start_date)||'—'}</span>`;
     const startCell=adm?`<input type="date" class="date-inp" data-id="${r.id}" data-f="start_date" value="${esc(r.start_date||'')}">`:`<span class="plain-text">${esc(r.start_date)||'—'}</span>`;
     const examCell=adm?`<input type="date" class="date-inp" data-id="${r.id}" data-f="exam_date" value="${esc(r.exam_date||'')}">`:`<span class="plain-text">${esc(r.exam_date)||'—'}</span>`;
-    const countCell=adm?`<input type="number" class="num-inp" data-id="${r.id}" data-f="exam_count" min="0" placeholder="0" value="${r.exam_count||0}">`:`<span class="plain-text">${r.exam_count||0}</span>`;
+    const countCell=adm?`<select class="tbl-sel" data-id="${r.id}" data-f="exam_count">${[0,1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}"${(r.exam_count||0)==n?" selected":""}>${n}</option>`).join("")}</select>`:`<span class="plain-text">${r.exam_count||0}</span>`;
     const statusCell=adm?`<select class="tbl-sel s-${r.status}" data-id="${r.id}" data-f="status">${statusOpts(r.status)}</select>`:`<span class="plain-text tbl-sel s-${r.status}" style="padding:3px 8px;border-radius:6px;display:inline-block">${esc(r.status)}</span>`;
     const scoreCell=adm?`<input type="number" class="num-inp" data-id="${r.id}" data-f="score" min="0" max="100" placeholder="—" value="${esc(r.score||'')}">`:`<span class="plain-text">${esc(r.score)||'—'}</span>`;
     const memoCell=adm?`<div class="ce" contenteditable="true" data-id="${r.id}" data-f="memo">${esc(r.memo)}</div>`:`<span class="plain-text">${esc(r.memo)||'—'}</span>`;
@@ -734,9 +734,9 @@ function renderTable(){
 
     return `<tr>
       <td style="color:#c4b49e;font-size:12px;text-align:center">${i+1}</td>
-      <td>${catCell}</td><td>${itemCell}</td><td>${goalCell}</td><td>${teacherCell}</td>
+      <td>${catCell}</td><td>${itemCell}</td><td>${goalCell}</td>
       <td>${plannedCell}</td><td>${startCell}</td><td>${examCell}</td><td>${countCell}</td>
-      <td>${statusCell}</td><td>${scoreCell}</td><td class="memo-td">${memoCell}</td><td>${delCell}</td>
+      <td>${scoreCell}</td><td>${statusCell}</td><td>${teacherCell}</td><td class="memo-td">${memoCell}</td><td>${delCell}</td>
     </tr>`;
   }).join('');
 
