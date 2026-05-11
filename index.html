@@ -700,7 +700,9 @@ function renderTable(){
     const catName=categories.find(c=>c.id===catId)?.name||'';
     const curName=curricula.find(c=>c.id===r.curriculum_id)?.name||'';
     const goalHours=getGoalHoursFromCurId(r.curriculum_id);
-    const catCell=`<span class="plain-text">${esc(catName)}</span>`;
+    const CAT_COLORS={"シャンプー":"#e8d9a0","ドライ":"#f5c6c6","ブロー":"#f5c6d8","カラー":"#f5d9b8","矯正":"#e0e0e0","コテ巻き":"#b8d4f5","ヘッドスパ":"#d4b8f5","カット":"#d9c4b0","パーマ":"#d0d0d0"};
+    const catColor=CAT_COLORS[catName]||"#f0ece8";
+    const catCell=`<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:500;background:${catColor}">${esc(catName)}</span>`;
     const itemCell=`<span class="plain-text">${esc(curName)}</span>`;
     const goalCell=`<span class="plain-text">${esc(goalHours)||'—'}</span>`;
     const plannedCell=adm?`<input type="date" class="date-inp" data-id="${r.id}" data-f="planned_start_date" value="${esc(r.planned_start_date||'')}">`:`<span class="plain-text">${esc(r.planned_start_date)||'—'}</span>`;
