@@ -772,9 +772,11 @@ function clearIndFilter(){
   document.getElementById("ind-status-filter").value="";
   renderTable();
 }
-  const sel=document.getElementById('ov-cat-filter');
+function updateOvCatFilter(){
+  const sel=document.getElementById("ov-cat-filter");
   const cur=sel.value;
-  sel.innerHTML='<option value="">すべてのカテゴリ</option>'+categories.map(c=>`<option value="${esc(c.id)}"${c.id===cur?' selected':''}>${esc(c.name)}</option>`).join('');
+  sel.innerHTML="<option value=\"\">" + "すべてのカテゴリ</option>"+categories.map(c=>"<option value=\""+esc(c.id)+"\"" + (c.id===cur?" selected":"") + ">"+esc(c.name)+"</option>").join("");
+}
 }
 
 function renderOverview(){
