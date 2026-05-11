@@ -513,8 +513,8 @@ function togglePwField(){
 document.getElementById('add-name').addEventListener('keydown',e=>{if(e.key==='Enter')doAdd();if(e.key==='Escape')hideForm('add-form');});
 document.getElementById('rename-name').addEventListener('keydown',e=>{if(e.key==='Enter')doRename();if(e.key==='Escape')hideForm('rename-form');});
 
-function onStudentChange(){CID=document.getElementById('student-sel').value;hideForm('add-form');hideForm('rename-form');loadProgressAndRender();}
-function onViewerChange(){CID=document.getElementById('viewer-sel').value;loadProgressAndRender();}
+function onStudentChange(){CID=document.getElementById('student-sel').value;localStorage.setItem('last_cid',CID);hideForm('add-form');hideForm('rename-form');loadProgressAndRender();}
+function onViewerChange(){CID=document.getElementById('viewer-sel').value;localStorage.setItem('last_cid',CID);loadProgressAndRender();}
 
 async function doAdd(){
   const name=document.getElementById('add-name').value.trim();
@@ -776,9 +776,16 @@ function renderAll(){renderSels();renderMaster();loadProgressAndRender();}
 
 (async()=>{
   await loadAll();
+  // 最後に見た生徒をlocalStorageから復元
+  const savedCID=localStorage.getItem("last_cid");
   const nonMgr=nonAdminStudents();
-  if(nonMgr.length&&!IS_ADMIN)CID=nonMgr[0].id;
-  else if(students.length)CID=students[0].id;
+  if(savedCID&&students.find(s=>s.id===savedCID)){
+    CID=savedCID;
+  }else if(nonMgr.length){
+    CID=nonMgr[0].id;
+  }else if(students.length){
+    CID=students[0].id;
+  }
   applyMode();
   renderAll();
 })();
