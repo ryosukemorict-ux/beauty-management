@@ -269,6 +269,23 @@ td.memo-td{white-space:normal;min-width:130px;}
     </div>
   </div>
 
+  <!-- Individual filter -->
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px" id="individual-filter">
+    <label style="font-size:12px;color:var(--mid)">絞り込み：</label>
+    <select class="filter-sel" id="ind-cat-filter" onchange="renderTable()">
+      <option value="">すべてのカテゴリ</option>
+    </select>
+    <select class="filter-sel" id="ind-status-filter" onchange="renderTable()">
+      <option value="">すべてのステータス</option>
+      <option value="未着手">未着手</option>
+      <option value="練習中">練習中</option>
+      <option value="合格">合格</option>
+      <option value="再確認">再確認</option>
+    </select>
+    <button class="btn btn-ghost btn-sm" onclick="clearIndFilter()">リセット</button>
+  </div>
+
   <div class="summary">
     <div class="stat"><div class="stat-n" id="s-total">0</div><div class="stat-l">総項目数</div></div>
     <div class="stat"><div class="stat-n" id="s-pass" style="color:var(--green)">0</div><div class="stat-l">合格済み</div></div>
@@ -665,7 +682,12 @@ async function loadProgressAndRender(){
 }
 
 function renderTable(){
-  const rows=progressRows.filter(r=>r.student_id===CID);
+  let rows=progressRows.filter(r=>r.student_id===CID);
+  // フィルター適用
+  const catF=document.getElementById("ind-cat-filter")?.value||"";
+  const statusF=document.getElementById("ind-status-filter")?.value||"";
+  if(catF)rows=rows.filter(r=>getCatIdFromCurId(r.curriculum_id)===catF);
+  if(statusF)rows=rows.filter(r=>r.status===statusF);
   const tb=document.getElementById('tbody');
   if(CID){document.getElementById('student-sel').value=CID;document.getElementById('viewer-sel').value=CID;}
   if(!CID||!rows.length){
@@ -678,8 +700,8 @@ function renderTable(){
     const catName=categories.find(c=>c.id===catId)?.name||'';
     const curName=curricula.find(c=>c.id===r.curriculum_id)?.name||'';
     const goalHours=getGoalHoursFromCurId(r.curriculum_id);
-    const catCell=adm?`<select class="tbl-sel" data-id="${r.id}" data-f="__cat">${catOpts(catId)}</select>`:`<span class="plain-text">${esc(catName)}</span>`;
-    const itemCell=adm?`<select class="tbl-sel" data-id="${r.id}" data-f="curriculum_id">${curOpts(catId,r.curriculum_id)}</select>`:`<span class="plain-text">${esc(curName)}</span>`;
+    const catCell=`<span class="plain-text">${esc(catName)}</span>`;
+    const itemCell=`<span class="plain-text">${esc(curName)}</span>`;
     const goalCell=`<span class="plain-text">${esc(goalHours)||'—'}</span>`;
     const plannedCell=adm?`<input type="date" class="date-inp" data-id="${r.id}" data-f="planned_start_date" value="${esc(r.planned_start_date||'')}">`:`<span class="plain-text">${esc(r.planned_start_date)||'—'}</span>`;
     const startCell=adm?`<input type="date" class="date-inp" data-id="${r.id}" data-f="start_date" value="${esc(r.start_date||'')}">`:`<span class="plain-text">${esc(r.start_date)||'—'}</span>`;
@@ -728,6 +750,16 @@ function updateStats(){
 }
 
 function updateOvCatFilter(){
+function updateIndCatFilter(){
+  const sel=document.getElementById("ind-cat-filter");if(!sel)return;
+  const cur=sel.value;
+  sel.innerHTML="<option value=\"\">" + "すべてのカテゴリ</option>"+categories.map(c=>"<option value=\""+esc(c.id)+"\"" + (c.id===cur?" selected":"") + ">"+esc(c.name)+"</option>").join("");
+}
+function clearIndFilter(){
+  document.getElementById("ind-cat-filter").value="";
+  document.getElementById("ind-status-filter").value="";
+  renderTable();
+}
   const sel=document.getElementById('ov-cat-filter');
   const cur=sel.value;
   sel.innerHTML='<option value="">すべてのカテゴリ</option>'+categories.map(c=>`<option value="${esc(c.id)}"${c.id===cur?' selected':''}>${esc(c.name)}</option>`).join('');
@@ -772,7 +804,7 @@ function renderOverview(){
   </tr>`).join('');
 }
 
-function renderAll(){renderSels();renderMaster();loadProgressAndRender();}
+function renderAll(){renderSels();renderMaster();updateIndCatFilter();loadProgressAndRender();}
 
 (async()=>{
   await loadAll();
