@@ -241,6 +241,43 @@ table { min-width: unset; }
   </div>
 </div>
 
+<!-- Master modal -->
+
+<div class="modal-overlay" id="master-modal">
+  <div class="modal" style="max-width:600px;width:95%">
+    <div class="modal-title">📋 カテゴリ・カリキュラム項目の管理</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:16px">
+      <div style="flex:1;min-width:200px">
+        <div style="font-size:11px;color:var(--soft);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">カテゴリ</div>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <select class="form-sel" id="cat-sel" style="flex:1;font-size:13px;padding:7px 28px 7px 11px" onchange="onCatSelChange()"></select>
+          <button class="btn btn-red btn-xs" onclick="askDelCatSel()">削除</button>
+        </div>
+        <div style="display:flex;gap:6px">
+          <input class="master-add-inp" id="cat-add-inp" type="text" placeholder="新しいカテゴリ名">
+          <button class="btn btn-gold btn-xs" onclick="addCat()">追加</button>
+        </div>
+      </div>
+      <div style="flex:1;min-width:200px">
+        <div style="font-size:11px;color:var(--soft);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">カリキュラム項目</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <label style="font-size:12px;color:var(--mid)">カテゴリ：</label>
+          <select class="form-sel" id="cur-cat-filter" onchange="renderCurList()" style="font-size:12px;padding:5px 24px 5px 8px"></select>
+        </div>
+        <div class="master-list" id="cur-list" style="max-height:160px"></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+          <input class="master-add-inp" id="cur-add-inp" type="text" placeholder="項目名">
+          <input class="master-add-inp" id="cur-add-hours" type="text" placeholder="目安時間" style="max-width:120px">
+          <button class="btn btn-gold btn-xs" onclick="addCur()">追加</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-dark" onclick="closeMasterModal()">閉じる</button>
+    </div>
+  </div>
+</div>
+
 <!-- View tabs (admin only) -->
 
 <div class="view-tabs" id="view-tabs" style="display:none">
@@ -294,34 +331,8 @@ table { min-width: unset; }
       </div>
     </div>
     <!-- Master editor -->
-    <div class="master-section">
-      <div class="master-section-title">📋 カテゴリ・カリキュラム項目の管理</div>
-      <div class="master-cols">
-        <div class="master-col">
-          <div class="master-col-title">カテゴリ</div>
-          <div class="form-row" style="margin-bottom:8px">
-            <select class="form-sel" id="cat-sel" style="font-size:13px;padding:7px 28px 7px 11px;flex:1" onchange="onCatSelChange()"></select>
-            <button class="btn btn-red btn-xs" onclick="askDelCatSel()">削除</button>
-          </div>
-          <div class="master-add-row">
-            <input class="master-add-inp" id="cat-add-inp" type="text" placeholder="新しいカテゴリ名">
-            <button class="btn btn-gold btn-xs" onclick="addCat()">追加</button>
-          </div>
-        </div>
-        <div class="master-col">
-          <div class="master-col-title">カリキュラム項目</div>
-          <div class="cat-filter-row">
-            <label>カテゴリ：</label>
-            <select class="form-sel" id="cur-cat-filter" onchange="renderCurList()" style="font-size:12px;padding:5px 24px 5px 8px"></select>
-          </div>
-          <div class="master-list" id="cur-list"></div>
-          <div class="master-add-row">
-            <input class="master-add-inp" id="cur-add-inp" type="text" placeholder="項目名">
-            <input class="master-add-inp" id="cur-add-hours" type="text" placeholder="目安時間（例：1週間）" style="max-width:150px">
-            <button class="btn btn-gold btn-xs" onclick="addCur()">追加</button>
-          </div>
-        </div>
-      </div>
+    <div class="student-actions" style="margin-top:12px">
+      <button class="btn btn-outline btn-sm" onclick="showMasterModal()">📋 カテゴリ・項目を管理</button>
     </div>
   </div>
 
@@ -569,6 +580,7 @@ function showConfirm(title,body,cb){
 }
 function closeConfirm(){ document.getElementById('confirm-modal').classList.remove('show'); }
 document.getElementById('confirm-modal').addEventListener('click',e=>{ if(e.target.id==='confirm-modal') closeConfirm(); });
+document.getElementById('master-modal').addEventListener('click',e=>{ if(e.target.id==='master-modal') closeMasterModal(); });
 
 // FORMS
 function showForm(id){
@@ -637,6 +649,8 @@ function renderSels(){
 
 // MASTER
 function renderMaster(){ renderCatList(); renderCurCatFilter(); renderCurList(); updateOvCatFilter(); }
+function showMasterModal(){ document.getElementById("master-modal").classList.add("show"); renderMaster(); }
+function closeMasterModal(){ document.getElementById("master-modal").classList.remove("show"); }
 function renderCatList(){
   const sel=document.getElementById("cat-sel"); if(!sel) return;
   const cur=sel.value;
