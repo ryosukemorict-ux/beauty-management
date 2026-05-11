@@ -761,7 +761,6 @@ function updateStats(){
   ['prog-label','prog-label2'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=pct+'%';});
 }
 
-function updateOvCatFilter(){
 function updateIndCatFilter(){
   const sel=document.getElementById("ind-cat-filter");if(!sel)return;
   const cur=sel.value;
@@ -776,7 +775,6 @@ function updateOvCatFilter(){
   const sel=document.getElementById("ov-cat-filter");
   const cur=sel.value;
   sel.innerHTML="<option value=\"\">" + "すべてのカテゴリ</option>"+categories.map(c=>"<option value=\""+esc(c.id)+"\"" + (c.id===cur?" selected":"") + ">"+esc(c.name)+"</option>").join("");
-}
 }
 
 function renderOverview(){
