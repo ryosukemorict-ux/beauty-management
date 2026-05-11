@@ -683,6 +683,16 @@ async function loadProgressAndRender(){
 
 function renderTable(){
   let rows=progressRows.filter(r=>r.student_id===CID);
+  // カテゴリのsort_order順、その中でカリキュラム項目のsort_order順に並べる
+  rows.sort((a,b)=>{
+    const catA=categories.find(c=>c.id===getCatIdFromCurId(a.curriculum_id));
+    const catB=categories.find(c=>c.id===getCatIdFromCurId(b.curriculum_id));
+    const curA=curricula.find(c=>c.id===a.curriculum_id);
+    const curB=curricula.find(c=>c.id===b.curriculum_id);
+    const catSort=(catA?.sort_order||0)-(catB?.sort_order||0);
+    if(catSort!==0)return catSort;
+    return (curA?.sort_order||0)-(curB?.sort_order||0);
+  });
   // フィルター適用
   const catF=document.getElementById("ind-cat-filter")?.value||"";
   const statusF=document.getElementById("ind-status-filter")?.value||"";
