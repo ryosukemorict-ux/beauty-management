@@ -543,6 +543,9 @@ function doLogout(){
 }
 function enterViewMode(){
   IS_ADMIN=false; ADMIN_ID=null;
+  // 管理者以外の最初の生徒にCIDを切り替える
+  const nonMgr=students.filter(s=>!["管理（全体）","エルズ（管理）","soleil（管理）"].includes(s.store));
+  if(nonMgr.length) CID=nonMgr[0].id;
   hideForm("add-form"); hideForm("rename-form");
   switchView("individual");
   applyMode(); renderAll();
