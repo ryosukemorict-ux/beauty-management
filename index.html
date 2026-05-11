@@ -619,6 +619,13 @@ async function doAdd(){
   const {data,error}=await sb.from('students').insert({name,store,pw_hash:pw?hash(pw):''}).select().single();
   if(error){ alert('エラー: '+error.message); return; }
   students.push(data); CID=data.id;
+  // 管理権限なし（一般スタッフ・生徒）の場合は全カリキュラムを自動作成
+  const adminStores=["管理（全体）","エルズ（管理）","soleil（管理）"];
+  if(!adminStores.includes(store) && curricula.length>0){
+    const rows=curricula.map(c=>({student_id:data.id,curriculum_id:c.id,goal_hours:c.goal_hours||"",teacher:"",planned_start_date:null,start_date:null,exam_date:null,exam_count:0,status:"未着手",score:null,memo:""}));
+    const {data:prData}=await sb.from('progress').insert(rows).select();
+    if(prData) progressRows.push(...prData);
+  }
   hideForm('add-form'); applyMode(); renderSels(); renderTable();
 }
 async function doRename(){
