@@ -303,7 +303,7 @@ table { min-width: unset; }
     <div class="inline-form" id="add-form">
       <div class="form-row"><span class="form-label">名前：</span><input class="text-inp" id="add-name" type="text" autocomplete="off" placeholder="例：田中 花子" maxlength="20"></div>
       <div class="form-row"><span class="form-label">店舗：</span>
-        <select class="form-sel" id="add-store">
+        <select class="form-sel" id="add-store" onchange="togglePwField()">
           <option value="エルズ">エルズ</option>
           <option value="soleil">soleil</option>
           <option value="エルズ（管理）">エルズ（管理）</option>
@@ -311,7 +311,7 @@ table { min-width: unset; }
           <option value="管理（全体）">管理（全体）</option>
         </select>
       </div>
-      <div class="form-row"><span class="form-label">PW：</span><input class="text-inp" id="add-pw" type="password" autocomplete="new-password" placeholder="管理者用パスワード（任意）" maxlength="30" style="width:220px"></div>
+      <div class="form-row" id="add-pw-row" style="display:none"><span class="form-label">PW：</span><input class="text-inp" id="add-pw" type="password" autocomplete="new-password" placeholder="管理者用パスワード（任意）" maxlength="30" style="width:220px"></div>
       <div class="form-btns">
         <button class="btn btn-dark btn-sm" onclick="doAdd()">追加</button>
         <button class="btn btn-ghost btn-sm" onclick="hideForm('add-form')">キャンセル</button>
@@ -600,8 +600,15 @@ function showForm(id){
     document.getElementById('add-name').value='';
     document.getElementById('add-store').value='エルズ';
     document.getElementById('add-pw').value='';
+    togglePwField();
     setTimeout(()=>document.getElementById('add-name').focus(),50);
   }
+}
+function togglePwField(){
+  const store=document.getElementById('add-store').value;
+  const adminStores=['管理（全体）','エルズ（管理）','soleil（管理）'];
+  document.getElementById('add-pw-row').style.display=adminStores.includes(store)?'':'none';
+  if(!adminStores.includes(store)) document.getElementById('add-pw').value='';
 }
 function hideForm(id){ document.getElementById(id).classList.remove('show'); }
 document.getElementById('add-name').addEventListener('keydown',e=>{ if(e.key==='Enter') doAdd(); if(e.key==='Escape') hideForm('add-form'); });
