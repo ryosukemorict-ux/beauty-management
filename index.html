@@ -208,7 +208,7 @@ table { min-width: unset; }
 </header>
 
 <div class="login-bar">
-  <span class="login-status" id="login-status">👁 閲覧モード</span>
+  <button class="btn btn-outline btn-sm" id="login-status" onclick="enterViewMode()">👁 閲覧モード</button>
   <button class="btn btn-gold btn-sm" id="login-btn" onclick="showLoginModal()">管理者ログイン</button>
 </div>
 
@@ -537,8 +537,14 @@ function doLogin(){
 }
 function doLogout(){
   IS_ADMIN=false; ADMIN_ID=null;
-  hideForm('add-form'); hideForm('rename-form');
-  switchView('individual');
+  hideForm("add-form"); hideForm("rename-form");
+  switchView("individual");
+  applyMode(); renderAll();
+}
+function enterViewMode(){
+  IS_ADMIN=false; ADMIN_ID=null;
+  hideForm("add-form"); hideForm("rename-form");
+  switchView("individual");
   applyMode(); renderAll();
 }
 function applyMode(){
@@ -558,7 +564,7 @@ function applyMode(){
     ls.className='login-status admin';
     lb.textContent='ログアウト'; lb.onclick=doLogout;
   } else {
-    ls.textContent='👁 閲覧モード'; ls.className='login-status';
+    ls.textContent='👁 閲覧モード'; ls.className='btn btn-outline btn-sm'; ls.onclick=enterViewMode;
     lb.textContent='管理者ログイン'; lb.onclick=showLoginModal;
   }
   if(students.length===0||managers().length===0){
