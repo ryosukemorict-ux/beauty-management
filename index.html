@@ -299,7 +299,10 @@ table { min-width: unset; }
       <div class="master-cols">
         <div class="master-col">
           <div class="master-col-title">カテゴリ</div>
-          <div class="master-list" id="cat-list"></div>
+          <div class="form-row" style="margin-bottom:8px">
+            <select class="form-sel" id="cat-sel" style="font-size:13px;padding:7px 28px 7px 11px;flex:1" onchange="onCatSelChange()"></select>
+            <button class="btn btn-red btn-xs" onclick="askDelCatSel()">削除</button>
+          </div>
           <div class="master-add-row">
             <input class="master-add-inp" id="cat-add-inp" type="text" placeholder="新しいカテゴリ名">
             <button class="btn btn-gold btn-xs" onclick="addCat()">追加</button>
@@ -635,13 +638,23 @@ function renderSels(){
 // MASTER
 function renderMaster(){ renderCatList(); renderCurCatFilter(); renderCurList(); updateOvCatFilter(); }
 function renderCatList(){
-  const el=document.getElementById('cat-list');
-  el.innerHTML=categories.map(c=>`<div class="master-item"><span>${esc(c.name)}</span><button class="master-item-del" onclick="askDelCat('${c.id}','${esc(c.name)}')">×</button></div>`).join('')||'<div style="font-size:12px;color:var(--soft);padding:4px">なし</div>';
+  const sel=document.getElementById("cat-sel"); if(!sel) return;
+  const cur=sel.value;
+  sel.innerHTML=categories.map(c=>`<option value="${esc(c.id)}"${c.id===cur?" selected":""}>${esc(c.name)}</option>`).join("")||"<option>なし</option>";
+  if(!sel.value && categories.length) sel.value=categories[0].id;
+}
+function onCatSelChange(){ renderCurCatFilter(); renderCurList(); }
+function askDelCatSel(){
+  const sel=document.getElementById("cat-sel");
+  const id=sel.value; const cat=categories.find(c=>c.id===id);
+  if(!cat) return;
+  askDelCat(id, cat.name);
 }
 function renderCurCatFilter(){
-  const sel=document.getElementById('cur-cat-filter');
-  const cur=sel.value;
-  sel.innerHTML=categories.map(c=>`<option value="${esc(c.id)}"${c.id===cur?' selected':''}>${esc(c.name)}</option>`).join('');
+  const catSel=document.getElementById("cat-sel");
+  const sel=document.getElementById("cur-cat-filter");
+  const cur=catSel?.value||sel.value;
+  sel.innerHTML=categories.map(c=>`<option value="${esc(c.id)}"${c.id===cur?" selected":""}>${esc(c.name)}</option>`).join("");
   if(!sel.value && categories.length) sel.value=categories[0].id;
 }
 function renderCurList(){
