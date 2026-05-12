@@ -370,8 +370,8 @@ td.memo-td{white-space:normal;min-width:130px;}
     <table class="overview-table">
       <thead>
         <tr>
-          <th>生徒名</th><th>店舗</th><th>カテゴリ</th><th>カリキュラム項目</th>
-          <th>ステータス</th><th>試験回数</th><th>点数</th><th>進捗率</th>
+          <th>生徒名</th><th>店舗</th><th>カテゴリ</th><th>カリキュラム項目</th><th>目安時間</th>
+          <th>練習開始予定日</th><th>練習開始日</th><th>試験日</th><th>試験回数</th><th>点数</th><th>ステータス</th><th>担当講師</th><th>メモ</th><th>進捗率</th>
         </tr>
       </thead>
       <tbody id="ov-tbody"></tbody>
@@ -809,9 +809,15 @@ function renderOverview(){
     <td>${esc(student.store)}</td>
     <td>${esc(catName)}</td>
     <td>${esc(curName)}</td>
-    <td>${row?`<span class="status-badge badge-${row.status}">${esc(row.status)}</span>`:'—'}</td>
-    <td>${row?esc(row.exam_count||0):'—'}</td>
-    <td>${row&&row.score?esc(row.score)+'点':'—'}</td>
+    <td>${row?esc(getGoalHoursFromCurId(row.curriculum_id)||"—"):"—"}</td>
+    <td>${row?esc(row.planned_start_date||"—"):"—"}</td>
+    <td>${row?esc(row.start_date||"—"):"—"}</td>
+    <td>${row?esc(row.exam_date||"—"):"—"}</td>
+    <td>${row?esc(row.exam_count||0):"—"}</td>
+    <td>${row&&row.score?esc(row.score)+"点":"—"}</td>
+    <td>${row?`<span class="status-badge badge-${row.status}">${esc(row.status)}</span>`:"—"}</td>
+    <td>${row?esc(row.teacher||"—"):"—"}</td>
+    <td style="white-space:normal;max-width:160px">${row?esc(row.memo||"—"):"—"}</td>
     <td><div class="mini-prog-wrap"><div class="mini-prog-bg"><div class="mini-prog-fill" style="width:${pct}%"></div></div><span style="font-size:11px;color:var(--mid)">${pass}/${total}</span></div></td>
   </tr>`).join('');
 }
