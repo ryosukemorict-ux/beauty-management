@@ -149,28 +149,10 @@ td.wrap{white-space:normal;min-width:120px;}
 
 /* ── NOTICE ── */
 
-.func-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;max-width:900px;margin:0 auto;padding:0 4px;}
-.func-card{background:white;border:2px solid var(--gold-light);border-radius:14px;padding:24px 16px;text-align:center;cursor:pointer;transition:all 0.2s;}
-.func-card:hover{border-color:var(--gold);box-shadow:0 4px 16px rgba(201,169,110,0.2);transform:translateY(-2px);}
-.func-card.disabled{opacity:0.4;cursor:not-allowed;pointer-events:none;}
-.func-card-icon{font-size:36px;margin-bottom:10px;}
-.func-card-name{font-size:15px;font-weight:700;margin-bottom:4px;}
-.func-card-desc{font-size:11px;color:var(--mid);}
-.func-card-lock{font-size:10px;color:var(--soft);margin-top:6px;}
-
 .notice{text-align:center;font-size:12px;color:var(--soft);background:#f5f0eb;border-radius:8px;padding:10px;margin-top:12px;}
 
 @media print{
   .top-bar,.nav-tabs,.action-bar,.filter-bar,.del-btn,.modal-overlay,
-.func-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;max-width:900px;margin:0 auto;padding:0 4px;}
-.func-card{background:white;border:2px solid var(--gold-light);border-radius:14px;padding:24px 16px;text-align:center;cursor:pointer;transition:all 0.2s;}
-.func-card:hover{border-color:var(--gold);box-shadow:0 4px 16px rgba(201,169,110,0.2);transform:translateY(-2px);}
-.func-card.disabled{opacity:0.4;cursor:not-allowed;pointer-events:none;}
-.func-card-icon{font-size:36px;margin-bottom:10px;}
-.func-card-name{font-size:15px;font-weight:700;margin-bottom:4px;}
-.func-card-desc{font-size:11px;color:var(--mid);}
-.func-card-lock{font-size:10px;color:var(--soft);margin-top:6px;}
-
 .notice{display:none !important;}
   .table-wrap{overflow:visible;box-shadow:none;}
   table{min-width:unset !important;}
@@ -1093,13 +1075,17 @@ function renderAll(){
 
 (async()=>{
   await loadAll();
-  // 最後に見た生徒を復元
   const saved=localStorage.getItem('last_cid');
   const nonMgr=nonAdminStudents().filter(s=>s.is_active!==false);
   if(saved&&students.find(s=>s.id===saved))CID=saved;
   else if(nonMgr.length)CID=nonMgr[0].id;
   else if(students.length)CID=students[0].id;
-  renderAll();
+  currentPage='dashboard';
+  applyAuth();
+  renderDashboard();
+  // Make sure dashboard is visible
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-dashboard').classList.add('active');
 })();
 </script>
 </body>
