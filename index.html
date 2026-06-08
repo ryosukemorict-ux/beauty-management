@@ -1,399 +1,514 @@
 <!DOCTYPE html>
-
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Beauty Management カリキュラム進捗表</title>
+<title>ailes group</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{--cream:#faf6f0;--gold:#c9a96e;--gold-light:#e8d5b0;--dark:#1a1410;--mid:#7a6a58;--soft:#c4b49e;--accent:#8b5e3c;--green:#4a7c59;--red:#c0392b;--blue:#2980b9;}
+:root{
+  --cream:#faf6f0;--gold:#c9a96e;--gold-light:#e8d5b0;--dark:#1a1410;
+  --mid:#7a6a58;--soft:#c4b49e;--accent:#8b5e3c;--green:#4a7c59;
+  --red:#c0392b;--blue:#2980b9;--purple:#7d3c98;
+}
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--dark);min-height:100vh;padding:28px 14px 80px;}
-.container{max-width:1300px;margin:0 auto;}
-header{text-align:center;margin-bottom:20px;}
-.eyebrow{font-size:11px;letter-spacing:4px;color:var(--gold);margin-bottom:8px;text-transform:uppercase;}
-h1{font-family:'Playfair Display',serif;font-size:clamp(20px,5vw,36px);color:var(--dark);font-weight:700;}
-.divider{width:50px;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:10px auto 0;}
-.login-bar{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
-.login-status{font-size:12px;color:var(--mid);background:white;border:1px solid var(--gold-light);padding:6px 14px;border-radius:20px;}
-.login-status.admin{background:var(--dark);color:var(--gold-light);border-color:var(--dark);}
+body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--dark);min-height:100vh;}
 .loading-screen{position:fixed;inset:0;background:var(--cream);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;z-index:9999;}
 .loading-spinner{width:40px;height:40px;border:3px solid var(--gold-light);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .loading-text{font-size:13px;color:var(--mid);}
-.view-tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
-.view-tab{font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:500;padding:8px 18px;border-radius:24px;border:1.5px solid var(--soft);background:white;color:var(--mid);cursor:pointer;transition:all 0.15s;}
-.view-tab.active{background:var(--dark);border-color:var(--dark);color:white;}
+
+/* ── TOP BAR ── */
+.top-bar{background:var(--dark);color:var(--gold-light);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.top-bar-title{font-family:'Playfair Display',serif;font-size:18px;letter-spacing:1px;}
+.top-bar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.user-badge{font-size:12px;background:rgba(255,255,255,0.1);padding:5px 12px;border-radius:20px;white-space:nowrap;}
+.user-badge .position{font-size:10px;color:var(--gold);margin-left:6px;}
+
+/* ── NAV TABS ── */
+.nav-tabs{background:white;border-bottom:2px solid var(--gold-light);padding:0 16px;display:flex;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.nav-tab{font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:500;padding:12px 18px;border:none;background:none;color:var(--mid);cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all 0.15s;}
+.nav-tab:hover{color:var(--dark);}
+.nav-tab.active{color:var(--gold);border-bottom-color:var(--gold);font-weight:700;}
+
+/* ── CONTAINER ── */
+.page{display:none;padding:20px 16px 80px;max-width:1400px;margin:0 auto;}
+.page.active{display:block;}
+
+/* ── MODALS ── */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;align-items:center;justify-content:center;}
 .modal-overlay.show{display:flex;}
-.modal{background:white;border-radius:16px;padding:28px 28px 22px;max-width:420px;width:92%;box-shadow:0 8px 40px rgba(0,0,0,0.2);}
-.modal-title{font-size:16px;font-weight:700;margin-bottom:6px;text-align:center;}
-.modal-sub{font-size:12px;color:var(--mid);margin-bottom:18px;text-align:center;}
-.modal-body{font-size:13px;color:var(--mid);margin-bottom:22px;line-height:1.7;text-align:center;}
+.modal{background:white;border-radius:16px;padding:24px;max-width:460px;width:94%;box-shadow:0 8px 40px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto;}
+.modal-lg{max-width:600px;}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:4px;text-align:center;}
+.modal-sub{font-size:12px;color:var(--mid);margin-bottom:16px;text-align:center;}
+.modal-body{font-size:13px;color:var(--mid);margin-bottom:18px;line-height:1.7;text-align:center;}
 .modal-actions{display:flex;gap:10px;justify-content:center;margin-top:16px;}
-.modal-form-row{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
-.modal-form-row label{font-size:12px;color:var(--mid);}
-.modal-inp{font-family:'Noto Sans JP',sans-serif;font-size:14px;padding:10px 14px;border-radius:8px;border:1.5px solid var(--gold-light);outline:none;background:#fdfaf6;width:100%;}
-.modal-inp:focus{border-color:var(--gold);}
-.modal-err{font-size:12px;color:var(--red);text-align:center;min-height:18px;margin-top:4px;}
-.panel{background:white;border:1px solid var(--gold-light);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 2px 10px rgba(0,0,0,0.04);}
-.panel-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mid);margin-bottom:12px;font-weight:500;}
-.selector-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;}
-.selector-row label{font-size:12px;color:var(--mid);white-space:nowrap;}
-.big-sel{font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:600;padding:9px 36px 9px 14px;border-radius:9px;border:2px solid var(--gold);background:white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7'%3E%3Cpath d='M0 0l6 7 6-7z' fill='%23c9a96e'/%3E%3C/svg%3E") no-repeat right 12px center;appearance:none;-webkit-appearance:none;outline:none;cursor:pointer;color:var(--dark);min-width:200px;}
-.student-actions{display:flex;gap:8px;flex-wrap:wrap;}
-.inline-form{display:none;flex-direction:column;gap:12px;background:#fdf8f2;border:1.5px solid var(--gold-light);border-radius:10px;padding:14px 16px;margin-top:12px;}
-.inline-form.show{display:flex;}
-.form-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-.form-label{font-size:12px;color:var(--mid);white-space:nowrap;min-width:70px;}
-.text-inp{font-family:'Noto Sans JP',sans-serif;font-size:13px;padding:7px 11px;border-radius:7px;border:1.5px solid var(--gold);outline:none;background:white;width:180px;}
-.form-sel{font-family:'Noto Sans JP',sans-serif;font-size:13px;padding:7px 28px 7px 11px;border-radius:7px;border:1.5px solid var(--gold);outline:none;cursor:pointer;background:white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a6a58'/%3E%3C/svg%3E") no-repeat right 9px center;appearance:none;-webkit-appearance:none;color:var(--dark);}
-.form-btns{display:flex;gap:8px;}
-.master-col-title{font-size:11px;color:var(--soft);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;}
-.master-list{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:160px;overflow-y:auto;}
-.master-item{display:flex;align-items:center;gap:6px;background:white;border:1px solid var(--gold-light);border-radius:7px;padding:6px 10px;font-size:13px;}
-.master-item span{flex:1;}
-.master-item-sub{font-size:11px;color:var(--soft);margin-left:4px;}
-.master-item-del{background:none;border:none;color:var(--soft);font-size:15px;cursor:pointer;padding:0 4px;line-height:1;}
-.master-item-del:hover{color:var(--red);}
-.master-add-inp{font-family:'Noto Sans JP',sans-serif;font-size:13px;padding:6px 10px;border-radius:7px;border:1.5px solid var(--gold-light);outline:none;background:white;flex:1;min-width:100px;}
-.master-add-inp:focus{border-color:var(--gold);}
-.cat-filter-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
-.cat-filter-row label{font-size:12px;color:var(--mid);}
-.btn{font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:500;padding:8px 15px;border-radius:7px;border:none;cursor:pointer;transition:all 0.15s;white-space:nowrap;}
+.modal-err{font-size:12px;color:var(--red);text-align:center;min-height:16px;margin-top:4px;}
+.form-group{margin-bottom:12px;}
+.form-group label{display:block;font-size:12px;color:var(--mid);margin-bottom:4px;}
+.form-inp{font-family:'Noto Sans JP',sans-serif;font-size:14px;padding:9px 12px;border-radius:8px;border:1.5px solid var(--gold-light);outline:none;background:#fdfaf6;width:100%;}
+.form-inp:focus{border-color:var(--gold);}
+.form-sel{font-family:'Noto Sans JP',sans-serif;font-size:14px;padding:9px 28px 9px 12px;border-radius:8px;border:1.5px solid var(--gold-light);outline:none;background:white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a6a58'/%3E%3C/svg%3E") no-repeat right 10px center;appearance:none;-webkit-appearance:none;width:100%;color:var(--dark);}
+.form-sel:focus{border-color:var(--gold);}
+
+/* ── BUTTONS ── */
+.btn{font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:500;padding:8px 16px;border-radius:7px;border:none;cursor:pointer;transition:all 0.15s;white-space:nowrap;}
 .btn-dark{background:var(--dark);color:white;}.btn-dark:hover{background:#2e241e;}
 .btn-gold{background:var(--gold);color:white;}.btn-gold:hover{background:var(--accent);}
 .btn-ghost{background:#ede8e2;color:var(--mid);}.btn-ghost:hover{background:#e2dbd3;}
 .btn-red{background:#fdf0ef;color:var(--red);border:1px solid #f5c6c3;}.btn-red:hover{background:#fde0de;}
 .btn-outline{background:white;color:#3a3028;border:1.5px solid var(--soft);}.btn-outline:hover{border-color:var(--gold);color:var(--gold);}
+.btn-green{background:#eef7f2;color:var(--green);border:1px solid #b8dfc9;}.btn-green:hover{background:#d4efdf;}
 .btn-sm{padding:6px 12px;font-size:12px;}.btn-xs{padding:4px 9px;font-size:11px;}
-.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
-@media(max-width:480px){.summary{grid-template-columns:repeat(2,1fr);}}
-.stat{background:white;border:1px solid var(--gold-light);border-radius:12px;padding:13px;text-align:center;}
-.stat-n{font-size:22px;font-weight:700;line-height:1;margin-bottom:3px;}
-.stat-l{font-size:11px;color:var(--mid);}
-.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:8px;}
-.progress-wrap{display:flex;align-items:center;gap:8px;}
-.prog-bg{background:#f0e8df;border-radius:20px;height:8px;width:100px;overflow:hidden;}
-.prog-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--gold),var(--accent));transition:width .4s;}
-.scroll-hint{font-size:11px;color:var(--soft);text-align:right;margin-bottom:4px;display:none;}
-@media(max-width:1100px){.scroll-hint{display:block;}}
-.table-wrap{background:white;border:1px solid var(--gold-light);border-radius:14px;overflow-x:auto;-webkit-overflow-scrolling:touch;box-shadow:0 4px 20px rgba(0,0,0,0.05);}
-table{min-width:1200px;width:100%;border-collapse:collapse;}
+
+/* ── PANEL ── */
+.panel{background:white;border:1px solid var(--gold-light);border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.04);}
+.panel-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mid);margin-bottom:12px;font-weight:500;}
+.action-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
+
+/* ── TABLE ── */
+.table-wrap{background:white;border:1px solid var(--gold-light);border-radius:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;box-shadow:0 2px 8px rgba(0,0,0,0.04);}
+table{width:100%;border-collapse:collapse;}
+.tbl-main{min-width:1100px;}
 thead{background:var(--dark);}
-thead th{padding:11px 12px;text-align:left;font-size:10px;font-weight:500;letter-spacing:1.2px;text-transform:uppercase;color:var(--gold-light);white-space:nowrap;}
+thead th{padding:10px 12px;text-align:left;font-size:10px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--gold-light);white-space:nowrap;}
 tbody tr{border-bottom:1px solid #f0e8df;}
 tbody tr:last-child{border-bottom:none;}
 tbody tr:hover{background:#fffbf7;}
 td{padding:9px 12px;font-size:13px;vertical-align:middle;white-space:nowrap;}
-td.memo-td{white-space:normal;min-width:130px;}
-.ce{outline:none;border-radius:4px;padding:4px 6px;display:block;min-width:60px;cursor:text;transition:background .15s,box-shadow .15s;}
-.ce:hover{background:#f5ede4;}.ce:focus{background:#fffbf7;box-shadow:0 0 0 2px var(--gold);}
+td.wrap{white-space:normal;min-width:120px;}
+.empty-td{text-align:center;color:var(--soft);padding:40px !important;white-space:normal !important;}
+.scroll-hint{font-size:11px;color:var(--soft);text-align:right;margin-bottom:4px;}
+
+/* ── FORM ELEMENTS IN TABLE ── */
 .tbl-sel{font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:4px 22px 4px 7px;border-radius:6px;border:1.5px solid var(--soft);background:white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a6a58'/%3E%3C/svg%3E") no-repeat right 6px center;appearance:none;-webkit-appearance:none;cursor:pointer;color:#3a3028;}
 .tbl-sel:focus{outline:none;border-color:var(--gold);}
-.tbl-sel.s-未着手{border-color:#ccc;color:var(--mid);}
-.tbl-sel.s-練習中{border-color:var(--blue);color:var(--blue);background-color:#eef6fd;}
-.tbl-sel.s-合格{border-color:var(--green);color:var(--green);background-color:#eef7f2;}
-.tbl-sel.s-再確認{border-color:var(--red);color:var(--red);background-color:#fdf0ef;}
+.s-未着手{border-color:#ccc;color:var(--mid);}
+.s-練習中{border-color:var(--blue);color:var(--blue);background-color:#eef6fd;}
+.s-合格{border-color:var(--green);color:var(--green);background-color:#eef7f2;}
+.s-再確認{border-color:var(--red);color:var(--red);background-color:#fdf0ef;}
 .num-inp,.date-inp{font-family:'Noto Sans JP',sans-serif;padding:4px 5px;border-radius:6px;border:1.5px solid var(--soft);background:white;}
 .num-inp{width:58px;text-align:center;font-size:13px;}.date-inp{width:126px;font-size:12px;}
 .num-inp:focus,.date-inp:focus{outline:none;border-color:var(--gold);}
-.plain-text{font-size:13px;color:var(--dark);}
-.del-btn{background:none;border:none;color:var(--soft);font-size:18px;cursor:pointer;padding:2px 7px;border-radius:4px;transition:color .15s,background .15s;line-height:1;}
+.ce{outline:none;border-radius:4px;padding:4px 6px;display:block;min-width:60px;cursor:text;}
+.ce:hover{background:#f5ede4;}.ce:focus{background:#fffbf7;box-shadow:0 0 0 2px var(--gold);}
+.del-btn{background:none;border:none;color:var(--soft);font-size:18px;cursor:pointer;padding:2px 7px;border-radius:4px;line-height:1;}
 .del-btn:hover{color:var(--red);background:#fdf0ef;}
-.empty-td{text-align:center;color:var(--soft);font-size:13px;padding:40px !important;white-space:normal !important;}
-.hint{text-align:center;font-size:11px;color:var(--soft);margin-top:14px;}
-.readonly-notice{text-align:center;font-size:12px;color:var(--soft);margin-top:14px;background:#f5f0eb;border-radius:8px;padding:8px;}
-.overview-filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;}
-.filter-sel{font-family:'Noto Sans JP',sans-serif;font-size:13px;padding:7px 28px 7px 11px;border-radius:7px;border:1.5px solid var(--gold-light);outline:none;cursor:pointer;background:white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a6a58'/%3E%3C/svg%3E") no-repeat right 9px center;appearance:none;-webkit-appearance:none;color:var(--dark);}
-.overview-table-wrap{background:white;border:1px solid var(--gold-light);border-radius:14px;overflow-x:auto;-webkit-overflow-scrolling:touch;box-shadow:0 4px 20px rgba(0,0,0,0.05);}
-.overview-table{min-width:600px;width:100%;border-collapse:collapse;}
-.overview-table thead{background:var(--dark);}
-.overview-table thead th{padding:11px 14px;text-align:left;font-size:10px;font-weight:500;letter-spacing:1.2px;text-transform:uppercase;color:var(--gold-light);white-space:nowrap;}
-.overview-table tbody tr{border-bottom:1px solid #f0e8df;}
-.overview-table tbody tr:last-child{border-bottom:none;}
-.overview-table tbody tr:hover{background:#fffbf7;}
-.overview-table td{padding:10px 14px;font-size:13px;vertical-align:middle;}
-.status-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
-.badge-未着手{background:#f0ece8;color:var(--mid);}.badge-練習中{background:#eef6fd;color:var(--blue);}
-.badge-合格{background:#eef7f2;color:var(--green);}.badge-再確認{background:#fdf0ef;color:var(--red);}
-.mini-prog-wrap{display:flex;align-items:center;gap:8px;}
-.mini-prog-bg{background:#f0e8df;border-radius:20px;height:6px;width:80px;overflow:hidden;flex-shrink:0;}
-.mini-prog-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--gold),var(--accent));}
-@media print{.login-bar,.controls,.student-actions,.panel .btn,.del-btn,.scroll-hint,.inline-form,.modal-overlay,.readonly-notice,.loading-screen,.view-tabs{display:none !important;}.table-wrap{overflow:visible;box-shadow:none;}table{min-width:unset;}}
+.plain{font-size:13px;color:var(--dark);}
+
+/* ── BADGES ── */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge-未着手{background:#f0ece8;color:var(--mid);}
+.badge-練習中{background:#eef6fd;color:var(--blue);}
+.badge-合格{background:#eef7f2;color:var(--green);}
+.badge-再確認{background:#fdf0ef;color:var(--red);}
+
+/* ── SUMMARY ── */
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
+@media(max-width:480px){.summary{grid-template-columns:repeat(2,1fr);}}
+.stat{background:white;border:1px solid var(--gold-light);border-radius:12px;padding:12px;text-align:center;}
+.stat-n{font-size:22px;font-weight:700;line-height:1;margin-bottom:3px;}
+.stat-l{font-size:11px;color:var(--mid);}
+.prog-wrap{display:flex;align-items:center;gap:8px;}
+.prog-bg{background:#f0e8df;border-radius:20px;height:8px;width:100px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--gold),var(--accent));transition:width .4s;}
+
+/* ── FILTERS ── */
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
+.filter-bar label{font-size:12px;color:var(--mid);}
+.filter-sel{font-family:'Noto Sans JP',sans-serif;font-size:13px;padding:6px 26px 6px 10px;border-radius:7px;border:1.5px solid var(--gold-light);outline:none;cursor:pointer;background:white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a6a58'/%3E%3C/svg%3E") no-repeat right 8px center;appearance:none;-webkit-appearance:none;color:var(--dark);}
+.filter-sel:focus{border-color:var(--gold);}
+
+/* ── STAFF CARD ── */
+.staff-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:16px;}
+.staff-card{background:white;border:1px solid var(--gold-light);border-radius:12px;padding:14px 16px;cursor:pointer;transition:all 0.15s;position:relative;}
+.staff-card:hover{border-color:var(--gold);box-shadow:0 2px 10px rgba(201,169,110,0.2);}
+.staff-card.inactive{opacity:0.5;}
+.staff-card-name{font-size:15px;font-weight:700;margin-bottom:4px;}
+.staff-card-sub{font-size:12px;color:var(--mid);}
+.staff-card-pos{display:inline-block;font-size:11px;padding:2px 8px;border-radius:12px;background:var(--gold-light);color:var(--accent);margin-top:6px;font-weight:500;}
+.staff-card-actions{position:absolute;top:10px;right:10px;display:flex;gap:6px;}
+
+/* ── PW CHANGE ── */
+.pw-section{background:#f5f0eb;border-radius:10px;padding:14px;margin-top:12px;}
+
+/* ── MASTER MODAL ── */
+.master-cols{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;}
+.master-col{flex:1;min-width:200px;}
+.master-col-title{font-size:11px;color:var(--soft);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;}
+.master-list{display:flex;flex-direction:column;gap:5px;max-height:180px;overflow-y:auto;margin-bottom:8px;}
+.master-item{display:flex;align-items:center;gap:6px;background:white;border:1px solid var(--gold-light);border-radius:7px;padding:5px 10px;font-size:13px;}
+.master-item span{flex:1;}.master-item-sub{font-size:11px;color:var(--soft);}
+.master-item-del{background:none;border:none;color:var(--soft);font-size:14px;cursor:pointer;padding:0 3px;line-height:1;}
+.master-item-del:hover{color:var(--red);}
+.master-add-row{display:flex;gap:6px;flex-wrap:wrap;}
+.master-add-inp{font-family:'Noto Sans JP',sans-serif;font-size:13px;padding:6px 10px;border-radius:7px;border:1.5px solid var(--gold-light);outline:none;background:white;flex:1;min-width:80px;}
+.master-add-inp:focus{border-color:var(--gold);}
+
+/* ── NOTICE ── */
+
+.func-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;max-width:900px;margin:0 auto;padding:0 4px;}
+.func-card{background:white;border:2px solid var(--gold-light);border-radius:14px;padding:24px 16px;text-align:center;cursor:pointer;transition:all 0.2s;}
+.func-card:hover{border-color:var(--gold);box-shadow:0 4px 16px rgba(201,169,110,0.2);transform:translateY(-2px);}
+.func-card.disabled{opacity:0.4;cursor:not-allowed;pointer-events:none;}
+.func-card-icon{font-size:36px;margin-bottom:10px;}
+.func-card-name{font-size:15px;font-weight:700;margin-bottom:4px;}
+.func-card-desc{font-size:11px;color:var(--mid);}
+.func-card-lock{font-size:10px;color:var(--soft);margin-top:6px;}
+
+.notice{text-align:center;font-size:12px;color:var(--soft);background:#f5f0eb;border-radius:8px;padding:10px;margin-top:12px;}
+
+@media print{
+  .top-bar,.nav-tabs,.action-bar,.filter-bar,.del-btn,.modal-overlay,
+.func-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;max-width:900px;margin:0 auto;padding:0 4px;}
+.func-card{background:white;border:2px solid var(--gold-light);border-radius:14px;padding:24px 16px;text-align:center;cursor:pointer;transition:all 0.2s;}
+.func-card:hover{border-color:var(--gold);box-shadow:0 4px 16px rgba(201,169,110,0.2);transform:translateY(-2px);}
+.func-card.disabled{opacity:0.4;cursor:not-allowed;pointer-events:none;}
+.func-card-icon{font-size:36px;margin-bottom:10px;}
+.func-card-name{font-size:15px;font-weight:700;margin-bottom:4px;}
+.func-card-desc{font-size:11px;color:var(--mid);}
+.func-card-lock{font-size:10px;color:var(--soft);margin-top:6px;}
+
+.notice{display:none !important;}
+  .table-wrap{overflow:visible;box-shadow:none;}
+  table{min-width:unset !important;}
+}
 </style>
 </head>
 <body>
+
 <div class="loading-screen" id="loading">
   <div class="loading-spinner"></div>
   <div class="loading-text">データを読み込み中...</div>
 </div>
-<div class="container">
-<header>
-  <p class="eyebrow">✦ Beauty Management ✦</p>
-  <h1>カリキュラム進捗表</h1>
-  <div class="divider"></div>
-</header>
-<div class="login-bar">
-  <span class="login-status" id="login-status">👁 閲覧モード</span>
-  <button class="btn btn-gold btn-sm" id="login-btn" onclick="showLoginModal()">管理者ログイン</button>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <div class="top-bar-title" style="font-family:'Playfair Display',serif;letter-spacing:2px">✦ ailes group</div>
+  <div class="top-bar-right">
+    <span class="user-badge" id="user-badge">👁 閲覧モード</span>
+    <button class="btn btn-outline btn-sm" id="auth-btn" onclick="showLoginModal()" style="background:transparent;color:var(--gold-light);border-color:var(--gold)">ログイン</button>
+  </div>
 </div>
 
+<!-- NAV TABS -->
+<div class="nav-tabs" id="nav-tabs" style="display:none">
+  <button class="nav-tab" id="tab-dashboard" onclick="showPage('dashboard')">🏠 ホーム</button>
+  <button class="nav-tab" id="tab-curriculum" onclick="showPage('curriculum')">📋 カリキュラム進捗</button>
+  <button class="nav-tab" id="tab-staff" onclick="showPage('staff')" style="display:none">👥 人材マスター</button>
+</div>
+
+<!-- ===== LOGIN MODAL ===== -->
 <div class="modal-overlay" id="login-modal">
   <div class="modal">
-    <div class="modal-title">管理者ログイン</div>
-    <div class="modal-sub">管理者を選択してパスワードを入力してください</div>
-    <div class="modal-form-row"><label>管理者</label><select class="modal-inp" id="login-sel"></select></div>
-    <div class="modal-form-row"><label>パスワード</label><input class="modal-inp" type="password" id="login-pw" placeholder="パスワードを入力" autocomplete="new-password"></div>
+    <div class="modal-title">ログイン</div>
+    <div class="modal-sub">名前を選択してパスワードを入力</div>
+    <div class="form-group"><label>名前</label><select class="form-sel" id="login-sel"></select></div>
+    <div class="form-group"><label>パスワード</label><input class="form-inp" type="password" id="login-pw" placeholder="パスワードを入力" autocomplete="new-password"></div>
     <div class="modal-err" id="login-err"></div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeLoginModal()">キャンセル</button>
+      <button class="btn btn-ghost" onclick="closeModal('login-modal')">キャンセル</button>
       <button class="btn btn-dark" onclick="doLogin()">ログイン</button>
     </div>
   </div>
 </div>
 
+<!-- ===== CONFIRM MODAL ===== -->
 <div class="modal-overlay" id="confirm-modal">
   <div class="modal">
     <div class="modal-title" id="confirm-title"></div>
     <div class="modal-body" id="confirm-body"></div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeConfirm()">キャンセル</button>
+      <button class="btn btn-ghost" onclick="closeModal('confirm-modal')">キャンセル</button>
       <button class="btn btn-red" id="confirm-ok">削除する</button>
     </div>
   </div>
 </div>
 
+<!-- ===== STAFF MODAL ===== -->
+<div class="modal-overlay" id="staff-modal">
+  <div class="modal modal-lg">
+    <div class="modal-title" id="staff-modal-title">スタッフ追加</div>
+    <div style="margin-top:12px">
+      <div class="form-group"><label>名前 *</label><input class="form-inp" id="sm-name" type="text" maxlength="20" autocomplete="off" placeholder="例：田中 花子"></div>
+      <div class="form-group"><label>店舗 *</label>
+        <select class="form-sel" id="sm-store" onchange="toggleSmPw()">
+          <option value="エルズ">エルズ</option>
+          <option value="soleil">soleil</option>
+          <option value="エルズ（管理）">エルズ（管理）</option>
+          <option value="soleil（管理）">soleil（管理）</option>
+          <option value="管理（全体）">管理（全体）</option>
+        </select>
+      </div>
+      <div class="form-group"><label>役職</label>
+        <select class="form-sel" id="sm-position">
+          <option value="">未設定</option>
+          <option value="代表">代表</option>
+          <option value="店長">店長</option>
+          <option value="チーフ">チーフ</option>
+          <option value="スタイリスト">スタイリスト</option>
+          <option value="Jrスタイリスト">Jrスタイリスト</option>
+          <option value="カラーリスト">カラーリスト</option>
+          <option value="アシスタント">アシスタント</option>
+          <option value="レセプション">レセプション</option>
+          <option value="管理者">管理者</option>
+        </select>
+      </div>
+      <div class="form-group"><label>生年月日</label><input class="form-inp" id="sm-birthdate" type="date"></div>
+      <div class="form-group"><label>入社日</label><input class="form-inp" id="sm-joindate" type="date"></div>
+      <div class="form-group" id="sm-leavedate-row" style="display:none"><label>退社日（退社処理の場合）</label><input class="form-inp" id="sm-leavedate" type="date"></div>
+      <div class="form-group" id="sm-pw-row"><label>パスワード</label><input class="form-inp" id="sm-pw" type="password" placeholder="初期値：2026" autocomplete="new-password"></div>
+      <div class="modal-err" id="sm-err"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('staff-modal')">キャンセル</button>
+      <button class="btn btn-dark" id="sm-save-btn" onclick="saveStaff()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PW CHANGE MODAL ===== -->
+<div class="modal-overlay" id="pw-modal">
+  <div class="modal">
+    <div class="modal-title">パスワード変更</div>
+    <div class="modal-sub" id="pw-modal-sub"></div>
+    <div class="form-group"><label>現在のパスワード</label><input class="form-inp" type="password" id="pw-current" autocomplete="new-password"></div>
+    <div class="form-group"><label>新しいパスワード</label><input class="form-inp" type="password" id="pw-new" autocomplete="new-password"></div>
+    <div class="form-group"><label>新しいパスワード（確認）</label><input class="form-inp" type="password" id="pw-confirm" autocomplete="new-password"></div>
+    <div class="modal-err" id="pw-err"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('pw-modal')">キャンセル</button>
+      <button class="btn btn-dark" onclick="doChangePw()">変更する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MASTER MODAL ===== -->
 <div class="modal-overlay" id="master-modal">
-  <div class="modal" style="max-width:600px;width:95%">
+  <div class="modal modal-lg">
     <div class="modal-title">📋 カテゴリ・カリキュラム項目の管理</div>
-    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:16px">
-      <div style="flex:1;min-width:200px">
+    <div class="master-cols">
+      <div class="master-col">
         <div class="master-col-title">カテゴリ</div>
         <div style="display:flex;gap:6px;margin-bottom:8px">
-          <select class="form-sel" id="cat-sel" style="flex:1;font-size:13px;padding:7px 28px 7px 11px" onchange="onCatSelChange()"></select>
+          <select class="filter-sel" id="cat-sel" style="flex:1" onchange="onCatSelChange()"></select>
           <button class="btn btn-red btn-xs" onclick="askDelCatSel()">削除</button>
         </div>
-        <div style="display:flex;gap:6px">
+        <div class="master-add-row">
           <input class="master-add-inp" id="cat-add-inp" type="text" placeholder="新しいカテゴリ名">
           <button class="btn btn-gold btn-xs" onclick="addCat()">追加</button>
         </div>
       </div>
-      <div style="flex:1;min-width:200px">
+      <div class="master-col">
         <div class="master-col-title">カリキュラム項目</div>
-        <div class="cat-filter-row">
-          <label>カテゴリ：</label>
-          <select class="form-sel" id="cur-cat-filter" onchange="renderCurList()" style="font-size:12px;padding:5px 24px 5px 8px"></select>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <label style="font-size:12px;color:var(--mid)">カテゴリ：</label>
+          <select class="filter-sel" id="cur-cat-filter" onchange="renderCurList()"></select>
         </div>
         <div class="master-list" id="cur-list"></div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+        <div class="master-add-row">
           <input class="master-add-inp" id="cur-add-inp" type="text" placeholder="項目名">
-          <input class="master-add-inp" id="cur-add-hours" type="text" placeholder="目安時間" style="max-width:120px">
+          <input class="master-add-inp" id="cur-add-hours" type="text" placeholder="目安時間" style="max-width:100px">
           <button class="btn btn-gold btn-xs" onclick="addCur()">追加</button>
         </div>
       </div>
     </div>
-    <div class="modal-actions">
-      <button class="btn btn-dark" onclick="closeMasterModal()">閉じる</button>
-    </div>
+    <div class="modal-actions"><button class="btn btn-dark" onclick="closeModal('master-modal')">閉じる</button></div>
   </div>
 </div>
 
-<div class="view-tabs" id="view-tabs" style="display:none">
-  <button class="view-tab active" id="tab-individual" onclick="switchView('individual')">👤 個人別</button>
-  <button class="view-tab" id="tab-overview" onclick="switchView('overview')">📊 全体一覧</button>
+
+<!-- ===== PAGE: DASHBOARD ===== -->
+<div class="page" id="page-dashboard">
+  <div style="text-align:center;padding:30px 0 20px">
+    <div style="font-family:'Playfair Display',serif;font-size:22px;color:var(--dark);margin-bottom:6px">Welcome, <span id="dash-name"></span></div>
+    <div style="font-size:13px;color:var(--mid)" id="dash-sub"></div>
+  </div>
+  <div class="func-grid" id="func-grid"></div>
+  <div style="text-align:center;margin-top:24px">
+    <button class="btn btn-outline btn-sm" onclick="showPwModal()">🔑 パスワード変更</button>
+  </div>
 </div>
 
-<div id="view-individual">
-  <div class="panel" id="admin-panel" style="display:none">
-    <div class="panel-title">👤 生徒・スタッフ管理</div>
-    <div class="selector-row">
-      <label>表示中：</label>
-      <select class="big-sel" id="student-sel" onchange="onStudentChange()"></select>
+<!-- ===== PAGE: CURRICULUM ===== -->
+<div class="page" id="page-curriculum">
+
+  <!-- Viewer selector -->
+  <div class="panel" id="curr-viewer-panel">
+    <div style="font-size:10px;letter-spacing:3px;color:var(--gold);margin-bottom:4px">✦ AILES GROUP ✦</div><div class="panel-title">👤 スタッフを選択</div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <select style="font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:600;padding:9px 36px 9px 14px;border-radius:9px;border:2px solid var(--gold);background:white url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%277%27%3E%3Cpath d=%27M0 0l6 7 6-7z%27 fill=%27%23c9a96e%27/%3E%3C/svg%3E') no-repeat right 12px center;appearance:none;-webkit-appearance:none;outline:none;cursor:pointer;color:var(--dark);min-width:200px" id="viewer-sel" onchange="onViewerChange()"></select>
     </div>
-    <div class="student-actions">
-      <button class="btn btn-gold btn-sm" onclick="showForm('add-form')">＋ 追加</button>
-      <button class="btn btn-ghost btn-sm" onclick="showForm('rename-form')">✏️ 名前・店舗を変更</button>
-      <button class="btn btn-red btn-sm" onclick="askDeleteStudent()">🗑 削除</button>
+  </div>
+
+  <!-- Admin panel -->
+  <div class="panel" id="curr-admin-panel" style="display:none">
+    <div class="panel-title">⚙️ 管理</div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+      <select style="font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:600;padding:9px 36px 9px 14px;border-radius:9px;border:2px solid var(--gold);background:white url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%277%27%3E%3Cpath d=%27M0 0l6 7 6-7z%27 fill=%27%23c9a96e%27/%3E%3C/svg%3E') no-repeat right 12px center;appearance:none;-webkit-appearance:none;outline:none;cursor:pointer;color:var(--dark);min-width:200px" id="student-sel" onchange="onStudentChange()"></select>
+    </div>
+    <div class="action-bar">
       <button class="btn btn-outline btn-sm" onclick="showMasterModal()">📋 カテゴリ・項目を管理</button>
-    </div>
-    <div class="inline-form" id="add-form">
-      <div class="form-row"><span class="form-label">名前：</span><input class="text-inp" id="add-name" type="text" placeholder="例：田中 花子" maxlength="20" autocomplete="off"></div>
-      <div class="form-row"><span class="form-label">店舗：</span>
-        <select class="form-sel" id="add-store" onchange="togglePwField()">
-          <option value="エルズ">エルズ</option>
-          <option value="soleil">soleil</option>
-          <option value="エルズ（管理）">エルズ（管理）</option>
-          <option value="soleil（管理）">soleil（管理）</option>
-          <option value="管理（全体）">管理（全体）</option>
-        </select>
-      </div>
-      <div class="form-row" id="add-pw-row" style="display:none">
-        <span class="form-label">PW：</span>
-        <input class="text-inp" id="add-pw" type="password" placeholder="管理者用パスワード" maxlength="30" autocomplete="new-password" style="width:220px">
-      </div>
-      <div class="form-btns">
-        <button class="btn btn-dark btn-sm" onclick="doAdd()">追加</button>
-        <button class="btn btn-ghost btn-sm" onclick="hideForm('add-form')">キャンセル</button>
-      </div>
-    </div>
-    <div class="inline-form" id="rename-form">
-      <div class="form-row"><span class="form-label">名前：</span><input class="text-inp" id="rename-name" type="text" maxlength="20" autocomplete="off"></div>
-      <div class="form-row"><span class="form-label">店舗：</span>
-        <select class="form-sel" id="rename-store">
-          <option value="エルズ">エルズ</option>
-          <option value="soleil">soleil</option>
-          <option value="エルズ（管理）">エルズ（管理）</option>
-          <option value="soleil（管理）">soleil（管理）</option>
-          <option value="管理（全体）">管理（全体）</option>
-        </select>
-      </div>
-      <div class="form-row">
-        <span class="form-label">PW変更：</span>
-        <input class="text-inp" id="rename-pw" type="password" placeholder="空欄で変更なし" maxlength="30" autocomplete="new-password" style="width:220px">
-      </div>
-      <div class="form-btns">
-        <button class="btn btn-dark btn-sm" onclick="doRename()">変更</button>
-        <button class="btn btn-ghost btn-sm" onclick="hideForm('rename-form')">キャンセル</button>
-      </div>
+      <button class="btn btn-outline btn-sm" onclick="window.print()">🖨 印刷</button>
     </div>
   </div>
 
-  <div class="panel" id="viewer-panel">
-    <div class="panel-title">👤 生徒を選択</div>
-    <div class="selector-row">
-      <label>表示中：</label>
-      <select class="big-sel" id="viewer-sel" onchange="onViewerChange()"></select>
-    </div>
-  </div>
-
-  <!-- Individual filter -->
-
-  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px" id="individual-filter">
-    <label style="font-size:12px;color:var(--mid)">絞り込み：</label>
-    <select class="filter-sel" id="ind-cat-filter" onchange="renderTable()">
+  <!-- Filters -->
+  <div class="filter-bar">
+    <label>絞り込み：</label>
+    <select class="filter-sel" id="ind-cat-filter" onchange="renderCurrTable()">
       <option value="">すべてのカテゴリ</option>
     </select>
-    <select class="filter-sel" id="ind-status-filter" onchange="renderTable()">
+    <select class="filter-sel" id="ind-status-filter" onchange="renderCurrTable()">
       <option value="">すべてのステータス</option>
       <option value="未着手">未着手</option>
       <option value="練習中">練習中</option>
       <option value="合格">合格</option>
       <option value="再確認">再確認</option>
     </select>
-    <button class="btn btn-ghost btn-sm" onclick="clearIndFilter()">リセット</button>
+    <button class="btn btn-ghost btn-sm" onclick="clearCurrFilter()">リセット</button>
   </div>
 
+  <!-- Summary -->
   <div class="summary">
     <div class="stat"><div class="stat-n" id="s-total">0</div><div class="stat-l">総項目数</div></div>
     <div class="stat"><div class="stat-n" id="s-pass" style="color:var(--green)">0</div><div class="stat-l">合格済み</div></div>
     <div class="stat"><div class="stat-n" id="s-prog" style="color:var(--blue)">0</div><div class="stat-l">練習中</div></div>
-    <div class="stat"><div class="stat-n" id="s-pct" style="color:var(--gold)">0%</div><div class="stat-l">合格率</div></div>
+    <div class="stat">
+      <div class="stat-n" id="s-pct" style="color:var(--gold)">0%</div>
+      <div class="stat-l">合格率</div>
+    </div>
   </div>
 
-  <div class="controls" id="admin-controls" style="display:none">
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-dark" onclick="addRow()">＋ 項目を追加</button>
-      <button class="btn btn-outline" onclick="window.print()">🖨 印刷</button>
-    </div>
-    <div class="progress-wrap">
-      <div class="prog-bg"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
-      <span id="prog-label" style="font-size:12px;color:var(--mid);font-weight:500">0%</span>
-    </div>
-  </div>
-  <div class="controls" id="viewer-controls">
-    <div></div>
-    <div class="progress-wrap">
-      <div class="prog-bg"><div class="prog-fill" id="prog-fill2" style="width:0%"></div></div>
-      <span id="prog-label2" style="font-size:12px;color:var(--mid);font-weight:500">0%</span>
-    </div>
+  <!-- Add row button (editor only) -->
+  <div id="curr-add-row-btn" style="display:none;margin-bottom:8px">
+    <button class="btn btn-dark btn-sm" onclick="addProgressRow()">＋ 項目を追加</button>
   </div>
 
   <p class="scroll-hint">← 横にスクロールできます →</p>
   <div class="table-wrap">
-    <table>
+    <table class="tbl-main">
       <thead>
         <tr>
           <th style="width:30px">#</th>
-          <th style="min-width:120px">カテゴリ</th>
-          <th style="min-width:160px">カリキュラム項目</th>
-          <th style="min-width:90px">目安時間</th>
-          <th style="min-width:126px">練習開始予定日</th>
-          <th style="min-width:120px">練習開始日</th>
-          <th style="min-width:120px">試験日</th>
-          <th style="min-width:80px">試験回数</th>
+          <th style="min-width:110px">カテゴリ</th>
+          <th style="min-width:150px">カリキュラム項目</th>
+          <th style="min-width:85px">目安時間</th>
+          <th style="min-width:120px">練習開始予定日</th>
+          <th style="min-width:115px">練習開始日</th>
+          <th style="min-width:115px">試験日</th>
+          <th style="min-width:75px">試験回数</th>
           <th style="min-width:60px">点数</th>
-          <th style="min-width:110px">ステータス</th>
-          <th style="min-width:120px">担当講師</th>
-          <th style="min-width:140px">メモ</th>
-          <th style="width:38px" id="del-col-th"></th>
+          <th style="min-width:105px">ステータス</th>
+          <th style="min-width:115px">担当講師</th>
+          <th style="min-width:130px">メモ</th>
+          <th style="width:36px" id="del-col-th"></th>
         </tr>
       </thead>
-      <tbody id="tbody"></tbody>
+      <tbody id="curr-tbody"></tbody>
     </table>
   </div>
-  <div id="mode-hint" class="readonly-notice">👁 閲覧モードです。編集するには管理者ログインが必要です。</div>
+  <div class="notice" id="curr-notice">👁 閲覧モードです。ログインすると編集できます。</div>
+
+  <!-- Overview (admin only) -->
+  <div id="curr-overview" style="display:none;margin-top:20px">
+    <div class="panel">
+      <div class="panel-title">📊 全体進捗一覧</div>
+      <div class="filter-bar">
+        <label>絞り込み：</label>
+        <select class="filter-sel" id="ov-status-filter" onchange="renderOverview()">
+          <option value="">すべてのステータス</option>
+          <option value="未着手">未着手</option>
+          <option value="練習中">練習中</option>
+          <option value="合格">合格</option>
+          <option value="再確認">再確認</option>
+        </select>
+        <select class="filter-sel" id="ov-cat-filter" onchange="renderOverview()">
+          <option value="">すべてのカテゴリ</option>
+        </select>
+        <select class="filter-sel" id="ov-store-filter" onchange="renderOverview()">
+          <option value="">すべての店舗</option>
+          <option value="エルズ">エルズ</option>
+          <option value="soleil">soleil</option>
+        </select>
+      </div>
+      <div class="summary">
+        <div class="stat"><div class="stat-n" id="ov-total">0</div><div class="stat-l">対象人数</div></div>
+        <div class="stat"><div class="stat-n" id="ov-pass" style="color:var(--green)">0</div><div class="stat-l">合格者数</div></div>
+        <div class="stat"><div class="stat-n" id="ov-prog" style="color:var(--blue)">0</div><div class="stat-l">練習中</div></div>
+        <div class="stat"><div class="stat-n" id="ov-review" style="color:var(--red)">0</div><div class="stat-l">再確認</div></div>
+      </div>
+    </div>
+    <p class="scroll-hint">← 横にスクロールできます →</p>
+    <div class="table-wrap">
+      <table style="min-width:1100px;width:100%;border-collapse:collapse">
+        <thead>
+          <tr>
+            <th>生徒名</th><th>店舗</th><th>役職</th><th>カテゴリ</th><th>カリキュラム項目</th>
+            <th>目安時間</th><th>練習開始予定日</th><th>練習開始日</th><th>試験日</th>
+            <th>試験回数</th><th>点数</th><th>ステータス</th><th>担当講師</th><th>メモ</th><th>進捗率</th>
+          </tr>
+        </thead>
+        <tbody id="ov-tbody"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
-<div id="view-overview" style="display:none">
-  <div class="panel">
-    <div class="panel-title">📊 全体進捗一覧</div>
-    <div class="overview-filters">
-      <label>絞り込み：</label>
-      <select class="filter-sel" id="ov-status-filter" onchange="renderOverview()">
-        <option value="">すべてのステータス</option>
-        <option value="未着手">未着手</option>
-        <option value="練習中">練習中</option>
-        <option value="合格">合格</option>
-        <option value="再確認">再確認</option>
-      </select>
-      <select class="filter-sel" id="ov-cat-filter" onchange="renderOverview()">
-        <option value="">すべてのカテゴリ</option>
-      </select>
-      <select class="filter-sel" id="ov-store-filter" onchange="renderOverview()">
-        <option value="">すべての店舗</option>
-        <option value="エルズ">エルズ</option>
-        <option value="soleil">soleil</option>
-      </select>
-    </div>
-    <div class="summary" style="margin-bottom:20px">
-      <div class="stat"><div class="stat-n" id="ov-total">0</div><div class="stat-l">対象人数</div></div>
-      <div class="stat"><div class="stat-n" id="ov-pass" style="color:var(--green)">0</div><div class="stat-l">合格者数</div></div>
-      <div class="stat"><div class="stat-n" id="ov-prog" style="color:var(--blue)">0</div><div class="stat-l">練習中</div></div>
-      <div class="stat"><div class="stat-n" id="ov-review" style="color:var(--red)">0</div><div class="stat-l">再確認</div></div>
-    </div>
+<!-- ===== PAGE: STAFF ===== -->
+<div class="page" id="page-staff">
+  <div class="action-bar">
+    <button class="btn btn-gold btn-sm" onclick="openStaffModal(null)">＋ スタッフ追加</button>
+    <select class="filter-sel" id="sf-store-filter" onchange="renderStaffPage()">
+      <option value="">すべての店舗</option>
+      <option value="エルズ">エルズ</option>
+      <option value="soleil">soleil</option>
+    </select>
+    <select class="filter-sel" id="sf-pos-filter" onchange="renderStaffPage()">
+      <option value="">すべての役職</option>
+      <option value="代表">代表</option>
+      <option value="店長">店長</option>
+      <option value="チーフ">チーフ</option>
+      <option value="スタイリスト">スタイリスト</option>
+      <option value="Jrスタイリスト">Jrスタイリスト</option>
+      <option value="カラーリスト">カラーリスト</option>
+      <option value="アシスタント">アシスタント</option>
+      <option value="レセプション">レセプション</option>
+      <option value="管理者">管理者</option>
+    </select>
+    <label style="font-size:12px;color:var(--mid);display:flex;align-items:center;gap:4px">
+      <input type="checkbox" id="sf-show-inactive" onchange="renderStaffPage()"> 退社者も表示
+    </label>
   </div>
-  <p class="scroll-hint">← 横にスクロールできます →</p>
-  <div class="overview-table-wrap">
-    <table class="overview-table">
-      <thead>
-        <tr>
-          <th>生徒名</th><th>店舗</th><th>カテゴリ</th><th>カリキュラム項目</th><th>目安時間</th>
-          <th>練習開始予定日</th><th>練習開始日</th><th>試験日</th><th>試験回数</th><th>点数</th><th>ステータス</th><th>担当講師</th><th>メモ</th><th>進捗率</th>
-        </tr>
-      </thead>
-      <tbody id="ov-tbody"></tbody>
-    </table>
-  </div>
-</div>
+  <div class="staff-grid" id="staff-grid"></div>
 </div>
 
 <script>
 const SUPABASE_URL='https://nrweporylfaorlqektsk.supabase.co';
 const SUPABASE_ANON='sb_publishable_a3X1ltKqAaTv6CyxHIReug_xEPqqCSS';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
+
+// 権限定義
 const ADMIN_STORES=['管理（全体）','エルズ（管理）','soleil（管理）'];
+const STAFF_EDITOR_ROLES=['代表','管理者','店長','チーフ']; // 人材マスター編集可
+const CURR_EDITOR_ROLES=['代表','管理者','店長','チーフ','スタイリスト']; // カリキュラム編集可
 const STATS=['未着手','練習中','合格','再確認'];
+const POSITIONS=['代表','店長','チーフ','スタイリスト','Jrスタイリスト','カラーリスト','アシスタント','レセプション','管理者'];
+const CAT_COLORS={シャンプー:'#e8d9a0',ドライ:'#f5c6c6',ブロー:'#f5c6d8',カラー:'#f5d9b8',矯正:'#e0e0e0','コテ巻き':'#b8d4f5',ヘッドスパ:'#d4b8f5',カット:'#d9c4b0',パーマ:'#d0d0d0'};
+
 function hash(s){let h=0;for(let i=0;i<s.length;i++)h=(Math.imul(31,h)+s.charCodeAt(i))|0;return String(h);}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function isAdminStore(store){return ADMIN_STORES.includes(store);}
-let students=[],categories=[],curricula=[],progressRows=[];
-let CID=null,IS_ADMIN=false,ADMIN_ID=null,currentView='individual';
-function managers(){return students.filter(s=>isAdminStore(s.store));}
-function curStudent(){return students.find(s=>s.id===CID);}
 function nonAdminStudents(){return students.filter(s=>!isAdminStore(s.store));}
+
+let students=[],categories=[],curricula=[],progressRows=[];
+let CID=null,ME=null,currentPage='curriculum';
+
+function canEditCurriculum(){return ME&&(isAdminStore(ME.store)||CURR_EDITOR_ROLES.includes(ME.position));}
+function canEditStaff(){return ME&&(isAdminStore(ME.store)||STAFF_EDITOR_ROLES.includes(ME.position));}
+function canViewOverview(){return ME&&(isAdminStore(ME.store)||CURR_EDITOR_ROLES.includes(ME.position));}
 
 async function loadAll(){
   document.getElementById('loading').style.display='flex';
@@ -409,196 +524,531 @@ async function loadAll(){
   document.getElementById('loading').style.display='none';
 }
 
-function switchView(v){
-  currentView=v;
-  document.getElementById('view-individual').style.display=v==='individual'?'':'none';
-  document.getElementById('view-overview').style.display=v==='overview'?'':'none';
-  document.getElementById('tab-individual').className='view-tab'+(v==='individual'?' active':'');
-  document.getElementById('tab-overview').className='view-tab'+(v==='overview'?' active':'');
-  if(v==='overview')renderOverview();
+// ── PAGE NAVIGATION ──
+function showPage(name){
+  currentPage=name;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  const tabEl=document.getElementById('tab-'+name);
+  if(tabEl)tabEl.classList.add('active');
+  if(name==='dashboard') renderDashboard();
+  if(name==='curriculum') renderCurriculumPage();
+  if(name==='staff') renderStaffPage();
 }
 
-function showLoginModal(){
-  const mgrs=managers();
-  const sel=document.getElementById('login-sel');
-  sel.innerHTML=mgrs.length?mgrs.map(m=>`<option value="${esc(m.id)}">${esc(m.name)}</option>`).join(''):'<option value="">（管理者が登録されていません）</option>';
-  document.getElementById('login-pw').value='';
-  document.getElementById('login-err').textContent='';
-  document.getElementById('login-modal').classList.add('show');
-  setTimeout(()=>document.getElementById('login-pw').focus(),100);
-}
-function closeLoginModal(){document.getElementById('login-modal').classList.remove('show');}
-document.getElementById('login-pw').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+// ── DASHBOARD ──
+const FUNC_LIST=[
+  {id:'curriculum',icon:'📋',name:'カリキュラム進捗',desc:'スタッフのカリキュラム進捗を管理',minRole:null},
+  {id:'staff',icon:'👥',name:'人材マスター',desc:'スタッフ情報の登録・管理',minRole:'staff_editor'},
+  {id:'appointment',icon:'📅',name:'次回予約・再来率',desc:'予約状況と再来率の管理',minRole:null,comingSoon:true},
+  {id:'meeting',icon:'📝',name:'会議報告',desc:'幹部・店舗会議の記録',minRole:null,comingSoon:true},
+  {id:'interview',icon:'💬',name:'面談報告',desc:'スタッフ面談の記録',minRole:null,comingSoon:true},
+  {id:'evaluation',icon:'⭐',name:'人事評価制度',desc:'評価の記録と管理',minRole:null,comingSoon:true},
+  {id:'schedule',icon:'📆',name:'年間スケジュール',desc:'年間の予定管理',minRole:null,comingSoon:true},
+];
 
-function doLogin(){
-  const sel=document.getElementById('login-sel');
-  const pw=document.getElementById('login-pw').value;
-  const mgr=students.find(s=>s.id===sel.value);
-  if(!mgr){document.getElementById('login-err').textContent='管理者が見つかりません';return;}
-  if(mgr.pw_hash&&mgr.pw_hash!==hash(pw)){document.getElementById('login-err').textContent='パスワードが正しくありません';return;}
-  IS_ADMIN=true;ADMIN_ID=mgr.id;
-  closeLoginModal();applyMode();renderAll();
+function canAccessFunc(func){
+  if(func.comingSoon) return false;
+  if(func.id==='curriculum') return true; // 未ログインでも閲覧可
+  if(func.minRole==='staff_editor') return canEditStaff();
+  return !!ME; // その他はログイン必須
 }
 
-function doLogout(){
-  IS_ADMIN=false;ADMIN_ID=null;
-  hideForm('add-form');hideForm('rename-form');
-  switchView('individual');
-  const nonMgr=nonAdminStudents();
-  if(nonMgr.length)CID=nonMgr[0].id;
-  applyMode();renderAll();
-}
-
-function applyMode(){
-  const adm=IS_ADMIN;
-  const noMgr=students.length===0||managers().length===0;
-  if(noMgr){
-    IS_ADMIN=true;ADMIN_ID=null;
-    document.getElementById('login-status').textContent='⚙️ 初期設定モード';
-    document.getElementById('login-status').className='login-status';
-    document.getElementById('login-btn').style.display='none';
-    document.getElementById('admin-panel').style.display='';
-    document.getElementById('viewer-panel').style.display='none';
-    document.getElementById('admin-controls').style.display='';
-    document.getElementById('viewer-controls').style.display='none';
-    document.getElementById('mode-hint').style.display='none';
-    document.getElementById('del-col-th').style.display='';
-    document.getElementById('view-tabs').style.display='none';
-    return;
+function renderDashboard(){
+  // welcome表示（ログイン時のみ）
+  const welcome=document.getElementById('dash-welcome');
+  const pwBtn=document.getElementById('dash-pw-btn');
+  if(ME){
+    document.getElementById('dash-name').textContent=ME.name;
+    document.getElementById('dash-sub').textContent=(ME.position||ME.store)+' ・ ログイン中';
+    if(welcome)welcome.style.display='';
+    if(pwBtn)pwBtn.style.display='';
+  } else {
+    if(welcome)welcome.style.display='none';
+    if(pwBtn)pwBtn.style.display='none';
   }
-  document.getElementById('login-btn').style.display='';
-  document.getElementById('admin-panel').style.display=adm?'':'none';
-  document.getElementById('viewer-panel').style.display=adm?'none':'';
-  document.getElementById('admin-controls').style.display=adm?'':'none';
-  document.getElementById('viewer-controls').style.display=adm?'none':'';
-  document.getElementById('mode-hint').style.display=adm?'none':'';
-  document.getElementById('del-col-th').style.display=adm?'':'none';
-  document.getElementById('view-tabs').style.display=adm?'':'none';
-  const lb=document.getElementById('login-btn');
-  const ls=document.getElementById('login-status');
-  if(adm){
-    const mgr=students.find(s=>s.id===ADMIN_ID);
-    ls.textContent=`🔑 ${mgr?mgr.name:'管理者'}`;
-    ls.className='login-status admin';
-    lb.textContent='ログアウト';lb.onclick=doLogout;
-  }else{
-    ls.textContent='👁 閲覧モード';
-    ls.className='login-status';
-    lb.textContent='管理者ログイン';lb.onclick=showLoginModal;
-  }
+  const grid=document.getElementById('func-grid');
+  grid.innerHTML=FUNC_LIST.map(f=>{
+    const accessible=canAccessFunc(f);
+    const locked=!accessible&&f.minRole;
+    const soon=f.comingSoon;
+    const clickable=accessible&&!soon;
+    return `<div class="func-card${locked||soon?' disabled':''}" ${clickable?`onclick="showPage('${f.id}')"`:''}> 
+      <div class="func-card-icon">${f.icon}</div>
+      <div class="func-card-name">${f.name}</div>
+      <div class="func-card-desc">${f.desc}</div>
+      ${soon?'<div class="func-card-lock">🔒 準備中</div>':locked?'<div class="func-card-lock">🔒 権限なし</div>':''}
+    </div>`;
+  }).join('');
 }
 
+// ── MODAL HELPERS ──
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+document.querySelectorAll('.modal-overlay').forEach(el=>{
+  el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('show');});
+});
 let _cb=null;
 function showConfirm(title,body,cb){
   document.getElementById('confirm-title').textContent=title;
   document.getElementById('confirm-body').textContent=body;
   _cb=cb;
-  document.getElementById('confirm-ok').onclick=()=>{closeConfirm();if(_cb)_cb();};
+  document.getElementById('confirm-ok').onclick=()=>{closeModal('confirm-modal');if(_cb)_cb();};
   document.getElementById('confirm-modal').classList.add('show');
 }
-function closeConfirm(){document.getElementById('confirm-modal').classList.remove('show');}
-document.getElementById('confirm-modal').addEventListener('click',e=>{if(e.target.id==='confirm-modal')closeConfirm();});
 
-function showMasterModal(){document.getElementById('master-modal').classList.add('show');renderMaster();}
-function closeMasterModal(){document.getElementById('master-modal').classList.remove('show');}
-document.getElementById('master-modal').addEventListener('click',e=>{if(e.target.id==='master-modal')closeMasterModal();});
+// ── LOGIN ──
+function showLoginModal(){
+  const active=students.filter(s=>s.is_active!==false);
+  document.getElementById('login-sel').innerHTML=active.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}　[${esc(s.store)}]</option>`).join('');
+  document.getElementById('login-pw').value='';
+  document.getElementById('login-err').textContent='';
+  document.getElementById('login-modal').classList.add('show');
+  setTimeout(()=>document.getElementById('login-pw').focus(),100);
+}
+document.getElementById('login-pw').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
-function showForm(id){
-  ['add-form','rename-form'].forEach(f=>document.getElementById(f).classList.remove('show'));
-  document.getElementById(id).classList.add('show');
-  if(id==='rename-form'){
-    const s=curStudent();if(!s)return;
-    document.getElementById('rename-name').value=s.name;
-    document.getElementById('rename-store').value=s.store||'エルズ';
-    document.getElementById('rename-pw').value='';
-    setTimeout(()=>{document.getElementById('rename-name').focus();document.getElementById('rename-name').select();},50);
-  }else{
-    document.getElementById('add-name').value='';
-    document.getElementById('add-store').value='エルズ';
-    document.getElementById('add-pw').value='';
-    togglePwField();
-    setTimeout(()=>document.getElementById('add-name').focus(),50);
+function doLogin(){
+  const id=document.getElementById('login-sel').value;
+  const pw=document.getElementById('login-pw').value;
+  const s=students.find(s=>s.id===id);
+  if(!s){document.getElementById('login-err').textContent='ユーザーが見つかりません';return;}
+  const expectedHash=s.pw_hash||(hash('2026'));
+  if(hash(pw)!==expectedHash&&pw!==s.pw_hash){
+    // パスワード未設定の場合は2026をデフォルト
+    if(pw==='2026'||hash(pw)===hash('2026')||(!s.pw_hash&&pw==='2026')){
+      // ok
+    } else if(s.pw_hash&&hash(pw)!==s.pw_hash){
+      document.getElementById('login-err').textContent='パスワードが正しくありません';return;
+    }
+  }
+  ME=s;
+  closeModal('login-modal');
+  currentPage='dashboard';
+  applyAuth();
+  renderAll();
+  showPage('dashboard');
+}
+
+function doLogout(){
+  ME=null;
+  currentPage='dashboard';
+  applyAuth();
+  renderAll();
+  showPage('dashboard');
+}
+
+function applyAuth(){
+  const badge=document.getElementById('user-badge');
+  const btn=document.getElementById('auth-btn');
+  const staffTab=document.getElementById('tab-staff');
+  const navTabs=document.getElementById('nav-tabs');
+
+  if(ME){
+    badge.textContent=`🔑 ${ME.name}${ME.position?' / '+ME.position:''}`;
+    btn.textContent='ログアウト';
+    btn.onclick=doLogout;
+    staffTab.style.display=canEditStaff()?'':'none';
+    navTabs.style.display='';
+  } else {
+    badge.textContent='👁 閲覧モード';
+    btn.textContent='ログイン';
+    btn.onclick=showLoginModal;
+    staffTab.style.display='none';
+    navTabs.style.display='none';
   }
 }
-function hideForm(id){document.getElementById(id).classList.remove('show');}
-function togglePwField(){
-  const store=document.getElementById('add-store').value;
-  const show=isAdminStore(store);
-  document.getElementById('add-pw-row').style.display=show?'':'none';
-  if(!show)document.getElementById('add-pw').value='';
+
+// ── PASSWORD CHANGE ──
+function showPwModal(){
+  if(!ME)return;
+  document.getElementById('pw-modal-sub').textContent=ME.name+'さんのパスワードを変更';
+  document.getElementById('pw-current').value='';
+  document.getElementById('pw-new').value='';
+  document.getElementById('pw-confirm').value='';
+  document.getElementById('pw-err').textContent='';
+  document.getElementById('pw-modal').classList.add('show');
 }
-document.getElementById('add-name').addEventListener('keydown',e=>{if(e.key==='Enter')doAdd();if(e.key==='Escape')hideForm('add-form');});
-document.getElementById('rename-name').addEventListener('keydown',e=>{if(e.key==='Enter')doRename();if(e.key==='Escape')hideForm('rename-form');});
-
-function onStudentChange(){CID=document.getElementById('student-sel').value;localStorage.setItem('last_cid',CID);hideForm('add-form');hideForm('rename-form');loadProgressAndRender();}
-function onViewerChange(){CID=document.getElementById('viewer-sel').value;localStorage.setItem('last_cid',CID);loadProgressAndRender();}
-
-async function doAdd(){
-  const name=document.getElementById('add-name').value.trim();
-  const store=document.getElementById('add-store').value;
-  const pw=document.getElementById('add-pw').value;
-  if(!name){document.getElementById('add-name').focus();return;}
-  const {data,error}=await sb.from('students').insert({name,store,pw_hash:pw?hash(pw):''}).select().single();
-  if(error){alert('エラー: '+error.message);return;}
-  students.push(data);CID=data.id;
-  if(!isAdminStore(store)&&curricula.length>0){
-    const rows=curricula.map(c=>({student_id:data.id,curriculum_id:c.id,goal_hours:c.goal_hours||'',teacher:'',planned_start_date:null,start_date:null,exam_date:null,exam_count:0,status:'未着手',score:null,memo:''}));
-    const {data:prData}=await sb.from('progress').insert(rows).select();
-    if(prData)progressRows.push(...prData);
+async function doChangePw(){
+  const cur=document.getElementById('pw-current').value;
+  const nw=document.getElementById('pw-new').value;
+  const cf=document.getElementById('pw-confirm').value;
+  const expectedHash=ME.pw_hash||hash('2026');
+  if(hash(cur)!==expectedHash&&!(ME.pw_hash===''&&cur==='2026')){
+    document.getElementById('pw-err').textContent='現在のパスワードが正しくありません';return;
   }
-  hideForm('add-form');applyMode();renderSels();renderTable();
+  if(!nw){document.getElementById('pw-err').textContent='新しいパスワードを入力してください';return;}
+  if(nw!==cf){document.getElementById('pw-err').textContent='新しいパスワードが一致しません';return;}
+  const {error}=await sb.from('students').update({pw_hash:hash(nw)}).eq('id',ME.id);
+  if(error){document.getElementById('pw-err').textContent='エラー: '+error.message;return;}
+  ME.pw_hash=hash(nw);
+  const s=students.find(s=>s.id===ME.id);if(s)s.pw_hash=hash(nw);
+  closeModal('pw-modal');
+  alert('パスワードを変更しました。');
 }
 
-async function doRename(){
-  const name=document.getElementById('rename-name').value.trim();
-  const store=document.getElementById('rename-store').value;
-  const pw=document.getElementById('rename-pw').value;
-  if(!name){document.getElementById('rename-name').focus();return;}
-  const upd={name,store};if(pw)upd.pw_hash=hash(pw);
-  const {error}=await sb.from('students').update(upd).eq('id',CID);
-  if(error){alert('エラー: '+error.message);return;}
-  const s=curStudent();if(s){s.name=name;s.store=store;if(pw)s.pw_hash=hash(pw);}
-  hideForm('rename-form');applyMode();renderSels();renderTable();
+// ── STAFF PAGE ──
+function renderStaffPage(){
+  const storeF=document.getElementById('sf-store-filter').value;
+  const posF=document.getElementById('sf-pos-filter').value;
+  const showInactive=document.getElementById('sf-show-inactive').checked;
+  let list=students;
+  if(!showInactive)list=list.filter(s=>s.is_active!==false);
+  if(storeF)list=list.filter(s=>s.store.includes(storeF));
+  if(posF)list=list.filter(s=>s.position===posF);
+  const grid=document.getElementById('staff-grid');
+  if(!list.length){grid.innerHTML='<div style="color:var(--soft);font-size:13px">該当するスタッフがいません</div>';return;}
+  grid.innerHTML=list.map(s=>`
+    <div class="staff-card${s.is_active===false?' inactive':''}">
+      <div class="staff-card-actions">
+        <button class="btn btn-outline btn-xs" onclick="openStaffModal('${s.id}')">編集</button>
+        ${s.is_active===false?`<button class="btn btn-green btn-xs" onclick="askReactivate('${s.id}')">復職</button>`:`<button class="btn btn-red btn-xs" onclick="askDeactivate('${s.id}')">退社</button>`}
+      </div>
+      <div class="staff-card-name">${esc(s.name)}</div>
+      <div class="staff-card-sub">${esc(s.store)}${s.is_active===false?' ・ <span style="color:var(--red)">退社</span>':''}</div>
+      ${s.position?`<div class="staff-card-pos">${esc(s.position)}</div>`:''}
+      <div style="font-size:11px;color:var(--soft);margin-top:6px">
+        ${s.birthdate?`生年月日：${s.birthdate}<br>`:''}
+        ${s.join_date?`入社日：${s.join_date}<br>`:''}
+        ${s.leave_date?`退社日：${s.leave_date}`:''}
+      </div>
+    </div>`).join('');
 }
 
-function askDeleteStudent(){
-  const s=curStudent();if(!s)return;
-  showConfirm('削除しますか？',`「${s.name}（${s.store}）」のデータをすべて削除します。`,async()=>{
-    await sb.from('progress').delete().eq('student_id',CID);
-    await sb.from('students').delete().eq('id',CID);
-    students=students.filter(s=>s.id!==CID);
-    progressRows=progressRows.filter(r=>r.student_id!==CID);
-    CID=students[0]?.id||null;
-    applyMode();renderSels();renderTable();
+function openStaffModal(id){
+  const isNew=!id;
+  document.getElementById('staff-modal-title').textContent=isNew?'スタッフ追加':'スタッフ編集';
+  document.getElementById('sm-leavedate-row').style.display=isNew?'none':'';
+  document.getElementById('sm-err').textContent='';
+  if(isNew){
+    document.getElementById('sm-name').value='';
+    document.getElementById('sm-store').value='エルズ';
+    document.getElementById('sm-position').value='';
+    document.getElementById('sm-birthdate').value='';
+    document.getElementById('sm-joindate').value='';
+    document.getElementById('sm-leavedate').value='';
+    document.getElementById('sm-pw').value='';
+    document.getElementById('sm-pw-row').style.display='';
+  } else {
+    const s=students.find(s=>s.id===id);if(!s)return;
+    document.getElementById('sm-name').value=s.name;
+    document.getElementById('sm-store').value=s.store||'エルズ';
+    document.getElementById('sm-position').value=s.position||'';
+    document.getElementById('sm-birthdate').value=s.birthdate||'';
+    document.getElementById('sm-joindate').value=s.join_date||'';
+    document.getElementById('sm-leavedate').value=s.leave_date||'';
+    document.getElementById('sm-pw').value='';
+    document.getElementById('sm-pw-row').style.display='';
+  }
+  document.getElementById('sm-save-btn').dataset.id=id||'';
+  toggleSmPw();
+  document.getElementById('staff-modal').classList.add('show');
+  setTimeout(()=>document.getElementById('sm-name').focus(),100);
+}
+
+function toggleSmPw(){
+  const store=document.getElementById('sm-store').value;
+  // PW always visible for all (needed for login)
+}
+
+async function saveStaff(){
+  const id=document.getElementById('sm-save-btn').dataset.id;
+  const name=document.getElementById('sm-name').value.trim();
+  const store=document.getElementById('sm-store').value;
+  const position=document.getElementById('sm-position').value;
+  const birthdate=document.getElementById('sm-birthdate').value||null;
+  const join_date=document.getElementById('sm-joindate').value||null;
+  const leave_date=document.getElementById('sm-leavedate').value||null;
+  const pw=document.getElementById('sm-pw').value;
+  if(!name){document.getElementById('sm-err').textContent='名前を入力してください';return;}
+
+  if(!id){
+    // New staff
+    const pw_hash=pw?hash(pw):hash('2026');
+    const {data,error}=await sb.from('students').insert({name,store,position,birthdate,join_date,pw_hash,is_active:true}).select().single();
+    if(error){document.getElementById('sm-err').textContent='エラー: '+error.message;return;}
+    students.push(data);
+    // 一般スタッフは全カリキュラム自動作成
+    if(!isAdminStore(store)&&curricula.length>0){
+      const rows=curricula.map(c=>({student_id:data.id,curriculum_id:c.id,goal_hours:c.goal_hours||'',teacher:'',planned_start_date:null,start_date:null,exam_date:null,exam_count:0,status:'未着手',score:null,memo:''}));
+      const {data:prData}=await sb.from('progress').insert(rows).select();
+      if(prData)progressRows.push(...prData);
+    }
+  } else {
+    // Edit staff
+    const upd={name,store,position,birthdate,join_date,leave_date,is_active:!leave_date};
+    if(pw)upd.pw_hash=hash(pw);
+    const {error}=await sb.from('students').update(upd).eq('id',id);
+    if(error){document.getElementById('sm-err').textContent='エラー: '+error.message;return;}
+    const s=students.find(s=>s.id===id);
+    if(s)Object.assign(s,{name,store,position,birthdate,join_date,leave_date,is_active:!leave_date});
+  }
+  closeModal('staff-modal');
+  renderStaffPage();
+  renderCurriculumPage();
+}
+
+function askDeactivate(id){
+  const s=students.find(s=>s.id===id);if(!s)return;
+  showConfirm('退社処理',`「${s.name}」を退社処理しますか？`,async()=>{
+    const today=new Date().toISOString().split('T')[0];
+    await sb.from('students').update({is_active:false,leave_date:today}).eq('id',id);
+    const st=students.find(s=>s.id===id);if(st){st.is_active=false;st.leave_date=today;}
+    renderStaffPage();renderCurriculumPage();
+  });
+}
+function askReactivate(id){
+  const s=students.find(s=>s.id===id);if(!s)return;
+  showConfirm('復職処理',`「${s.name}」を復職させますか？`,async()=>{
+    await sb.from('students').update({is_active:true,leave_date:null}).eq('id',id);
+    const st=students.find(s=>s.id===id);if(st){st.is_active=true;st.leave_date=null;}
+    renderStaffPage();renderCurriculumPage();
   });
 }
 
-function renderSels(){
-  const nonMgr=nonAdminStudents();
-  const allOpts=students.map(s=>`<option value="${esc(s.id)}"${s.id===CID?' selected':''}>${esc(s.name)}　[${esc(s.store)}]</option>`).join('');
+// ── CURRICULUM PAGE ──
+function renderCurriculumPage(){
+  const editable=canEditCurriculum();
+  const overview=canViewOverview();
+
+  document.getElementById('curr-viewer-panel').style.display=editable?'none':'';
+  document.getElementById('curr-admin-panel').style.display=editable?'':'none';
+  document.getElementById('curr-notice').style.display=editable?'none':'';
+  document.getElementById('curr-add-row-btn').style.display=editable?'':'none';
+  document.getElementById('del-col-th').style.display=editable?'':'none';
+  document.getElementById('curr-overview').style.display=overview?'':'none';
+
+  // Populate selectors
+  const nonMgr=nonAdminStudents().filter(s=>s.is_active!==false);
+  const allActive=students.filter(s=>s.is_active!==false);
   const viewerOpts=nonMgr.map(s=>`<option value="${esc(s.id)}"${s.id===CID?' selected':''}>${esc(s.name)}　[${esc(s.store)}]</option>`).join('');
-  document.getElementById('student-sel').innerHTML=allOpts;
+  const adminOpts=allActive.map(s=>`<option value="${esc(s.id)}"${s.id===CID?' selected':''}>${esc(s.name)}　[${esc(s.store)}]</option>`).join('');
   document.getElementById('viewer-sel').innerHTML=viewerOpts||'<option>生徒がいません</option>';
+  document.getElementById('student-sel').innerHTML=adminOpts||'<option>スタッフがいません</option>';
+
+  // Update cat filter
+  const cf=document.getElementById('ind-cat-filter');
+  const cur=cf.value;
+  cf.innerHTML='<option value="">すべてのカテゴリ</option>'+categories.map(c=>`<option value="${esc(c.id)}"${c.id===cur?' selected':''}>${esc(c.name)}</option>`).join('');
+
+  loadProgressAndRender();
+  if(overview)renderOverview();
 }
 
-function renderMaster(){renderCatList();renderCurCatFilter();renderCurList();updateOvCatFilter();}
-function renderCatList(){
-  const sel=document.getElementById('cat-sel');if(!sel)return;
+function onViewerChange(){CID=document.getElementById('viewer-sel').value;localStorage.setItem('last_cid',CID);loadProgressAndRender();}
+function onStudentChange(){CID=document.getElementById('student-sel').value;localStorage.setItem('last_cid',CID);loadProgressAndRender();}
+function clearCurrFilter(){document.getElementById('ind-cat-filter').value='';document.getElementById('ind-status-filter').value='';renderCurrTable();}
+
+async function loadProgressAndRender(){
+  if(!CID){renderCurrTable();return;}
+  const {data}=await sb.from('progress').select('*').eq('student_id',CID);
+  progressRows=progressRows.filter(r=>r.student_id!==CID);
+  if(data)progressRows.push(...data);
+  renderCurrTable();
+}
+
+function getCatId(curId){return curricula.find(c=>c.id===curId)?.category_id||'';}
+function getGoalHours(curId){return curricula.find(c=>c.id===curId)?.goal_hours||'';}
+function catOpts(val){return categories.map(c=>`<option value="${esc(c.id)}"${c.id===val?' selected':''}>${esc(c.name)}</option>`).join('');}
+function curOpts(catId,val){return curricula.filter(c=>c.category_id===catId).map(c=>`<option value="${esc(c.id)}"${c.id===val?' selected':''}>${esc(c.name)}</option>`).join('');}
+function statusOpts(val){return STATS.map(s=>`<option value="${esc(s)}"${s===val?' selected':''}>${esc(s)}</option>`).join('');}
+function countOpts(val){return [0,1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}"${(val||0)==n?' selected':''}>${n}</option>`).join('');}
+function teacherOpts(val){
+  const mgrs=students.filter(s=>isAdminStore(s.store)&&s.is_active!==false);
+  const staff=nonAdminStudents().filter(s=>s.is_active!==false);
+  let o=`<option value=""${!val?' selected':''}>（未定）</option>`;
+  if(mgrs.length)o+=`<optgroup label="── 管理者 ──">`+mgrs.map(m=>`<option value="${esc(m.name)}"${m.name===val?' selected':''}>${esc(m.name)}</option>`).join('')+'</optgroup>';
+  if(staff.length)o+=`<optgroup label="── スタッフ ──">`+staff.map(m=>`<option value="${esc(m.name)}"${m.name===val?' selected':''}>${esc(m.name)}</option>`).join('')+'</optgroup>';
+  return o;
+}
+
+function renderCurrTable(){
+  const editable=canEditCurriculum();
+  const catF=document.getElementById('ind-cat-filter')?.value||'';
+  const statusF=document.getElementById('ind-status-filter')?.value||'';
+  let rows=progressRows.filter(r=>r.student_id===CID);
+  rows.sort((a,b)=>{
+    const cA=categories.find(c=>c.id===getCatId(a.curriculum_id));
+    const cB=categories.find(c=>c.id===getCatId(b.curriculum_id));
+    const cuA=curricula.find(c=>c.id===a.curriculum_id);
+    const cuB=curricula.find(c=>c.id===b.curriculum_id);
+    const cs=(cA?.sort_order||0)-(cB?.sort_order||0);
+    return cs!==0?cs:(cuA?.sort_order||0)-(cuB?.sort_order||0);
+  });
+  if(catF)rows=rows.filter(r=>getCatId(r.curriculum_id)===catF);
+  if(statusF)rows=rows.filter(r=>r.status===statusF);
+  const tb=document.getElementById('curr-tbody');
+
+  // Sync selectors
+  if(CID){
+    const vs=document.getElementById('viewer-sel');const as=document.getElementById('student-sel');
+    if(vs)vs.value=CID;if(as)as.value=CID;
+  }
+
+  if(!CID||!rows.length){
+    tb.innerHTML=`<tr><td colspan="13" class="empty-td">${!CID?'生徒を選択してください':editable?'「＋ 項目を追加」で追加してください':'データがありません'}</td></tr>`;
+    updateStats([]);return;
+  }
+
+  tb.innerHTML=rows.map((r,i)=>{
+    const catId=getCatId(r.curriculum_id);
+    const catName=categories.find(c=>c.id===catId)?.name||'';
+    const curName=curricula.find(c=>c.id===r.curriculum_id)?.name||'';
+    const goalH=getGoalHours(r.curriculum_id);
+    const cc=CAT_COLORS[catName]||'#f0ece8';
+    const catBadge=`<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:500;background:${cc}">${esc(catName)}</span>`;
+
+    const plannedCell=editable?`<input type="date" class="date-inp" data-id="${r.id}" data-f="planned_start_date" value="${esc(r.planned_start_date||'')}">`:`<span class="plain">${esc(r.planned_start_date)||'—'}</span>`;
+    const startCell=editable?`<input type="date" class="date-inp" data-id="${r.id}" data-f="start_date" value="${esc(r.start_date||'')}">`:`<span class="plain">${esc(r.start_date)||'—'}</span>`;
+    const examCell=editable?`<input type="date" class="date-inp" data-id="${r.id}" data-f="exam_date" value="${esc(r.exam_date||'')}">`:`<span class="plain">${esc(r.exam_date)||'—'}</span>`;
+    const countCell=editable?`<select class="tbl-sel" data-id="${r.id}" data-f="exam_count">${countOpts(r.exam_count)}</select>`:`<span class="plain">${r.exam_count||0}</span>`;
+    const scoreCell=editable?`<input type="number" class="num-inp" data-id="${r.id}" data-f="score" min="0" max="100" placeholder="—" value="${esc(r.score||'')}">`:`<span class="plain">${esc(r.score)||'—'}</span>`;
+    const statusCell=editable?`<select class="tbl-sel s-${r.status}" data-id="${r.id}" data-f="status">${statusOpts(r.status)}</select>`:`<span class="plain badge badge-${r.status}">${esc(r.status)}</span>`;
+    const teacherCell=editable?`<select class="tbl-sel" data-id="${r.id}" data-f="teacher">${teacherOpts(r.teacher)}</select>`:`<span class="plain">${esc(r.teacher)||'—'}</span>`;
+    const memoCell=editable?`<div class="ce" contenteditable="true" data-id="${r.id}" data-f="memo">${esc(r.memo)}</div>`:`<span class="plain">${esc(r.memo)||'—'}</span>`;
+    const delCell=editable?`<button class="del-btn" data-id="${r.id}" data-name="${esc(curName)}">×</button>`:'';
+
+    return `<tr>
+      <td style="color:#c4b49e;font-size:12px;text-align:center">${i+1}</td>
+      <td>${catBadge}</td><td><span class="plain">${esc(curName)}</span></td>
+      <td><span class="plain">${esc(goalH)||'—'}</span></td>
+      <td>${plannedCell}</td><td>${startCell}</td><td>${examCell}</td>
+      <td>${countCell}</td><td>${scoreCell}</td><td>${statusCell}</td>
+      <td>${teacherCell}</td><td class="wrap">${memoCell}</td><td>${delCell}</td>
+    </tr>`;
+  }).join('');
+
+  const allRows=progressRows.filter(r=>r.student_id===CID);
+  updateStats(allRows);
+
+  if(editable){
+    tb.querySelectorAll('[contenteditable]').forEach(el=>{
+      el.addEventListener('blur',()=>updateProgress(el.dataset.id,el.dataset.f,el.innerText.trim()));
+      el.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();el.blur();}});
+    });
+    tb.querySelectorAll('select').forEach(el=>{
+      el.addEventListener('change',()=>{
+        if(el.dataset.f==='status')el.className=`tbl-sel s-${el.value}`;
+        updateProgress(el.dataset.id,el.dataset.f,el.value);
+      });
+    });
+    tb.querySelectorAll('input[type="number"],input[type="date"]').forEach(el=>{
+      el.addEventListener('change',()=>updateProgress(el.dataset.id,el.dataset.f,el.value||null));
+    });
+    tb.querySelectorAll('.del-btn').forEach(b=>{
+      b.addEventListener('click',()=>showConfirm('項目を削除しますか？',`「${b.dataset.name}」を削除します。`,async()=>{
+        await sb.from('progress').delete().eq('id',b.dataset.id);
+        progressRows=progressRows.filter(r=>r.id!==b.dataset.id);
+        renderCurrTable();
+      }));
+    });
+  }
+}
+
+function updateStats(rows){
+  const total=rows.length,pass=rows.filter(r=>r.status==='合格').length,prog=rows.filter(r=>r.status==='練習中').length,pct=total?Math.round(pass/total*100):0;
+  document.getElementById('s-total').textContent=total;
+  document.getElementById('s-pass').textContent=pass;
+  document.getElementById('s-prog').textContent=prog;
+  document.getElementById('s-pct').textContent=pct+'%';
+}
+
+async function updateProgress(id,field,value){
+  await sb.from('progress').update({[field]:value||null}).eq('id',id);
+  const r=progressRows.find(r=>r.id===id);if(r)r[field]=value;
+}
+
+async function addProgressRow(){
+  if(!CID)return;
+  const fc=categories[0];const fcur=curricula.find(c=>c.category_id===fc?.id);
+  const {data,error}=await sb.from('progress').insert({student_id:CID,curriculum_id:fcur?.id||null,goal_hours:'',teacher:'',planned_start_date:null,start_date:null,exam_date:null,exam_count:0,status:'未着手',score:null,memo:''}).select().single();
+  if(error){alert('エラー: '+error.message);return;}
+  progressRows.push(data);renderCurrTable();
+}
+
+// ── OVERVIEW ──
+function renderOverview(){
+  const sF=document.getElementById('ov-status-filter').value;
+  const cF=document.getElementById('ov-cat-filter').value;
+  const stF=document.getElementById('ov-store-filter').value;
+
+  // update ov-cat-filter
+  const ocf=document.getElementById('ov-cat-filter');
+  const ocur=ocf.value;
+  ocf.innerHTML='<option value="">すべてのカテゴリ</option>'+categories.map(c=>`<option value="${esc(c.id)}"${c.id===ocur?' selected':''}>${esc(c.name)}</option>`).join('');
+
+  let fStudents=nonAdminStudents().filter(s=>s.is_active!==false);
+  if(stF)fStudents=fStudents.filter(s=>s.store.includes(stF));
+
+  let allRows=[];
+  fStudents.forEach(s=>{
+    const sRows=progressRows.filter(r=>r.student_id===s.id);
+    const total=sRows.length,pass=sRows.filter(r=>r.status==='合格').length,pct=total?Math.round(pass/total*100):0;
+    let filtered=sRows;
+    if(sF)filtered=filtered.filter(r=>r.status===sF);
+    if(cF)filtered=filtered.filter(r=>getCatId(r.curriculum_id)===cF);
+    filtered.forEach(r=>{
+      allRows.push({s,r,catName:categories.find(c=>c.id===getCatId(r.curriculum_id))?.name||'',curName:curricula.find(c=>c.id===r.curriculum_id)?.name||'',total,pass,pct});
+    });
+    if(!filtered.length&&!sF&&!cF)allRows.push({s,r:null,catName:'',curName:'',total,pass,pct});
+  });
+
+  const uq=new Set(allRows.map(x=>x.s.id));
+  document.getElementById('ov-total').textContent=uq.size;
+  document.getElementById('ov-pass').textContent=new Set(allRows.filter(x=>x.r?.status==='合格').map(x=>x.s.id)).size;
+  document.getElementById('ov-prog').textContent=new Set(allRows.filter(x=>x.r?.status==='練習中').map(x=>x.s.id)).size;
+  document.getElementById('ov-review').textContent=new Set(allRows.filter(x=>x.r?.status==='再確認').map(x=>x.s.id)).size;
+
+  const tb=document.getElementById('ov-tbody');
+  if(!allRows.length){tb.innerHTML=`<tr><td colspan="15" class="empty-td">該当データなし</td></tr>`;return;}
+  tb.innerHTML=allRows.map(({s,r,catName,curName,total,pass,pct})=>`<tr>
+    <td><strong>${esc(s.name)}</strong></td>
+    <td>${esc(s.store)}</td>
+    <td>${esc(s.position||'—')}</td>
+    <td>${esc(catName)}</td>
+    <td>${esc(curName)}</td>
+    <td>${esc(getGoalHours(r?.curriculum_id)||'—')}</td>
+    <td>${esc(r?.planned_start_date||'—')}</td>
+    <td>${esc(r?.start_date||'—')}</td>
+    <td>${esc(r?.exam_date||'—')}</td>
+    <td>${r?esc(r.exam_count||0):'—'}</td>
+    <td>${r&&r.score?esc(r.score)+'点':'—'}</td>
+    <td>${r?`<span class="badge badge-${r.status}">${esc(r.status)}</span>`:'—'}</td>
+    <td>${esc(r?.teacher||'—')}</td>
+    <td style="white-space:normal;max-width:150px">${esc(r?.memo||'—')}</td>
+    <td><div class="prog-wrap"><div class="prog-bg"><div class="prog-fill" style="width:${pct}%"></div></div><span style="font-size:11px;color:var(--mid)">${pass}/${total}</span></div></td>
+  </tr>`).join('');
+}
+
+// ── MASTER ──
+function showMasterModal(){
+  renderCatSel();renderCurCatFilter();renderCurList();
+  document.getElementById('master-modal').classList.add('show');
+}
+function renderCatSel(){
+  const sel=document.getElementById('cat-sel');
   const cur=sel.value;
-  sel.innerHTML=categories.map(c=>`<option value="${esc(c.id)}"${c.id===cur?' selected':''}>${esc(c.name)}</option>`).join('')||'<option>なし</option>';
+  sel.innerHTML=categories.map(c=>`<option value="${esc(c.id)}"${c.id===cur?' selected':''}>${esc(c.name)}</option>`).join('');
   if(!sel.value&&categories.length)sel.value=categories[0].id;
 }
 function onCatSelChange(){renderCurCatFilter();renderCurList();}
 function askDelCatSel(){
-  const sel=document.getElementById('cat-sel');
-  const id=sel.value;const cat=categories.find(c=>c.id===id);if(!cat)return;
-  showConfirm('カテゴリを削除しますか？',`「${cat.name}」と紐づく項目をすべて削除します。`,async()=>{
+  const id=document.getElementById('cat-sel').value;
+  const cat=categories.find(c=>c.id===id);if(!cat)return;
+  showConfirm('カテゴリを削除',`「${cat.name}」と紐づく全項目を削除します。`,async()=>{
     await sb.from('curriculum_master').delete().eq('category_id',id);
     await sb.from('categories').delete().eq('id',id);
     categories=categories.filter(c=>c.id!==id);curricula=curricula.filter(c=>c.category_id!==id);
-    renderMaster();
+    renderCatSel();renderCurCatFilter();renderCurList();
   });
 }
+async function addCat(){
+  const inp=document.getElementById('cat-add-inp');const name=inp.value.trim();if(!name)return;
+  const {data,error}=await sb.from('categories').insert({name,sort_order:categories.length+1}).select().single();
+  if(error){alert(error.message);return;}
+  categories.push(data);inp.value='';renderCatSel();renderCurCatFilter();renderCurList();
+}
+document.getElementById('cat-add-inp').addEventListener('keydown',e=>{if(e.key==='Enter')addCat();});
 function renderCurCatFilter(){
   const catSel=document.getElementById('cat-sel');
   const sel=document.getElementById('cur-cat-filter');
@@ -609,237 +1059,48 @@ function renderCurCatFilter(){
 function renderCurList(){
   const catId=document.getElementById('cur-cat-filter').value;
   const items=curricula.filter(c=>c.category_id===catId);
-  const el=document.getElementById('cur-list');
-  el.innerHTML=items.map(c=>`<div class="master-item"><span>${esc(c.name)}</span>${c.goal_hours?`<span class="master-item-sub">${esc(c.goal_hours)}</span>`:''}<button class="master-item-del" onclick="askDelCur('${c.id}','${esc(c.name)}')">×</button></div>`).join('')||'<div style="font-size:12px;color:var(--soft);padding:4px">なし</div>';
+  document.getElementById('cur-list').innerHTML=items.map(c=>`
+    <div class="master-item">
+      <span>${esc(c.name)}</span>
+      ${c.goal_hours?`<span class="master-item-sub">${esc(c.goal_hours)}</span>`:''}
+      <button class="master-item-del" onclick="askDelCur('${c.id}','${esc(c.name)}')">×</button>
+    </div>`).join('')||'<div style="font-size:12px;color:var(--soft);padding:4px">なし</div>';
 }
-async function addCat(){
-  const inp=document.getElementById('cat-add-inp');
-  const name=inp.value.trim();if(!name)return;
-  const {data,error}=await sb.from('categories').insert({name,sort_order:categories.length+1}).select().single();
-  if(error){alert('エラー: '+error.message);return;}
-  categories.push(data);inp.value='';renderMaster();
-}
-document.getElementById('cat-add-inp').addEventListener('keydown',e=>{if(e.key==='Enter')addCat();});
 async function addCur(){
   const catId=document.getElementById('cur-cat-filter').value;
-  const inp=document.getElementById('cur-add-inp');
-  const hInp=document.getElementById('cur-add-hours');
+  const inp=document.getElementById('cur-add-inp');const hInp=document.getElementById('cur-add-hours');
   const name=inp.value.trim();if(!name||!catId)return;
   const goal_hours=hInp.value.trim();
-  const sort=curricula.filter(c=>c.category_id===catId).length+1;
-  const {data,error}=await sb.from('curriculum_master').insert({category_id:catId,name,goal_hours,sort_order:sort}).select().single();
-  if(error){alert('エラー: '+error.message);return;}
+  const {data,error}=await sb.from('curriculum_master').insert({category_id:catId,name,goal_hours,sort_order:curricula.filter(c=>c.category_id===catId).length+1}).select().single();
+  if(error){alert(error.message);return;}
   curricula.push(data);inp.value='';hInp.value='';renderCurList();
 }
 document.getElementById('cur-add-inp').addEventListener('keydown',e=>{if(e.key==='Enter')addCur();});
 function askDelCur(id,name){
-  showConfirm('項目を削除しますか？',`「${name}」をマスターから削除します。`,async()=>{
+  showConfirm('項目を削除',`「${name}」を削除します。`,async()=>{
     await sb.from('curriculum_master').delete().eq('id',id);
     curricula=curricula.filter(c=>c.id!==id);renderCurList();
   });
 }
 
-async function addRow(){
-  if(!CID)return;
-  const firstCat=categories[0];
-  const firstCur=curricula.find(c=>c.category_id===firstCat?.id);
-  const {data,error}=await sb.from('progress').insert({student_id:CID,curriculum_id:firstCur?.id||null,goal_hours:'',teacher:'',planned_start_date:null,start_date:null,exam_date:null,exam_count:0,status:'未着手',score:null,memo:''}).select().single();
-  if(error){alert('エラー: '+error.message);return;}
-  progressRows.push(data);renderTable();
-  setTimeout(()=>document.getElementById('tbody').lastElementChild?.scrollIntoView({behavior:'smooth',block:'center'}),80);
+// ── INIT ──
+function renderAll(){
+  applyAuth();
+  renderDashboard();
+  if(currentPage==='curriculum') renderCurriculumPage();
+  if(currentPage==='staff') renderStaffPage();
 }
-function askDelRow(id,name){
-  showConfirm('項目を削除しますか？',`「${name}」を削除します。`,async()=>{
-    await sb.from('progress').delete().eq('id',id);
-    progressRows=progressRows.filter(r=>r.id!==id);renderTable();
-  });
-}
-async function updateProgress(id,field,value){
-  await sb.from('progress').update({[field]:value||null}).eq('id',id);
-  const r=progressRows.find(r=>r.id===id);if(r)r[field]=value;
-  updateStats();
-}
-function getCatIdFromCurId(curId){return curricula.find(c=>c.id===curId)?.category_id||'';}
-function getGoalHoursFromCurId(curId){return curricula.find(c=>c.id===curId)?.goal_hours||'';}
-function catOpts(val){return categories.map(c=>`<option value="${esc(c.id)}"${c.id===val?' selected':''}>${esc(c.name)}</option>`).join('');}
-function curOpts(catId,val){return curricula.filter(c=>c.category_id===catId).map(c=>`<option value="${esc(c.id)}"${c.id===val?' selected':''}>${esc(c.name)}</option>`).join('');}
-function statusOpts(val){return STATS.map(s=>`<option value="${esc(s)}"${s===val?' selected':''}>${esc(s)}</option>`).join('');}
-function countOpts(val){return [0,1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}"${(val||0)==n?' selected':''}>${n}</option>`).join('');}
-function teacherOpts(val){
-  const mgrs=managers();const staff=nonAdminStudents();
-  let opts=`<option value=""${!val?' selected':''}>（未定）</option>`;
-  if(mgrs.length)opts+=`<optgroup label="── 管理者 ──">`+mgrs.map(m=>`<option value="${esc(m.name)}"${m.name===val?' selected':''}>${esc(m.name)}</option>`).join('')+'</optgroup>';
-  if(staff.length)opts+=`<optgroup label="── スタッフ ──">`+staff.map(m=>`<option value="${esc(m.name)}"${m.name===val?' selected':''}>${esc(m.name)}</option>`).join('')+'</optgroup>';
-  return opts;
-}
-
-async function loadProgressAndRender(){
-  if(!CID){renderTable();return;}
-  const {data}=await sb.from('progress').select('*').eq('student_id',CID);
-  progressRows=progressRows.filter(r=>r.student_id!==CID);
-  if(data)progressRows.push(...data);
-  renderTable();
-}
-
-function renderTable(){
-  let rows=progressRows.filter(r=>r.student_id===CID);
-  // カテゴリのsort_order順、その中でカリキュラム項目のsort_order順に並べる
-  rows.sort((a,b)=>{
-    const catA=categories.find(c=>c.id===getCatIdFromCurId(a.curriculum_id));
-    const catB=categories.find(c=>c.id===getCatIdFromCurId(b.curriculum_id));
-    const curA=curricula.find(c=>c.id===a.curriculum_id);
-    const curB=curricula.find(c=>c.id===b.curriculum_id);
-    const catSort=(catA?.sort_order||0)-(catB?.sort_order||0);
-    if(catSort!==0)return catSort;
-    return (curA?.sort_order||0)-(curB?.sort_order||0);
-  });
-  // フィルター適用
-  const catF=document.getElementById("ind-cat-filter")?.value||"";
-  const statusF=document.getElementById("ind-status-filter")?.value||"";
-  if(catF)rows=rows.filter(r=>getCatIdFromCurId(r.curriculum_id)===catF);
-  if(statusF)rows=rows.filter(r=>r.status===statusF);
-  const tb=document.getElementById('tbody');
-  if(CID){document.getElementById('student-sel').value=CID;document.getElementById('viewer-sel').value=CID;}
-  if(!CID||!rows.length){
-    tb.innerHTML=`<tr><td colspan="13" class="empty-td">${!CID?'生徒を追加してください。':IS_ADMIN?'「＋ 項目を追加」ボタンで追加してください。':'データがありません。'}</td></tr>`;
-    updateStats();return;
-  }
-  const adm=IS_ADMIN;
-  tb.innerHTML=rows.map((r,i)=>{
-    const catId=getCatIdFromCurId(r.curriculum_id);
-    const catName=categories.find(c=>c.id===catId)?.name||'';
-    const curName=curricula.find(c=>c.id===r.curriculum_id)?.name||'';
-    const goalHours=getGoalHoursFromCurId(r.curriculum_id);
-    const CAT_COLORS={"シャンプー":"#e8d9a0","ドライ":"#f5c6c6","ブロー":"#f5c6d8","カラー":"#f5d9b8","矯正":"#e0e0e0","コテ巻き":"#b8d4f5","ヘッドスパ":"#d4b8f5","カット":"#d9c4b0","パーマ":"#d0d0d0"};
-    const catColor=CAT_COLORS[catName]||"#f0ece8";
-    const catCell=`<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:500;background:${catColor}">${esc(catName)}</span>`;
-    const itemCell=`<span class="plain-text">${esc(curName)}</span>`;
-    const goalCell=`<span class="plain-text">${esc(goalHours)||'—'}</span>`;
-    const plannedCell=adm?`<input type="date" class="date-inp" data-id="${r.id}" data-f="planned_start_date" value="${esc(r.planned_start_date||'')}">`:`<span class="plain-text">${esc(r.planned_start_date)||'—'}</span>`;
-    const startCell=adm?`<input type="date" class="date-inp" data-id="${r.id}" data-f="start_date" value="${esc(r.start_date||'')}">`:`<span class="plain-text">${esc(r.start_date)||'—'}</span>`;
-    const examCell=adm?`<input type="date" class="date-inp" data-id="${r.id}" data-f="exam_date" value="${esc(r.exam_date||'')}">`:`<span class="plain-text">${esc(r.exam_date)||'—'}</span>`;
-    const countCell=adm?`<select class="tbl-sel" data-id="${r.id}" data-f="exam_count">${countOpts(r.exam_count)}</select>`:`<span class="plain-text">${r.exam_count||0}</span>`;
-    const scoreCell=adm?`<input type="number" class="num-inp" data-id="${r.id}" data-f="score" min="0" max="100" placeholder="—" value="${esc(r.score||'')}">`:`<span class="plain-text">${esc(r.score)||'—'}</span>`;
-    const statusCell=adm?`<select class="tbl-sel s-${r.status}" data-id="${r.id}" data-f="status">${statusOpts(r.status)}</select>`:`<span class="plain-text tbl-sel s-${r.status}" style="padding:3px 8px;border-radius:6px;display:inline-block">${esc(r.status)}</span>`;
-    const teacherCell=adm?`<select class="tbl-sel" data-id="${r.id}" data-f="teacher">${teacherOpts(r.teacher)}</select>`:`<span class="plain-text">${esc(r.teacher)||'—'}</span>`;
-    const memoCell=adm?`<div class="ce" contenteditable="true" data-id="${r.id}" data-f="memo">${esc(r.memo)}</div>`:`<span class="plain-text">${esc(r.memo)||'—'}</span>`;
-    const delCell=adm?`<button class="del-btn" data-id="${r.id}" data-name="${esc(curName)}">×</button>`:'';
-    return `<tr><td style="color:#c4b49e;font-size:12px;text-align:center">${i+1}</td><td>${catCell}</td><td>${itemCell}</td><td>${goalCell}</td><td>${plannedCell}</td><td>${startCell}</td><td>${examCell}</td><td>${countCell}</td><td>${scoreCell}</td><td>${statusCell}</td><td>${teacherCell}</td><td class="memo-td">${memoCell}</td><td>${delCell}</td></tr>`;
-  }).join('');
-  if(adm){
-    tb.querySelectorAll('[contenteditable]').forEach(el=>{
-      el.addEventListener('blur',()=>{updateProgress(el.dataset.id,el.dataset.f,el.innerText.trim());});
-      el.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();el.blur();}});
-    });
-    tb.querySelectorAll('select').forEach(el=>{
-      el.addEventListener('change',()=>{
-        const id=el.dataset.id;const f=el.dataset.f;
-        if(f==='__cat'){
-          const newCatId=el.value;
-          const itemSel=tb.querySelector(`select[data-f="curriculum_id"][data-id="${id}"]`);
-          if(itemSel){const fc=curricula.find(c=>c.category_id===newCatId);itemSel.innerHTML=curOpts(newCatId,fc?.id||'');if(fc)updateProgress(id,'curriculum_id',fc.id);}
-        }else{
-          if(f==='status')el.className=`tbl-sel s-${el.value}`;
-          updateProgress(id,f,el.value);
-        }
-      });
-    });
-    tb.querySelectorAll('input').forEach(el=>{el.addEventListener('change',()=>{updateProgress(el.dataset.id,el.dataset.f,el.value||null);});});
-    tb.querySelectorAll('.del-btn').forEach(b=>{b.addEventListener('click',()=>askDelRow(b.dataset.id,b.dataset.name));});
-  }
-  updateStats();
-}
-
-function updateStats(){
-  const rows=progressRows.filter(r=>r.student_id===CID);
-  const total=rows.length,pass=rows.filter(r=>r.status==='合格').length,prog=rows.filter(r=>r.status==='練習中').length,pct=total?Math.round(pass/total*100):0;
-  document.getElementById('s-total').textContent=total;
-  document.getElementById('s-pass').textContent=pass;
-  document.getElementById('s-prog').textContent=prog;
-  document.getElementById('s-pct').textContent=pct+'%';
-  ['prog-fill','prog-fill2'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.width=pct+'%';});
-  ['prog-label','prog-label2'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=pct+'%';});
-}
-
-function updateIndCatFilter(){
-  const sel=document.getElementById("ind-cat-filter");if(!sel)return;
-  const cur=sel.value;
-  sel.innerHTML="<option value=\"\">" + "すべてのカテゴリ</option>"+categories.map(c=>"<option value=\""+esc(c.id)+"\"" + (c.id===cur?" selected":"") + ">"+esc(c.name)+"</option>").join("");
-}
-function clearIndFilter(){
-  document.getElementById("ind-cat-filter").value="";
-  document.getElementById("ind-status-filter").value="";
-  renderTable();
-}
-function updateOvCatFilter(){
-  const sel=document.getElementById("ov-cat-filter");
-  const cur=sel.value;
-  sel.innerHTML="<option value=\"\">" + "すべてのカテゴリ</option>"+categories.map(c=>"<option value=\""+esc(c.id)+"\"" + (c.id===cur?" selected":"") + ">"+esc(c.name)+"</option>").join("");
-}
-
-function renderOverview(){
-  const statusF=document.getElementById('ov-status-filter').value;
-  const catF=document.getElementById('ov-cat-filter').value;
-  const storeF=document.getElementById('ov-store-filter').value;
-  let filteredStudents=nonAdminStudents();
-  if(storeF)filteredStudents=filteredStudents.filter(s=>s.store.includes(storeF));
-  let allRows=[];
-  filteredStudents.forEach(s=>{
-    const sRows=progressRows.filter(r=>r.student_id===s.id);
-    const total=sRows.length,pass=sRows.filter(r=>r.status==='合格').length,pct=total?Math.round(pass/total*100):0;
-    let filtered=sRows;
-    if(statusF)filtered=filtered.filter(r=>r.status===statusF);
-    if(catF)filtered=filtered.filter(r=>getCatIdFromCurId(r.curriculum_id)===catF);
-    filtered.forEach(r=>{
-      allRows.push({student:s,row:r,catName:categories.find(c=>c.id===getCatIdFromCurId(r.curriculum_id))?.name||'',curName:curricula.find(c=>c.id===r.curriculum_id)?.name||'',total,pass,pct});
-    });
-    if(filtered.length===0&&!statusF&&!catF){
-      allRows.push({student:s,row:null,catName:'',curName:'',total,pass,pct});
-    }
-  });
-  const uq=new Set(allRows.map(r=>r.student.id));
-  document.getElementById('ov-total').textContent=uq.size;
-  document.getElementById('ov-pass').textContent=new Set(allRows.filter(r=>r.row?.status==='合格').map(r=>r.student.id)).size;
-  document.getElementById('ov-prog').textContent=new Set(allRows.filter(r=>r.row?.status==='練習中').map(r=>r.student.id)).size;
-  document.getElementById('ov-review').textContent=new Set(allRows.filter(r=>r.row?.status==='再確認').map(r=>r.student.id)).size;
-  const tb=document.getElementById('ov-tbody');
-  if(!allRows.length){tb.innerHTML=`<tr><td colspan="8" class="empty-td">該当するデータがありません。</td></tr>`;return;}
-  tb.innerHTML=allRows.map(({student,row,catName,curName,total,pass,pct})=>`<tr>
-    <td><strong>${esc(student.name)}</strong></td>
-    <td>${esc(student.store)}</td>
-    <td>${esc(catName)}</td>
-    <td>${esc(curName)}</td>
-    <td>${row?esc(getGoalHoursFromCurId(row.curriculum_id)||"—"):"—"}</td>
-    <td>${row?esc(row.planned_start_date||"—"):"—"}</td>
-    <td>${row?esc(row.start_date||"—"):"—"}</td>
-    <td>${row?esc(row.exam_date||"—"):"—"}</td>
-    <td>${row?esc(row.exam_count||0):"—"}</td>
-    <td>${row&&row.score?esc(row.score)+"点":"—"}</td>
-    <td>${row?`<span class="status-badge badge-${row.status}">${esc(row.status)}</span>`:"—"}</td>
-    <td>${row?esc(row.teacher||"—"):"—"}</td>
-    <td style="white-space:normal;max-width:160px">${row?esc(row.memo||"—"):"—"}</td>
-    <td><div class="mini-prog-wrap"><div class="mini-prog-bg"><div class="mini-prog-fill" style="width:${pct}%"></div></div><span style="font-size:11px;color:var(--mid)">${pass}/${total}</span></div></td>
-  </tr>`).join('');
-}
-
-function renderAll(){renderSels();renderMaster();updateIndCatFilter();loadProgressAndRender();}
 
 (async()=>{
   await loadAll();
-  // 最後に見た生徒をlocalStorageから復元
-  const savedCID=localStorage.getItem("last_cid");
-  const nonMgr=nonAdminStudents();
-  if(savedCID&&students.find(s=>s.id===savedCID)){
-    CID=savedCID;
-  }else if(nonMgr.length){
-    CID=nonMgr[0].id;
-  }else if(students.length){
-    CID=students[0].id;
-  }
-  applyMode();
+  // 最後に見た生徒を復元
+  const saved=localStorage.getItem('last_cid');
+  const nonMgr=nonAdminStudents().filter(s=>s.is_active!==false);
+  if(saved&&students.find(s=>s.id===saved))CID=saved;
+  else if(nonMgr.length)CID=nonMgr[0].id;
+  else if(students.length)CID=students[0].id;
   renderAll();
 })();
 </script>
-
 </body>
 </html>
