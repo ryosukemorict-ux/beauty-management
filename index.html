@@ -409,7 +409,6 @@ const SUPABASE_URL='https://nrweporylfaorlqektsk.supabase.co';
 const SUPABASE_ANON='sb_publishable_a3X1ltKqAaTv6CyxHIReug_xEPqqCSS';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
 
-const ADMIN_STORES=['管理（全体）','エルズ（管理）','soleil（管理）'];
 const STAFF_EDITOR_ROLES=['代表','管理者','店長','チーフ'];
 const CURR_EDITOR_ROLES=['代表','管理者','店長','チーフ','スタイリスト'];
 const STATS=['未着手','練習中','合格'];
@@ -418,7 +417,7 @@ const CAT_COLORS={シャンプー:'#e8d9a0',ドライ:'#f5c6c6',ブロー:'#f5c6
 
 function hash(s){let h=0;for(let i=0;i<s.length;i++)h=(Math.imul(31,h)+s.charCodeAt(i))|0;return String(h);}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function isAdminStore(store){return ADMIN_STORES.includes(store);}
+function isAdminStore(store){return false;}
 const CURR_TARGET_ROLES=['Jrスタイリスト','カラーリスト','アシスタント'];
 function nonAdminStudents(){return students.filter(function(s){return CURR_TARGET_ROLES.includes(s.position);});}
 
