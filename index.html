@@ -454,7 +454,7 @@ function showPage(name){
   const tabEl=document.getElementById('tab-'+name);
   if(tabEl)tabEl.classList.add('active');
   if(name==='dashboard') renderDashboard();
-  if(name==='curriculum') renderCurriculumPage();
+  if(name==='curriculum') setTimeout(renderCurriculumPage, 50);
   if(name==='staff') renderStaffPage();
 }
 
@@ -965,7 +965,6 @@ function renderAll(){
   currentPage='dashboard';
   applyAuth();
   renderDashboard();
-  renderCurriculumPage();
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
   document.getElementById('page-dashboard').classList.add('active');
 })();
