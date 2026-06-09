@@ -324,7 +324,20 @@ function renderTable() {
       const subTr = document.createElement('tr');
       subTr.className = 'subtotal';
       const label = d === daysInMonth ? '月末合計' : `〜${d}日 小計`;
-      subTr.innerHTML = `<td>${label}</td>${staff.map(() => `<td>-</td>`).join('')}${storeFilter==='both'?'<td></td><td></td><td></td>':''}`;
+      subTr.innerHTML = `<td>${label}</td>${staff.map(s => {
+  let sv=0,sn=0;
+  for(let sd=startDay||1;sd<=d;sd++){
+    const ds=`${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(sd).padStart(2,'0')}`;
+    const rec=allReservations.find(r=>r.staff_id===s.id&&r.date===ds);
+    if(rec){sv+=rec.visitor_count||0;sn+=rec.next_reservation_count||0;}
+    document.querySelectorAll(`select[data-staff="${s.id}"][data-date="${ds}"][data-type="visitor"]`).forEach(el=>sv+=parseInt(el.value)||0);
+    document.querySelectorAll(`select[data-staff="${s.id}"][data-date="${ds}"][data-type="next_res"]`).forEach(el=>sn+=parseInt(el.value)||0);
+  }
+  sv=Math.floor(sv/2);sn=Math.floor(sn/2);
+  const sr=sv>0?Math.round(sn/sv*100):0;
+  return `<td>${sv||'-'} / ${sn||'-'} / <span class="rate-badge ${sr>=70?'rate-high':sr>=50?'rate-mid':(sv>0?'rate-low':'')}">${sv>0?sr+'%':'-'}</span></td>`;
+}).join('')}${storeFilter==='both'?'<td></td><td></td><td></td>':''}`;
+
       body.appendChild(subTr);
     }
   }
