@@ -15,27 +15,16 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--dark);min-height:100vh;}
-
-/* TOP BAR */
 .top-bar{background:var(--dark);color:var(--gold-light);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;}
 .top-bar-title{font-family:'Playfair Display',serif;font-size:18px;letter-spacing:1px;}
-.top-bar-right{display:flex;align-items:center;gap:10px;}
 .back-btn{background:rgba(255,255,255,0.1);border:1px solid var(--gold);color:var(--gold-light);padding:6px 14px;border-radius:20px;font-size:12px;cursor:pointer;text-decoration:none;}
 .back-btn:hover{background:var(--gold);color:var(--dark);}
-
-/* TABS */
 .tab-bar{background:#fff;border-bottom:2px solid var(--gold-light);display:flex;padding:0 20px;gap:4px;}
 .tab{padding:12px 20px;font-size:13px;font-weight:500;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;color:var(--mid);}
 .tab.active{border-bottom-color:var(--gold);color:var(--dark);font-weight:700;}
-
-/* MAIN */
-.main{padding:20px;max-width:1200px;margin:0 auto;}
-
-/* PANEL */
+.main{padding:20px;max-width:1400px;margin:0 auto;}
 .panel{background:#fff;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
-.panel-title{font-size:15px;font-weight:700;color:var(--dark);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
-
-/* FILTER BAR */
+.panel-title{font-size:15px;font-weight:700;color:var(--dark);margin-bottom:16px;}
 .filter-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px;}
 .filter-bar label{font-size:12px;color:var(--mid);}
 .filter-sel{border:1px solid var(--gold-light);border-radius:8px;padding:6px 10px;font-size:13px;background:#fff;color:var(--dark);}
@@ -43,83 +32,55 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
 .btn-dark{background:var(--dark);color:var(--gold-light);}
 .btn-dark:hover{background:var(--accent);}
 .btn-outline{background:#fff;border:1px solid var(--gold);color:var(--dark);}
-.btn-outline:hover{background:var(--cream);}
-
-/* TABLE */
 .table-wrap{overflow-x:auto;}
-table.tbl-main{width:100%;border-collapse:collapse;font-size:13px;}
-table.tbl-main th{background:var(--dark);color:var(--gold-light);padding:10px 8px;text-align:center;white-space:nowrap;font-weight:500;}
-table.tbl-main td{padding:8px;text-align:center;border-bottom:1px solid var(--gold-light);vertical-align:middle;}
+table.tbl-main{width:100%;border-collapse:collapse;font-size:12px;}
+table.tbl-main th{background:var(--dark);color:var(--gold-light);padding:8px 6px;text-align:center;white-space:nowrap;font-weight:500;}
+table.tbl-main td{padding:6px 4px;text-align:center;border-bottom:1px solid var(--gold-light);vertical-align:middle;}
 table.tbl-main tr:hover td{background:rgba(201,169,110,0.08);}
-table.tbl-main tr.subtotal td{background:rgba(201,169,110,0.15);font-weight:700;}
+table.tbl-main tr.subtotal td{background:rgba(201,169,110,0.18);font-weight:700;font-size:11px;}
 table.tbl-main tr.total td{background:var(--dark);color:var(--gold-light);font-weight:700;}
-table.tbl-main input[type="number"]{width:60px;border:1px solid var(--gold-light);border-radius:6px;padding:4px 6px;text-align:center;font-size:13px;}
-table.tbl-main input[type="number"]:focus{outline:none;border-color:var(--gold);}
-.rate-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:700;}
+.cell-wrap{display:flex;align-items:center;justify-content:center;gap:2px;flex-wrap:wrap;}
+select.num-sel{width:42px;border:1px solid var(--gold-light);border-radius:6px;padding:2px 2px;text-align:center;font-size:12px;background:#fff;}
+select.num-sel:focus{outline:none;border-color:var(--gold);}
+.rate-badge{display:inline-block;padding:1px 6px;border-radius:10px;font-size:11px;font-weight:700;}
 .rate-high{background:#d4edda;color:#155724;}
 .rate-mid{background:#fff3cd;color:#856404;}
 .rate-low{background:#f8d7da;color:#721c24;}
-
-/* RANKING */
 .rank-list{display:flex;flex-direction:column;gap:10px;}
 .rank-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;background:var(--cream);}
 .rank-num{font-size:18px;font-weight:700;width:32px;text-align:center;}
-.rank-num.gold{color:#c9a96e;}
-.rank-num.silver{color:#888;}
-.rank-num.bronze{color:#cd7f32;}
+.rank-num.gold{color:#c9a96e;}.rank-num.silver{color:#888;}.rank-num.bronze{color:#cd7f32;}
 .rank-name{flex:1;font-size:14px;font-weight:500;}
 .rank-store{font-size:11px;color:var(--mid);}
-.rank-bar-wrap{width:160px;}
+.rank-bar-wrap{width:140px;}
 .rank-bar-bg{background:#e0e0e0;border-radius:4px;height:8px;overflow:hidden;}
 .rank-bar-fill{height:8px;border-radius:4px;background:linear-gradient(90deg,var(--gold),var(--accent));}
 .rank-pct{font-size:14px;font-weight:700;color:var(--accent);min-width:48px;text-align:right;}
-
-/* CHART */
 .chart-wrap{position:relative;height:320px;}
-
-/* MONTH NAV */
 .month-nav{display:flex;align-items:center;gap:12px;}
 .month-nav button{background:none;border:1px solid var(--gold-light);border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px;}
 .month-nav button:hover{background:var(--gold-light);}
 .month-label{font-size:15px;font-weight:700;min-width:100px;text-align:center;}
-
-/* NOTICE */
 .notice{background:#fff8e1;border-left:4px solid var(--gold);padding:10px 14px;border-radius:6px;font-size:12px;color:var(--mid);margin-bottom:16px;}
-
-/* LOADING */
-.loading{text-align:center;padding:40px;color:var(--mid);}
-
-/* SECTION hidden */
-.section{display:none;}
-.section.active{display:block;}
-
-/* Stats summary */
+.section{display:none;}.section.active{display:block;}
 .summary{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px;}
 .stat{background:var(--cream);border-radius:10px;padding:12px 18px;flex:1;min-width:120px;}
 .stat-n{font-size:22px;font-weight:700;color:var(--gold);}
 .stat-l{font-size:11px;color:var(--mid);margin-top:2px;}
+.loading{text-align:center;padding:40px;color:var(--mid);}
 </style>
 </head>
 <body>
-
-<!-- TOP BAR -->
 <div class="top-bar">
   <div class="top-bar-title">📅 次回予約管理</div>
-  <div class="top-bar-right">
-    <a href="index.html" class="back-btn">← ダッシュボード</a>
-  </div>
+  <a href="index.html" class="back-btn">← ダッシュボード</a>
 </div>
-
-<!-- TABS -->
 <div class="tab-bar">
   <div class="tab active" onclick="switchTab('table')">📋 日別入力表</div>
   <div class="tab" onclick="switchTab('ranking')">🏆 ランキング</div>
   <div class="tab" onclick="switchTab('graph')">📈 成長グラフ</div>
 </div>
-
 <div class="main">
-
-  <!-- ① 日別入力表 -->
   <div id="sec-table" class="section active">
     <div class="panel">
       <div class="panel-title">📋 日別次回予約入力表</div>
@@ -140,15 +101,13 @@ table.tbl-main input[type="number"]:focus{outline:none;border-color:var(--gold);
       <div class="notice">📝 各自の来客数・次回予約数を入力してください。次回予約率は自動計算されます。</div>
       <div id="table-summary" class="summary"></div>
       <div class="table-wrap">
-        <table class="tbl-main" id="main-table">
+        <table class="tbl-main">
           <thead id="table-head"></thead>
           <tbody id="table-body"></tbody>
         </table>
       </div>
     </div>
   </div>
-
-  <!-- ② ランキング -->
   <div id="sec-ranking" class="section">
     <div class="panel">
       <div class="panel-title">🏆 月別次回予約率ランキング</div>
@@ -168,8 +127,6 @@ table.tbl-main input[type="number"]:focus{outline:none;border-color:var(--gold);
       <div id="ranking-list" class="rank-list"><div class="loading">データを読み込み中...</div></div>
     </div>
   </div>
-
-  <!-- ③ 成長グラフ -->
   <div id="sec-graph" class="section">
     <div class="panel">
       <div class="panel-title">📈 スタッフ別 月別推移グラフ</div>
@@ -188,30 +145,20 @@ table.tbl-main input[type="number"]:focus{outline:none;border-color:var(--gold);
         </select>
         <button class="btn btn-outline" onclick="renderGraph()">更新</button>
       </div>
-      <div class="chart-wrap">
-        <canvas id="growth-chart"></canvas>
-      </div>
+      <div class="chart-wrap"><canvas id="growth-chart"></canvas></div>
     </div>
   </div>
-
 </div>
-
 <script>
-// ===== SUPABASE SETUP =====
 const SUPABASE_URL = 'https://nrweporylfaorlqektsk.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yd2Vwb3J5bGZhb3JscWVrdHNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0ODUzMDAsImV4cCI6MjA5NDA2MTMwMH0.48m8FDoD3oFaqxXEZ625wr5zD001c1ghuUOmcaNaICQ';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ===== STATE =====
-let currentYear = 2026;
-let currentMonth = 6;
-let rankYear = 2026;
-let rankMonth = 6;
-let allStaff = [];
-let allReservations = [];
+let currentYear = 2026, currentMonth = 6;
+let rankYear = 2026, rankMonth = 6;
+let allStaff = [], allReservations = [];
 let growthChart = null;
 
-// ===== INIT =====
 async function init() {
   const { data, error } = await sb.from('students').select('id,name,store,position,is_active').eq('is_active', true).order('store').order('name');
   if (!error && data) allStaff = data;
@@ -226,7 +173,6 @@ async function loadReservations() {
   if (!error && data) allReservations = data;
 }
 
-// ===== TAB SWITCH =====
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach((t,i) => {
     t.classList.remove('active');
@@ -238,7 +184,6 @@ function switchTab(tab) {
   if(tab === 'graph') renderGraph();
 }
 
-// ===== MONTH NAV =====
 function changeMonth(d) {
   currentMonth += d;
   if(currentMonth > 12){currentMonth=1;currentYear++;}
@@ -246,6 +191,7 @@ function changeMonth(d) {
   document.getElementById('month-label-table').textContent = `${currentYear}年${currentMonth}月`;
   loadReservations().then(() => renderTable());
 }
+
 function changeMonthRank(d) {
   rankMonth += d;
   if(rankMonth > 12){rankMonth=1;rankYear++;}
@@ -254,110 +200,139 @@ function changeMonthRank(d) {
   renderRanking();
 }
 
-// ===== RENDER TABLE =====
-function renderTable() {
-  const storeFilter = document.getElementById('store-filter-table').value;
-  const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
-
-  // 対象スタッフ
-  let staff = allStaff.filter(s => {
-    if(storeFilter === 'els') return s.store === 'els' || s.store === 'エルズ';
-    if(storeFilter === 'soleil') return s.store === 'soleil' || s.store === 'soleil by ailes';
+function getStaffForFilter(filterId) {
+  const f = document.getElementById(filterId).value;
+  return allStaff.filter(s => {
+    if(f === 'els') return s.store === 'els' || s.store === 'エルズ';
+    if(f === 'soleil') return s.store === 'soleil' || s.store === 'soleil by ailes';
     return true;
   });
+}
+
+function makeOptions(selected) {
+  let html = '';
+  for(let i=0;i<=30;i++) html += `<option value="${i}"${selected==i?' selected':''}>${i}</option>`;
+  return html;
+}
+
+function renderTable() {
+  const storeFilter = document.getElementById('store-filter-table').value;
+  const staff = getStaffForFilter('store-filter-table');
+  const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
 
   // HEAD
   const head = document.getElementById('table-head');
   head.innerHTML = `<tr>
-    <th style="min-width:80px">日付</th>
-    ${staff.map(s => `<th style="min-width:130px">${s.name}<br><span style="font-size:10px;opacity:0.7">${s.store||''}</span></th>`).join('')}
-    ${storeFilter==='both'?'<th style="min-width:80px">合計<br>来客</th><th style="min-width:80px">合計<br>予約</th><th style="min-width:80px">合計<br>予約率</th>':''}
+    <th style="min-width:70px">日付</th>
+    ${staff.map(s => `<th style="min-width:120px">${s.name}<br><span style="font-size:10px;opacity:0.7">${s.store||''}</span></th>`).join('')}
+    ${storeFilter==='both'?'<th style="min-width:70px">合計<br>来客</th><th style="min-width:70px">合計<br>予約</th><th style="min-width:70px">合計<br>予約率</th>':''}
   </tr>
   <tr style="background:rgba(201,169,110,0.2)">
-    <th style="font-size:11px;padding:4px"></th>
-    ${staff.map(() => `<th colspan="1" style="font-size:10px;padding:4px;font-weight:400">来客 / 予約 / 率</th>`).join('')}
+    <th></th>
+    ${staff.map(() => `<th style="font-size:10px;padding:3px;font-weight:400">来客 / 予約 / 率</th>`).join('')}
     ${storeFilter==='both'?'<th></th><th></th><th></th>':''}
   </tr>`;
 
   // BODY
   const body = document.getElementById('table-body');
   body.innerHTML = '';
-
-  let monthTotalVisitor = 0, monthTotalReserv = 0;
+  let monthTotalV = 0, monthTotalN = 0;
 
   for(let d=1; d<=daysInMonth; d++) {
     const dateStr = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const dayOfWeek = ['日','月','火','水','木','金','土'][new Date(dateStr).getDay()];
+    const dow = ['日','月','火','水','木','金','土'][new Date(dateStr).getDay()];
     const isWeekend = new Date(dateStr).getDay() === 0 || new Date(dateStr).getDay() === 6;
 
-    let rowVisitor = 0, rowReserv = 0;
+    let rowV = 0, rowN = 0;
     const cells = staff.map(s => {
       const rec = allReservations.find(r => r.staff_id === s.id && r.date === dateStr);
       const v = rec ? rec.visitor_count : 0;
       const n = rec ? rec.next_reservation_count : 0;
       const rate = v > 0 ? Math.round(n/v*100) : 0;
-      rowVisitor += v; rowReserv += n;
-      const rateClass = rate >= 70 ? 'rate-high' : rate >= 50 ? 'rate-mid' : (v>0?'rate-low':'');
+      const rc = rate>=70?'rate-high':rate>=50?'rate-mid':(v>0?'rate-low':'');
+      rowV += v; rowN += n;
       return `<td>
-        <select data-staff="${s.id}" data-date="${dateStr}" data-type="visitor" onchange="recalcRate(this)" style="width:44px;border:1px solid #e8d5b0;border-radius:6px;padding:2px;font-size:12px">${[...Array(31)].map((_,i)=>`<option value="${i}" ${v==i?'selected':''}>${i}</option>`).join('')}</select>
-<select data-staff="${s.id}" data-date="${dateStr}" data-type="next_res" onchange="recalcRate(this)" style="width:44px;border:1px solid #e8d5b0;border-radius:6px;padding:2px;font-size:12px">${[...Array(31)].map((_,i)=>`<option value="${i}" ${n==i?'selected':''}>${i}</option>`).join('')}</select>
-        <span class="rate-badge ${rateClass}" id="rate-${s.id}-${dateStr}">${v>0?rate+'%':'-'}</span>
+        <div class="cell-wrap">
+          <select class="num-sel" data-staff="${s.id}" data-date="${dateStr}" data-type="visitor" onchange="recalcRate(this)">${makeOptions(v)}</select>
+          <select class="num-sel" data-staff="${s.id}" data-date="${dateStr}" data-type="next_res" onchange="recalcRate(this)">${makeOptions(n)}</select>
+          <span class="rate-badge ${rc}" id="rate-${s.id}-${dateStr}">${v>0?rate+'%':'-'}</span>
+        </div>
       </td>`;
     }).join('');
 
-    monthTotalVisitor += rowVisitor;
-    monthTotalReserv += rowReserv;
-    const rowRate = rowVisitor > 0 ? Math.round(rowReserv/rowVisitor*100) : 0;
-    const rowRateClass = rowRate >= 70 ? 'rate-high' : rowRate >= 50 ? 'rate-mid' : (rowVisitor>0?'rate-low':'');
+    monthTotalV += rowV; monthTotalN += rowN;
+    const rowRate = rowV > 0 ? Math.round(rowN/rowV*100) : 0;
+    const rowRc = rowRate>=70?'rate-high':rowRate>=50?'rate-mid':(rowV>0?'rate-low':'');
 
     const tr = document.createElement('tr');
-    if(isWeekend) tr.style.background = 'rgba(200,200,200,0.1)';
+    if(isWeekend) tr.style.background = 'rgba(200,200,200,0.08)';
     tr.innerHTML = `
-      <td style="font-weight:500">${currentMonth}/${d}(${dayOfWeek})</td>
+      <td style="font-weight:500;white-space:nowrap">${currentMonth}/${d}(${dow})</td>
       ${cells}
-      ${storeFilter==='both'?`<td>${rowVisitor||'-'}</td><td>${rowReserv||'-'}</td><td><span class="rate-badge ${rowRateClass}">${rowVisitor>0?rowRate+'%':'-'}</span></td>`:''}
+      ${storeFilter==='both'?`<td>${rowV||'-'}</td><td>${rowN||'-'}</td><td><span class="rate-badge ${rowRc}">${rowV>0?rowRate+'%':'-'}</span></td>`:''}
     `;
     body.appendChild(tr);
 
     // 10日ごと小計
-  if(d % 10 === 0 || d === daysInMonth) {
-  const startDay = d<=10 ? 1 : d<=20 ? 11 : 21;
-  const subTr = document.createElement('tr');
-  subTr.className = 'subtotal';
-  const label = d === daysInMonth ? '月末合計' : `〜${d}日 小計`;
-  const staffCells = staff.map(s => {
-    let sv=0, sn=0;
-    for(let sd=startDay; sd<=d; sd++){
-      const ds=`${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(sd).padStart(2,'0')}`;
-      document.querySelectorAll(`select[data-staff="${s.id}"][data-date="${ds}"][data-type="visitor"]`).forEach(el=>sv+=parseInt(el.value)||0);
-      document.querySelectorAll(`select[data-staff="${s.id}"][data-date="${ds}"][data-type="next_res"]`).forEach(el=>sn+=parseInt(el.value)||0);
+    if(d % 10 === 0 || d === daysInMonth) {
+      const startDay = d<=10 ? 1 : d<=20 ? 11 : 21;
+      const label = d === daysInMonth ? '月末合計' : `〜${d}日 小計`;
+      const subTr = document.createElement('tr');
+      subTr.className = 'subtotal';
+      subTr.dataset.startDay = startDay;
+      subTr.dataset.endDay = d;
+
+      // 各スタッフの小計を計算
+      const subCells = staff.map(s => {
+        let sv=0, sn=0;
+        for(let sd=startDay; sd<=d; sd++) {
+          const ds = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(sd).padStart(2,'0')}`;
+          document.querySelectorAll(`select[data-staff="${s.id}"][data-date="${ds}"][data-type="visitor"]`).forEach(el => sv += parseInt(el.value)||0);
+          document.querySelectorAll(`select[data-staff="${s.id}"][data-date="${ds}"][data-type="next_res"]`).forEach(el => sn += parseInt(el.value)||0);
+        }
+        const sr = sv>0 ? Math.round(sn/sv*100) : 0;
+        const rc = sr>=70?'rate-high':sr>=50?'rate-mid':(sv>0?'rate-low':'');
+        return `<td>${sv||'-'} / ${sn||'-'} / <span class="rate-badge ${rc}">${sv>0?sr+'%':'-'}</span></td>`;
+      }).join('');
+
+      // 店舗合計列
+      let totalSv=0, totalSn=0;
+      if(storeFilter==='both') {
+        for(let sd=startDay; sd<=d; sd++) {
+          const ds = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(sd).padStart(2,'0')}`;
+          document.querySelectorAll(`select[data-date="${ds}"][data-type="visitor"]`).forEach(el => totalSv += parseInt(el.value)||0);
+          document.querySelectorAll(`select[data-date="${ds}"][data-type="next_res"]`).forEach(el => totalSn += parseInt(el.value)||0);
+        }
+      }
+      const totalSr = totalSv>0 ? Math.round(totalSn/totalSv*100) : 0;
+      const totalRc = totalSr>=70?'rate-high':totalSr>=50?'rate-mid':(totalSv>0?'rate-low':'');
+
+      subTr.innerHTML = `<td>${label}</td>${subCells}${storeFilter==='both'?`<td>${totalSv||'-'}</td><td>${totalSn||'-'}</td><td><span class="rate-badge ${totalRc}">${totalSv>0?totalSr+'%':'-'}</span></td>`:''}`;
+      body.appendChild(subTr);
     }
-    const sr=sv>0?Math.round(sn/sv*100):0;
-    const rc=sr>=70?'rate-high':sr>=50?'rate-mid':(sv>0?'rate-low':'');
-    return `<td>${sv||'-'} / ${sn||'-'} / <span class="rate-badge ${rc}">${sv>0?sr+'%':'-'}</span></td>`;
-  }).join('');
-  subTr.innerHTML = `<td>${label}</td>${staffCells}${storeFilter==='both'?'<td></td><td></td><td></td>':''}`;
-  body.appendChild(subTr);
+  }
+
+  // サマリー更新
+  updateSummary(monthTotalV, monthTotalN);
 }
 
-  // サマリー
-  const monthRate = monthTotalVisitor > 0 ? Math.round(monthTotalReserv/monthTotalVisitor*100) : 0;
+function updateSummary(v, n) {
+  const rate = v > 0 ? Math.round(n/v*100) : 0;
   document.getElementById('table-summary').innerHTML = `
-    <div class="stat"><div class="stat-n">${monthTotalVisitor}</div><div class="stat-l">月間来客数</div></div>
-    <div class="stat"><div class="stat-n">${monthTotalReserv}</div><div class="stat-l">月間次回予約数</div></div>
-    <div class="stat"><div class="stat-n" style="color:${monthRate>=70?'var(--green)':monthRate>=50?'#856404':'var(--red)'}">${monthRate}%</div><div class="stat-l">月間次回予約率</div></div>
+    <div class="stat"><div class="stat-n">${v}</div><div class="stat-l">月間来客数</div></div>
+    <div class="stat"><div class="stat-n">${n}</div><div class="stat-l">月間次回予約数</div></div>
+    <div class="stat"><div class="stat-n" style="color:${rate>=70?'var(--green)':rate>=50?'#856404':'var(--red)'}">${rate}%</div><div class="stat-l">月間次回予約率</div></div>
   `;
 }
 
-// ===== RECALC RATE =====
 function recalcRate(input) {
   const staffId = input.dataset.staff;
   const date = input.dataset.date;
   const row = input.closest('tr');
-  const vInput = row.querySelector(`select[data-staff="${staffId}"][data-date="${date}"][data-type="visitor"]`);
-  const nInput = row.querySelector(`select[data-staff="${staffId}"][data-date="${date}"][data-type="next_res"]`);
-  const v = parseInt(vInput?.value) || 0;
-  const n = parseInt(nInput?.value) || 0;
+  const vSel = row.querySelector(`select[data-staff="${staffId}"][data-date="${date}"][data-type="visitor"]`);
+  const nSel = row.querySelector(`select[data-staff="${staffId}"][data-date="${date}"][data-type="next_res"]`);
+  const v = parseInt(vSel?.value) || 0;
+  const n = parseInt(nSel?.value) || 0;
   const rate = v > 0 ? Math.round(n/v*100) : 0;
   const badge = document.getElementById(`rate-${staffId}-${date}`);
   if(badge) {
@@ -368,84 +343,81 @@ function recalcRate(input) {
 }
 
 function updateTotals() {
-  const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+  const staff = getStaffForFilter('store-filter-table');
   const storeFilter = document.getElementById('store-filter-table').value;
-  let monthV = 0, monthN = 0;
+  const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
 
-  for(let d=1; d<=daysInMonth; d++) {
-    const dateStr = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const rows = document.querySelectorAll(`#table-body tr`);
-    rows.forEach(row => {
-      row.querySelectorAll(`select[data-date="${dateStr}"][data-type="visitor"]`).forEach(s => monthV += parseInt(s.value)||0);
-      row.querySelectorAll(`select[data-date="${dateStr}"][data-type="next_res"]`).forEach(s => monthN += parseInt(s.value)||0);
-    });
-  }
+  // 月間合計
+  let monthV=0, monthN=0;
+  document.querySelectorAll('#table-body select[data-type="visitor"]').forEach(s => monthV += parseInt(s.value)||0);
+  document.querySelectorAll('#table-body select[data-type="next_res"]').forEach(s => monthN += parseInt(s.value)||0);
+  updateSummary(monthV, monthN);
 
-  // 10日ごと小計更新
+  // 小計行更新
   document.querySelectorAll('#table-body tr.subtotal').forEach(subTr => {
-    const label = subTr.querySelector('td')?.textContent || '';
-    const match = label.match(/〜(\d+)日/);
-    const endDay = match ? parseInt(match[1]) : daysInMonth;
-    const startDay = endDay === 10 ? 1 : endDay === 20 ? 11 : 21;
-    let sv = 0, sn = 0;
-    for(let d=startDay; d<=endDay; d++) {
-      const dateStr = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      document.querySelectorAll(`select[data-date="${dateStr}"][data-type="visitor"]`).forEach(s => sv += parseInt(s.value)||0);
-      document.querySelectorAll(`select[data-date="${dateStr}"][data-type="next_res"]`).forEach(s => sn += parseInt(s.value)||0);
-    }
-    const sr = sv > 0 ? Math.round(sn/sv*100) : 0;
+    const startDay = parseInt(subTr.dataset.startDay);
+    const endDay = parseInt(subTr.dataset.endDay);
     const tds = subTr.querySelectorAll('td');
-    if(tds[1]) tds[1].textContent = sv || '-';
-    if(tds[2]) tds[2].textContent = sn || '-';
-    if(tds[3]) tds[3].innerHTML = sv > 0 ? `<span class="rate-badge ${sr>=70?'rate-high':sr>=50?'rate-mid':'rate-low'}">${sr}%</span>` : '-';
-  });
+    
+    const subCells = staff.map((s, idx) => {
+      let sv=0, sn=0;
+      for(let sd=startDay; sd<=endDay; sd++) {
+        const ds = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(sd).padStart(2,'0')}`;
+        document.querySelectorAll(`select[data-staff="${s.id}"][data-date="${ds}"][data-type="visitor"]`).forEach(el => sv += parseInt(el.value)||0);
+        document.querySelectorAll(`select[data-staff="${s.id}"][data-date="${ds}"][data-type="next_res"]`).forEach(el => sn += parseInt(el.value)||0);
+      }
+      const sr = sv>0 ? Math.round(sn/sv*100) : 0;
+      const rc = sr>=70?'rate-high':sr>=50?'rate-mid':(sv>0?'rate-low':'');
+      if(tds[idx+1]) tds[idx+1].innerHTML = `${sv||'-'} / ${sn||'-'} / <span class="rate-badge ${rc}">${sv>0?sr+'%':'-'}</span>`;
+    });
 
-  const monthRate = monthV > 0 ? Math.round(monthN/monthV*100) : 0;
-  document.getElementById('table-summary').innerHTML = `
-    <div class="stat"><div class="stat-n">${monthV}</div><div class="stat-l">月間来客数</div></div>
-    <div class="stat"><div class="stat-n">${monthN}</div><div class="stat-l">月間次回予約数</div></div>
-    <div class="stat"><div class="stat-n" style="color:${monthRate>=70?'var(--green)':monthRate>=50?'#856404':'var(--red)'}">${monthRate}%</div><div class="stat-l">月間次回予約率</div></div>
-  `;
+    // 合計列更新
+    if(storeFilter==='both') {
+      let tv=0, tn=0;
+      for(let sd=startDay; sd<=endDay; sd++) {
+        const ds = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(sd).padStart(2,'0')}`;
+        document.querySelectorAll(`select[data-date="${ds}"][data-type="visitor"]`).forEach(el => tv += parseInt(el.value)||0);
+        document.querySelectorAll(`select[data-date="${ds}"][data-type="next_res"]`).forEach(el => tn += parseInt(el.value)||0);
+      }
+      const tr2 = tv>0?Math.round(tn/tv*100):0;
+      const rc2 = tr2>=70?'rate-high':tr2>=50?'rate-mid':(tv>0?'rate-low':'');
+      const lastIdx = staff.length+1;
+      if(tds[lastIdx]) tds[lastIdx].textContent = tv||'-';
+      if(tds[lastIdx+1]) tds[lastIdx+1].textContent = tn||'-';
+      if(tds[lastIdx+2]) tds[lastIdx+2].innerHTML = `<span class="rate-badge ${rc2}">${tv>0?tr2+'%':'-'}</span>`;
+    }
+  });
 }
 
-
-// ===== SAVE =====
 async function saveAll() {
-  const inputs = document.querySelectorAll('#table-body select');
+  const selects = document.querySelectorAll('#table-body select');
   const dataMap = {};
-  inputs.forEach(inp => {
-    const key = `${inp.dataset.staff}_${inp.dataset.date}`;
-    if(!dataMap[key]) dataMap[key] = {staff_id:inp.dataset.staff, date:inp.dataset.date, visitor_count:0, next_reservation_count:0};
-    if(inp.dataset.type === 'visitor') dataMap[key].visitor_count = parseInt(inp.value)||0;
-    if(inp.dataset.type === 'next_res') dataMap[key].next_reservation_count = parseInt(inp.value)||0;
+  selects.forEach(sel => {
+    const key = `${sel.dataset.staff}_${sel.dataset.date}`;
+    if(!dataMap[key]) dataMap[key] = {staff_id:sel.dataset.staff, date:sel.dataset.date, visitor_count:0, next_reservation_count:0};
+    if(sel.dataset.type === 'visitor') dataMap[key].visitor_count = parseInt(sel.value)||0;
+    if(sel.dataset.type === 'next_res') dataMap[key].next_reservation_count = parseInt(sel.value)||0;
   });
-
   const upsertData = Object.values(dataMap).filter(d => d.visitor_count > 0 || d.next_reservation_count > 0);
   if(upsertData.length === 0) { alert('入力データがありません'); return; }
-
   const { error } = await sb.from('next_reservations').upsert(upsertData, {onConflict:'staff_id,date'});
   if(error) { alert('保存エラー: '+error.message); return; }
   alert('✅ 保存しました！');
   await loadReservations();
 }
 
-// ===== RANKING =====
 async function renderRanking() {
   const storeFilter = document.getElementById('store-filter-rank').value;
   const startDate = `${rankYear}-${String(rankMonth).padStart(2,'0')}-01`;
   const endDate = new Date(rankYear, rankMonth, 0).toISOString().split('T')[0];
-
   const { data, error } = await sb.from('next_reservations').select('staff_id,visitor_count,next_reservation_count').gte('date',startDate).lte('date',endDate);
-
   const list = document.getElementById('ranking-list');
   if(error || !data) { list.innerHTML = '<div class="loading">データ取得エラー</div>'; return; }
-
   let staff = allStaff.filter(s => {
     if(storeFilter === 'els') return s.store === 'els' || s.store === 'エルズ';
     if(storeFilter === 'soleil') return s.store === 'soleil' || s.store === 'soleil by ailes';
     return true;
   });
-
   const staffStats = staff.map(s => {
     const recs = data.filter(r => r.staff_id === s.id);
     const totalV = recs.reduce((a,r) => a+r.visitor_count,0);
@@ -453,104 +425,72 @@ async function renderRanking() {
     const rate = totalV > 0 ? Math.round(totalN/totalV*100) : 0;
     return {...s, totalV, totalN, rate};
   }).filter(s => s.totalV > 0).sort((a,b) => b.rate - a.rate);
-
   if(staffStats.length === 0) { list.innerHTML = '<div class="loading">この月のデータがありません</div>'; return; }
-
   const maxRate = staffStats[0].rate;
   list.innerHTML = staffStats.map((s,i) => {
     const numClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
     const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
-    const rateClass = s.rate>=70?'rate-high':s.rate>=50?'rate-mid':'rate-low';
+    const rc = s.rate>=70?'rate-high':s.rate>=50?'rate-mid':'rate-low';
     return `<div class="rank-item">
       <div class="rank-num ${numClass}">${medal||i+1}</div>
-      <div style="flex:1">
-        <div class="rank-name">${s.name}</div>
-        <div class="rank-store">${s.store||''} / 来客${s.totalV}名 予約${s.totalN}名</div>
-      </div>
-      <div class="rank-bar-wrap">
-        <div class="rank-bar-bg"><div class="rank-bar-fill" style="width:${maxRate>0?Math.round(s.rate/maxRate*100):0}%"></div></div>
-      </div>
-      <div class="rank-pct"><span class="rate-badge ${rateClass}">${s.rate}%</span></div>
+      <div style="flex:1"><div class="rank-name">${s.name}</div><div class="rank-store">${s.store||''} / 来客${s.totalV}名 予約${s.totalN}名</div></div>
+      <div class="rank-bar-wrap"><div class="rank-bar-bg"><div class="rank-bar-fill" style="width:${maxRate>0?Math.round(s.rate/maxRate*100):0}%"></div></div></div>
+      <div class="rank-pct"><span class="rate-badge ${rc}">${s.rate}%</span></div>
     </div>`;
   }).join('');
 }
 
-// ===== GRAPH =====
 async function renderGraph() {
   const months = parseInt(document.getElementById('graph-months').value);
   const storeFilter = document.getElementById('store-filter-graph').value;
-
-  // 期間計算
-  const labels = [];
-  const monthList = [];
+  const now = new Date(2026, 5, 1);
+  const labels = [], monthList = [];
   for(let i=months-1; i>=0; i--) {
-    const d = new Date(2026, 5-i, 1); // ← 現在月から
-    const y = d.getFullYear(), m = d.getMonth()+1;
-    labels.push(`${y}/${String(m).padStart(2,'0')}`);
-    monthList.push({y,m});
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    labels.push(`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}`);
+    monthList.push({y:d.getFullYear(), m:d.getMonth()+1});
   }
-
-  // データ取得
   const startDate = `${monthList[0].y}-${String(monthList[0].m).padStart(2,'0')}-01`;
   const lastM = monthList[monthList.length-1];
   const endDate = new Date(lastM.y, lastM.m, 0).toISOString().split('T')[0];
   const { data } = await sb.from('next_reservations').select('staff_id,date,visitor_count,next_reservation_count').gte('date',startDate).lte('date',endDate);
-
   let staff = allStaff.filter(s => {
     if(storeFilter === 'els') return s.store === 'els' || s.store === 'エルズ';
     if(storeFilter === 'soleil') return s.store === 'soleil' || s.store === 'soleil by ailes';
     return true;
   });
-
   const colors = ['#c9a96e','#4a7c59','#2980b9','#7d3c98','#c0392b','#e67e22','#1abc9c','#e74c3c','#3498db','#9b59b6'];
-
-  const datasets = staff.map((s,idx) => {
-    const rateData = monthList.map(({y,m}) => {
+  const datasets = staff.map((s,idx) => ({
+    label: s.name,
+    data: monthList.map(({y,m}) => {
       const prefix = `${y}-${String(m).padStart(2,'0')}`;
       const recs = (data||[]).filter(r => r.staff_id === s.id && r.date.startsWith(prefix));
-      const totalV = recs.reduce((a,r)=>a+r.visitor_count,0);
-      const totalN = recs.reduce((a,r)=>a+r.next_reservation_count,0);
-      return totalV > 0 ? Math.round(totalN/totalV*100) : null;
-    });
-    return {
-      label: s.name,
-      data: rateData,
-      borderColor: colors[idx%colors.length],
-      backgroundColor: colors[idx%colors.length]+'22',
-      tension: 0.4,
-      spanGaps: true,
-      pointRadius: 5,
-      pointHoverRadius: 7,
-    };
-  });
-
+      const tv = recs.reduce((a,r)=>a+r.visitor_count,0);
+      const tn = recs.reduce((a,r)=>a+r.next_reservation_count,0);
+      return tv > 0 ? Math.round(tn/tv*100) : null;
+    }),
+    borderColor: colors[idx%colors.length],
+    backgroundColor: colors[idx%colors.length]+'22',
+    tension: 0.4, spanGaps: true, pointRadius: 5, pointHoverRadius: 7,
+  }));
   if(growthChart) growthChart.destroy();
   const ctx = document.getElementById('growth-chart').getContext('2d');
   growthChart = new Chart(ctx, {
-    type: 'line',
-    data: { labels, datasets },
+    type: 'line', data: { labels, datasets },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { position: 'bottom', labels: { font: { family: 'Noto Sans JP', size: 11 } } },
-        tooltip: {
-          callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y+'%' : 'データなし'}` }
-        }
+        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y!=null?ctx.parsed.y+'%':'データなし'}` } }
       },
       scales: {
-        y: {
-          min: 0, max: 100,
-          ticks: { callback: v => v+'%', font: { size: 11 } },
-          title: { display: true, text: '次回予約率 (%)', font: { size: 11 } }
-        },
-        x: { ticks: { font: { size: 11 } } }
+        y: { min:0, max:100, ticks:{callback:v=>v+'%',font:{size:11}}, title:{display:true,text:'次回予約率 (%)',font:{size:11}} },
+        x: { ticks:{font:{size:11}} }
       }
     }
   });
 }
 
-// ===== START =====
 init();
 </script>
 </body>
