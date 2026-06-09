@@ -501,8 +501,8 @@ async function loadAll(){
       sb.from('progress').select('*'),
     ]);
     students=s.data||[];categories=c.data||[];curricula=cu.data||[];progressRows=pr.data||[];
-  }catch(e){console.error(e);}
-  document.getElementById('loading').style.display='none';
+}catch(e){console.error(e);document.getElementById('loading').style.display='none';alert('読み込みエラー: '+e.message);}
+document.getElementById('loading').style.display='none';
 }
 
 // ── PAGE NAVIGATION ──
