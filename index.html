@@ -678,10 +678,18 @@ function renderStaffPage(){
   const storeF=document.getElementById('sf-store-filter').value;
   const posF=document.getElementById('sf-pos-filter').value;
   const showInactive=document.getElementById('sf-show-inactive').checked;
+  const POS_ORDER=['管理者','代表','店長','チーフ','スタイリスト','Jrスタイリスト','カラーリスト','アシスタント','レセプション'];
   let list=students;
   if(!showInactive)list=list.filter(s=>s.is_active!==false);
   if(storeF)list=list.filter(s=>s.store.includes(storeF));
   if(posF)list=list.filter(s=>s.position===posF);
+  list=list.slice().sort((a,b)=>{
+    const ai=POS_ORDER.indexOf(a.position||'');
+    const bi=POS_ORDER.indexOf(b.position||'');
+    const av=ai===-1?999:ai;
+    const bv=bi===-1?999:bi;
+    return av-bv;
+  });
   const grid=document.getElementById('staff-grid');
   if(!list.length){grid.innerHTML='<div style="color:var(--soft);font-size:13px">該当するスタッフがいません</div>';return;}
   grid.innerHTML=list.map(s=>`
