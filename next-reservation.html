@@ -473,3 +473,46 @@ async function renderRanking() {
     </div>`;
   }).join('');
 }
+
+async function renderGraph() {
+  const months = parseInt(document.getElementById('graph-months').value);
+  const storeFilter = document.getElementById('store-filter-graph').value;
+  const now = new Date(2026, 5, 1);
+  const labels = [], monthList = [];
+  for(let i=months-1; i>=0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    labels.push(`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}`);
+    monthList.push({y:d.getFullYear(), m:d.getMonth()+1});
+  }
+  const startDate = `${monthList[0].y}-${String(monthList[0].m).padStart(2,'0')}-01`;
+  const lastM = monthList[monthList.length-1];
+  const endDate = new Date(lastM.y, lastM.m, 0).toISOString().split('T')[0];
+  const { data } = await sb.from('next_reservations').select('staff_id,date,visitor_count,next_reservation_count').gte('date',startDate).lte('date',endDate);
+
+  const elsStaff = allStaff.filter(s => s.store==='els'||s.store==='エルズ');
+  const soleilStaff = allStaff.filter(s => s.store==='soleil'||s.store==='soleil by ailes');
+  const calcRate = (staffList, {y,m}) => {
+    const prefix = `${y}-${String(m).padStart(2,'0')}`;
+    const recs = (data||[]).filter(r => staffList.some(s=>s.id===r.staff_id) && r.date.startsWith(prefix));
+    const tv = recs.reduce((a,r)=>a+r.visitor_count,0);
+    const tn = recs.reduce((a,r)=>a+r.next_reservation_count,0);
+    return tv > 0 ? Math.round(tn/tv*100) : null;
+  };
+
+  if(window.storeChart) window.storeChart.destroy();
+  window.storeChart = new Chart(document.getElementById('store-chart').getContext('2d'), {
+    type:'line',
+    data:{ labels, datasets:[
+      {label:'エルズ', data:monthList.map(m=>calcRate(elsStaff,m)), borderColor:'#c9a96e', backgroundColor:'#c9a96e22', borderWidth:3, tension:0.4, spanGaps:true, pointRadius:5},
+      {label:'soleil', data:monthList.map(m=>calcRate(soleilStaff,m)), borderColor:'#4a7c59', backgroundColor:'#4a7c5922', borderWidth:3, tension:0.4, spanGaps:true, pointRadius:5},
+      {label:'両店合計', data:monthList.map(m=>calcRate(allStaff,m)), borderColor:'#2980b9', backgroundColor:'#2980b922', borderWidth:3, tension:0.4, spanGaps:true, pointRadius:5},
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{position:'bottom', labels:{font:{family:'Noto Sans JP',size:12}}}, tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y!=null?c.parsed.y+'%':'データなし'}`}} }, scales:{ y:{min:0,max:100,ticks:{callback:v=>v+'%'}}, x:{ticks:{font:{size:11}}} } }
+  });
+
+  let staff = allStaff.filter(s => {
+    if(storeFilter==='els') return s.store==='els'||s.store==='エルズ';
+    if(storeFilter==='soleil') return s.store==='soleil'||s.store==='soleil by ailes';
+    return true;
+  });
+  const colors = ['#c9a96e','#4a7c59','#2980b9','#7d3c98','#c0392b','#e67e22','#1abc9c','#e74c3c','#3498db','
