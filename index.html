@@ -219,9 +219,7 @@ td.wrap{white-space:normal;min-width:120px;}
         <select class="form-sel" id="sm-store" onchange="toggleSmPw()">
           <option value="エルズ">エルズ</option>
           <option value="soleil">soleil</option>
-          <option value="エルズ（管理）">エルズ（管理）</option>
-          <option value="soleil（管理）">soleil（管理）</option>
-          <option value="管理（全体）">管理（全体）</option>
+          <option value="両店">両店</option>
         </select>
       </div>
       <div class="form-group"><label>役職</label>
@@ -447,6 +445,7 @@ td.wrap{white-space:normal;min-width:120px;}
       <option value="">すべての店舗</option>
       <option value="エルズ">エルズ</option>
       <option value="soleil">soleil</option>
+      <option value="両店">両店</option>
     </select>
     <select class="filter-sel" id="sf-pos-filter" onchange="renderStaffPage()">
       <option value="">すべての役職</option>
@@ -892,9 +891,9 @@ function renderCurrTable(){
     const cc=CAT_COLORS[catName]||'#f0ece8';
     const catBadge=`<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:500;background:${cc}">${esc(catName)}</span>`;
 
-    const plannedCell=editable?`<input type="date" class="date-inp" data-id="${r.id}" data-f="planned_start_date" value="${esc(r.planned_start_date||'')}">`:`<span class="plain">${esc(r.planned_start_date)||'—'}</span>`;
-    const startCell=editable?`<input type="date" class="date-inp" data-id="${r.id}" data-f="start_date" value="${esc(r.start_date||'')}">`:`<span class="plain">${esc(r.start_date)||'—'}</span>`;
-    const examCell=editable?`<input type="date" class="date-inp" data-id="${r.id}" data-f="exam_date" value="${esc(r.exam_date||'')}">`:`<span class="plain">${esc(r.exam_date)||'—'}</span>`;
+    const plannedCell=editable?`<div style="display:flex;align-items:center;gap:3px"><input type="date" class="date-inp" data-id="${r.id}" data-f="planned_start_date" value="${esc(r.planned_start_date||'')}">${r.planned_start_date?`<button onclick="clearDate('${r.id}','planned_start_date',this)" style="background:none;border:none;color:#c4b49e;cursor:pointer;font-size:14px;padding:0 2px" title="クリア">×</button>`:''}</div>`:`<span class="plain">${esc(r.planned_start_date)||'—'}</span>`;
+    const startCell=editable?`<div style="display:flex;align-items:center;gap:3px"><input type="date" class="date-inp" data-id="${r.id}" data-f="start_date" value="${esc(r.start_date||'')}">${r.start_date?`<button onclick="clearDate('${r.id}','start_date',this)" style="background:none;border:none;color:#c4b49e;cursor:pointer;font-size:14px;padding:0 2px" title="クリア">×</button>`:''}</div>`:`<span class="plain">${esc(r.start_date)||'—'}</span>`;
+    const examCell=editable?`<div style="display:flex;align-items:center;gap:3px"><input type="date" class="date-inp" data-id="${r.id}" data-f="exam_date" value="${esc(r.exam_date||'')}">${r.exam_date?`<button onclick="clearDate('${r.id}','exam_date',this)" style="background:none;border:none;color:#c4b49e;cursor:pointer;font-size:14px;padding:0 2px" title="クリア">×</button>`:''}</div>`:`<span class="plain">${esc(r.exam_date)||'—'}</span>`;
     const countCell=editable?`<select class="tbl-sel" data-id="${r.id}" data-f="exam_count">${countOpts(r.exam_count)}</select>`:`<span class="plain">${r.exam_count||0}</span>`;
     const scoreCell=editable?`<input type="number" class="num-inp" data-id="${r.id}" data-f="score" min="0" max="100" placeholder="—" value="${esc(r.score||'')}">`:`<span class="plain">${esc(r.score)||'—'}</span>`;
     const statusCell=editable?`<select class="tbl-sel s-${r.status}" data-id="${r.id}" data-f="status">${statusOpts(r.status)}</select>`:`<span class="plain badge badge-${r.status}">${esc(r.status)}</span>`;
@@ -945,6 +944,15 @@ function updateStats(rows){
   document.getElementById('s-pass').textContent=pass;
   document.getElementById('s-prog').textContent=prog;
   document.getElementById('s-pct').textContent=pct+'%';
+}
+
+async function clearDate(id,field,btn){
+  await updateProgress(id,field,null);
+  // Remove the clear button and clear the input
+  const wrap=btn.parentElement;
+  const inp=wrap.querySelector('input[type="date"]');
+  if(inp)inp.value='';
+  btn.remove();
 }
 
 async function updateProgress(id,field,value){
