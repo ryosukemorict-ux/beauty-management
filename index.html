@@ -444,7 +444,6 @@ async function loadAll(){
     return;
   }
   document.getElementById('loading').style.display='none';
-  alert('スタッフ数:'+students.length+' 対象:'+students.filter(function(s){return ['Jrスタイリスト','カラーリスト','アシスタント'].includes(s.position);}).length);
 }
 
 function showPage(name){
@@ -966,6 +965,7 @@ function renderAll(){
   currentPage='dashboard';
   applyAuth();
   renderDashboard();
+  renderCurriculumPage();
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
   document.getElementById('page-dashboard').classList.add('active');
 })();
