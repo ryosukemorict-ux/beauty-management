@@ -263,12 +263,13 @@ function renderTable(){
           const sr=sv>0?Math.round(sn/sv*100):0;
           return `<td>${sv||'-'} / ${sn||'-'} / ${badge(sr,sv>0)}</td>`;
         }).join('');
-        let tv=0,tn=0;
-        for(let x=sd;x<=d;x++){
-          const xds=`${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(x).padStart(2,'0')}`;
-          (allReservations||[]).filter(r=>r.date===xds).forEach(r=>{tv+=r.visitor_count||0;tn+=r.next_reservation_count||0;});
-        }
-        const tr2=tv>0?Math.round(tn/tv*100):0;
+              let tv=0,tn=0;
+        document.querySelectorAll(`#table-body tr:not(.sub)`).forEach(tr=>{
+          const ds=tr.querySelector('td')?.textContent?.trim();
+          if(!ds)return;
+          tr.querySelectorAll('select[data-type="visitor"]').forEach(el=>tv+=parseInt(el.value)||0);
+          tr.querySelectorAll('select[data-type="next_res"]').forEach(el=>tn+=parseInt(el.value)||0);
+        });
         sub.innerHTML=`<td>${lbl}</td>${sc}${sf==='both'?`<td>${tv||'-'}</td><td>${tn||'-'}</td><td>${badge(tr2,tv>0)}</td>`:''}`;
         body.appendChild(sub);
       }
