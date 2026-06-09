@@ -248,7 +248,7 @@ function renderTable(){
     tr.innerHTML=`<td style="font-weight:500;white-space:nowrap">${currentMonth}/${d}(${dow})</td>${cells}${sf==='both'?`<td>${rv||'-'}</td><td>${rn||'-'}</td><td>${badge(rrate,rv>0)}</td>`:''}`;
     body.appendChild(tr);
           if(d%10===0||d===days){
-        const sd=d<=10?1:d<=20?11:21;
+        const sd=d===days?1:d<=10?1:d<=20?11:21;
         const lbl=d===days?'月末合計':`〜${d}日 小計`;
         const sub=document.createElement('tr');
         sub.className='sub';
