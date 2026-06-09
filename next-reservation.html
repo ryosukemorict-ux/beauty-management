@@ -263,19 +263,20 @@ function renderTable(){
   const sr=sv>0?Math.round(sn/sv*100):0;
   return `<td>${sv||'-'} / ${sn||'-'} / ${badge(sr,sv>0)}</td>`;
 }).join('');
-              let tv=0,tn=0;
-        document.querySelectorAll(`#table-body select[data-type="visitor"]`).forEach(s=>{
-          const d=s.dataset.date;
-          if(d>=`${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(sd).padStart(2,'0')}`&&d<=`${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(ed).padStart(2,'0')}`)tv+=parseInt(s.value)||0;
-        });
-        document.querySelectorAll(`#table-body select[data-type="next_res"]`).forEach(s=>{
-          const d=s.dataset.date;
-          if(d>=`${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(sd).padStart(2,'0')}`&&d<=`${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(ed).padStart(2,'0')}`)tn+=parseInt(s.value)||0;
-        });
+                let tv=0,tn=0;
+        if(sf==='both'){
+          document.querySelectorAll(`#table-body select[data-type="visitor"]`).forEach(s=>{
+            const d=s.dataset.date;
+            if(d>=`${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(sd).padStart(2,'0')}`&&d<=`${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(ed).padStart(2,'0')}`)tv+=parseInt(s.value)||0;
+          });
+          document.querySelectorAll(`#table-body select[data-type="next_res"]`).forEach(s=>{
+            const d=s.dataset.date;
+            if(d>=`${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(sd).padStart(2,'0')}`&&d<=`${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(ed).padStart(2,'0')}`)tn+=parseInt(s.value)||0;
+          });
+        }
         const tr2=tv>0?Math.round(tn/tv*100):0;
         sub.innerHTML=`<td>${lbl}</td>${sc}${sf==='both'?`<td>${tv||'-'}</td><td>${tn||'-'}</td><td>${badge(tr2,tv>0)}</td>`:''}`;
-      body.appendChild(sub);
-    }
+        body.appendChild(sub);
   }
   updateSummary(mv,mn);
 }
