@@ -924,8 +924,43 @@ function renderOverview(){
   if(!allRows.length){tb.innerHTML='<tr><td colspan="15" class="empty-td">該当データなし</td></tr>';return;}
   tb.innerHTML=allRows.map(function(row){
     const s=row.s,r=row.r,catName=row.catName,curName=row.curName,total=row.total,pass=row.pass,pct=row.pct;
-    return '<tr><td><strong>'+esc(s.name)+'</strong></td><td>'+esc(s.store)+'</td><td>'+esc(s.position||'—')+'</td><td>'+esc(catName)+'</td><td>'+esc(curName)+'</td><td>'+esc(getGoalHours(r?r.curriculum_id:null)||'—')+'</td><td>'+esc((r&&r.planned_start_date)||'—')+'</td><td>'+esc((r&&r.start_date)||'—')+'</td><td>'+esc((r&&r.exam_date)||'—')+'</td><td>'+(r?esc(r.exam_count||0):'—')+'</td><td>'+(r&&r.score?esc(r.score)+'点':'—')+'</td><td>'+(r?'<span class="badge badge-'+r.status+'">'+esc(r.status)+'</span>':'—')+'</td><td>'+esc((r&&r.teacher)||'—')+'</td><td style="white-space:normal;max-width:150px">'+esc((r&&r.memo)||'—')+'</td><td><div class="prog-wrap"><div class="prog-bg"><div class="prog-fill" style="width:'+pct+'%"></div></div><span style="font-size:11px;color:var(--mid)">'+pass+'/'+total+'</span></div></td></tr>';
+    if(!r)return '<tr><td><strong>'+esc(s.name)+'</strong></td><td>'+esc(s.store)+'</td><td>'+esc(s.position||'—')+'</td><td colspan="12" style="text-align:center;color:var(--soft)">データなし</td></tr>';
+    const cc=CAT_COLORS[catName]||'#f0ece8';
+    const catBadge='<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:500;background:'+cc+'">'+esc(catName)+'</span>';
+    const rid=r.id;
+    return '<tr>'
+      +'<td><strong>'+esc(s.name)+'</strong></td>'
+      +'<td>'+esc(s.store)+'</td>'
+      +'<td>'+esc(s.position||'—')+'</td>'
+      +'<td>'+catBadge+'</td>'
+      +'<td>'+esc(curName)+'</td>'
+      +'<td>'+esc(getGoalHours(r.curriculum_id)||'—')+'</td>'
+      +'<td><input type="date" class="date-inp ov-inp" data-id="'+rid+'" data-f="planned_start_date" value="'+esc(r.planned_start_date||'')+'"></td>'
+      +'<td><input type="date" class="date-inp ov-inp" data-id="'+rid+'" data-f="start_date" value="'+esc(r.start_date||'')+'"></td>'
+      +'<td><input type="date" class="date-inp ov-inp" data-id="'+rid+'" data-f="exam_date" value="'+esc(r.exam_date||'')+'"></td>'
+      +'<td><select class="tbl-sel ov-sel" data-id="'+rid+'" data-f="exam_count">'+countOpts(r.exam_count)+'</select></td>'
+      +'<td><input type="number" class="num-inp ov-inp" data-id="'+rid+'" data-f="score" min="0" max="100" placeholder="—" value="'+esc(r.score||'')+'"></td>'
+      +'<td><select class="tbl-sel s-'+r.status+' ov-sel" data-id="'+rid+'" data-f="status">'+statusOpts(r.status)+'</select></td>'
+      +'<td><select class="tbl-sel ov-sel" data-id="'+rid+'" data-f="teacher">'+teacherOpts(r.teacher)+'</select></td>'
+      +'<td style="white-space:normal;max-width:150px"><div class="ce ov-ce" contenteditable="true" data-id="'+rid+'" data-f="memo">'+esc(r.memo)+'</div></td>'
+      +'<td><div class="prog-wrap"><div class="prog-bg"><div class="prog-fill" style="width:'+pct+'%"></div></div><span style="font-size:11px;color:var(--mid)">'+pass+'/'+total+'</span></div></td>'
+      +'</tr>';
   }).join('');
+
+  // Add event listeners for overview editing
+  tb.querySelectorAll('.ov-sel').forEach(function(el){
+    el.addEventListener('change',function(){
+      if(el.dataset.f==='status')el.className='tbl-sel s-'+el.value+' ov-sel';
+      updateProgress(el.dataset.id,el.dataset.f,el.value);
+    });
+  });
+  tb.querySelectorAll('.ov-inp').forEach(function(el){
+    el.addEventListener('change',function(){updateProgress(el.dataset.id,el.dataset.f,el.value||null);});
+  });
+  tb.querySelectorAll('.ov-ce').forEach(function(el){
+    el.addEventListener('blur',function(){updateProgress(el.dataset.id,el.dataset.f,el.innerText.trim());});
+    el.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();el.blur();}});
+  });
 }
 
 function showMasterModal(){
