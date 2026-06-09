@@ -339,7 +339,6 @@ function renderTable() {
   subTr.innerHTML = `<td>${label}</td>${staffCells}${storeFilter==='both'?'<td></td><td></td><td></td>':''}`;
   body.appendChild(subTr);
 }
-  }
 
   // サマリー
   const monthRate = monthTotalVisitor > 0 ? Math.round(monthTotalReserv/monthTotalVisitor*100) : 0;
