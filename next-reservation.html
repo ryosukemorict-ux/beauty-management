@@ -381,7 +381,7 @@ async function renderRanking(){
 async function renderGraph(){
   const months=parseInt(document.getElementById('graph-months').value);
   const sf=document.getElementById('store-filter-graph').value;
-  const now=new Date(2026,5,1);
+  const now=new Date();
   const labels=[],ml=[];
   for(let i=months-1;i>=0;i--){
     const d=new Date(now.getFullYear(),now.getMonth()-i,1);
