@@ -308,7 +308,7 @@ td.wrap{white-space:normal;min-width:120px;}
     <div style="font-family:'Playfair Display',serif;font-size:22px;color:var(--dark);margin-bottom:6px">Welcome, <span id="dash-name"></span></div>
     <div style="font-size:13px;color:var(--mid)" id="dash-sub"></div>
   </div>
-  <div class="func-grid" id="func-grid"></div>
+  <div id="func-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;max-width:480px;margin:0 auto;padding:0 16px"></div>
   <div style="text-align:center;margin-top:24px">
     <button class="btn btn-outline btn-sm" onclick="showPwModal()">🔑 パスワード変更</button>
   </div>
@@ -551,16 +551,20 @@ function renderDashboard(){
     if(pwBtn)pwBtn.style.display='none';
   }
   const grid=document.getElementById('func-grid');
+  const disabled_style='opacity:0.4;cursor:not-allowed;';
+  const card_style='background:white;border:2px solid #e8d5b0;border-radius:14px;padding:22px 12px 18px;text-align:center;cursor:pointer;transition:all 0.2s;';
   grid.innerHTML=FUNC_LIST.map(f=>{
     const accessible=canAccessFunc(f);
     const locked=!accessible&&f.minRole;
     const soon=f.comingSoon;
     const clickable=accessible&&!soon;
-    return `<div class="func-card${locked||soon?' disabled':''}" ${clickable?`onclick="showPage('${f.id}')"`:''}> 
-      <div class="func-card-icon">${f.icon}</div>
-      <div class="func-card-name">${f.name}</div>
-      <div class="func-card-desc">${f.desc}</div>
-      ${soon?'<div class="func-card-lock">🔒 準備中</div>':locked?'<div class="func-card-lock">🔒 権限なし</div>':''}
+    const extra=locked||soon?disabled_style:'';
+    return `<div style="${card_style}${extra}" ${clickable?`onclick="showPage('${f.id}')"`:''}
+      onmouseenter="if(!this.style.opacity)this.style.cssText+=';border-color:#c9a96e;box-shadow:0 4px 16px rgba(201,169,110,0.3);transform:translateY(-2px)'"
+      onmouseleave="if(!this.style.opacity)this.style.cssText=this.style.cssText.replace(/border-color:[^;]+;|box-shadow:[^;]+;|transform:[^;]+;/g,'')">
+      <div style="font-size:36px;margin-bottom:10px">${f.icon}</div>
+      <div style="font-size:13px;font-weight:700;color:#1a1410">${f.name}</div>
+      ${soon?'<div style="font-size:10px;color:#c4b49e;margin-top:6px">🔒 準備中</div>':locked?'<div style="font-size:10px;color:#c4b49e;margin-top:6px">🔒 権限なし</div>':''}
     </div>`;
   }).join('');
 }
