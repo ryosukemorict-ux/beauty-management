@@ -254,15 +254,15 @@ function renderTable(){
       sub.className='sub';
       sub.dataset.sd=sd;sub.dataset.ed=d;
       const sc=staff.map(s=>{
-        let sv=0,sn=0;
-        for(let x=sd;x<=d;x++){
-          const xds=`${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(x).padStart(2,'0')}`;
-          document.querySelectorAll(`select[data-staff="${s.id}"][data-date="${xds}"][data-type="visitor"]`).forEach(el=>sv+=parseInt(el.value)||0);
-          document.querySelectorAll(`select[data-staff="${s.id}"][data-date="${xds}"][data-type="next_res"]`).forEach(el=>sn+=parseInt(el.value)||0);
-        }
-        const sr=sv>0?Math.round(sn/sv*100):0;
-        return `<td>${sv||'-'} / ${sn||'-'} / ${badge(sr,sv>0)}</td>`;
-      }).join('');
+  let sv=0,sn=0;
+  for(let x=sd;x<=d;x++){
+    const xds=`${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(x).padStart(2,'0')}`;
+    const rec=allReservations.find(r=>r.staff_id===s.id&&r.date===xds);
+    if(rec){sv+=rec.visitor_count||0;sn+=rec.next_reservation_count||0;}
+  }
+  const sr=sv>0?Math.round(sn/sv*100):0;
+  return `<td>${sv||'-'} / ${sn||'-'} / ${badge(sr,sv>0)}</td>`;
+}).join('');
       let tv=0,tn=0;
       if(sf==='both'){
         for(let x=sd;x<=d;x++){
