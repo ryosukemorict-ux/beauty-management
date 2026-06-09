@@ -265,7 +265,7 @@ function renderTable(){
         }).join('');
         let tv=0,tn=0;
         for(let x=sd;x<=d;x++){
-          const xds=`${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(x).padStart(2,'0')}`;
+          const xds=`${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(x).padStart(2,'0')}`;console.log('xds:',xds,'data:',allReservations.length);
           allReservations.filter(r=>String(r.date)===String(xds)).forEach(r=>{tv+=r.visitor_count||0;tn+=r.next_reservation_count||0;});
         }
         const tr2=tv>0?Math.round(tn/tv*100):0;
