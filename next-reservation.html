@@ -334,6 +334,8 @@ function updateTotals(){
       if(tds[li+2])tds[li+2].innerHTML=badge(tr2,tv>0);
     }
   });
+    const monthSub=document.querySelector('#table-body tr.sub[data-ed="'+new Date(currentYear,currentMonth,0).getDate()+'"]');
+  if(monthSub){const mtds=monthSub.querySelectorAll('td');let mtv=0,mtn=0;document.querySelectorAll('#table-body select[data-type="visitor"]').forEach(el=>mtv+=parseInt(el.value)||0);document.querySelectorAll('#table-body select[data-type="next_res"]').forEach(el=>mtn+=parseInt(el.value)||0);const mtr=mtv>0?Math.round(mtn/mtv*100):0;const mli=staff.length+1;if(mtds[mli])mtds[mli].textContent=mtv||'-';if(mtds[mli+1])mtds[mli+1].textContent=mtn||'-';if(mtds[mli+2])mtds[mli+2].innerHTML=badge(mtr,mtv>0);}
 }
 
 function autoSave(sid,date){
