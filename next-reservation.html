@@ -161,7 +161,15 @@ let growthChart = null;
 
 async function init() {
   const { data, error } = await sb.from('students').select('id,name,store,position,is_active').eq('is_active', true).order('store').order('name');
-  if (!error && data) allStaff = data;
+if (!error && data) {
+  const posOrder = ['店長','副店長','スタイリスト','アシスタント'];
+  allStaff = data.sort((a,b) => {
+    const ai = posOrder.indexOf(a.position); 
+    const bi = posOrder.indexOf(b.position);
+    return (ai===-1?99:ai) - (bi===-1?99:bi);
+  });
+}
+
   await loadReservations();
   renderTable();
 }
