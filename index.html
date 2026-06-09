@@ -494,12 +494,13 @@ function canViewOverview(){return ME&&(isAdminStore(ME.store)||CURR_EDITOR_ROLES
 async function loadAll(){
   document.getElementById('loading').style.display='flex';
   try{
-    const [s,c,cu,pr]=await Promise.all([
+    const timeout=new Promise((_,r)=>setTimeout(()=>r(new Error('タイムアウト')),10000));
+const [s,c,cu,pr]=await Promise.race([Promise.all([
       sb.from('students').select('*').order('created_at'),
       sb.from('categories').select('*').order('sort_order'),
       sb.from('curriculum_master').select('*').order('sort_order'),
       sb.from('progress').select('*'),
-    ]);
+  ]),timeout]);
     students=s.data||[];categories=c.data||[];curricula=cu.data||[];progressRows=pr.data||[];
 }catch(e){console.error(e);document.getElementById('loading').style.display='none';alert('読み込みエラー: '+e.message);}
 document.getElementById('loading').style.display='none';
