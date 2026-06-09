@@ -271,7 +271,7 @@ function renderTable(){
           tr.querySelectorAll('select[data-type="next_res"]').forEach(el=>tn+=parseInt(el.value)||0);
         });
             const tr2=tv>0?Math.round(tn/tv*100):0;
-        sub.innerHTML=`<td>${lbl}</td>${sc}${sf==='both'?`<td>${tv||'-'}</td><td>${tn||'-'}</td><td>${badge(tr2,tv>0)}</td>`:''}`;
+        sub.innerHTML=`<td>${lbl}</td>${sc}${sf==='both'?`<td>${tv>0?tv:'-'}</td><td>${tn>0?tn:'-'}</td><td>${badge(tr2,tv>0)}</td>`:''}`;
         body.appendChild(sub);
       }
       updateSummary(mv,mn);
