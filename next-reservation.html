@@ -299,8 +299,8 @@ function renderTable() {
       rowVisitor += v; rowReserv += n;
       const rateClass = rate >= 70 ? 'rate-high' : rate >= 50 ? 'rate-mid' : (v>0?'rate-low':'');
       return `<td>
-        <input type="number" min="0" max="99" value="${v}" data-staff="${s.id}" data-date="${dateStr}" data-type="visitor" style="width:44px" oninput="recalcRate(this)">
-        <input type="number" min="0" max="99" value="${n}" data-staff="${s.id}" data-date="${dateStr}" data-type="next_res" style="width:44px" oninput="recalcRate(this)">
+        <select data-staff="${s.id}" data-date="${dateStr}" data-type="visitor" onchange="recalcRate(this)" style="width:44px;border:1px solid #e8d5b0;border-radius:6px;padding:2px;font-size:12px">${[...Array(31)].map((_,i)=>`<option value="${i}" ${v==i?'selected':''}>${i}</option>`).join('')}</select>
+<select data-staff="${s.id}" data-date="${dateStr}" data-type="next_res" onchange="recalcRate(this)" style="width:44px;border:1px solid #e8d5b0;border-radius:6px;padding:2px;font-size:12px">${[...Array(31)].map((_,i)=>`<option value="${i}" ${n==i?'selected':''}>${i}</option>`).join('')}</select>
         <span class="rate-badge ${rateClass}" id="rate-${s.id}-${dateStr}">${v>0?rate+'%':'-'}</span>
       </td>`;
     }).join('');
