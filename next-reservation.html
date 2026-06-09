@@ -270,6 +270,7 @@ function renderTable(){
           tr.querySelectorAll('select[data-type="visitor"]').forEach(el=>tv+=parseInt(el.value)||0);
           tr.querySelectorAll('select[data-type="next_res"]').forEach(el=>tn+=parseInt(el.value)||0);
         });
+            const tr2=tv>0?Math.round(tn/tv*100):0;
         sub.innerHTML=`<td>${lbl}</td>${sc}${sf==='both'?`<td>${tv||'-'}</td><td>${tn||'-'}</td><td>${badge(tr2,tv>0)}</td>`:''}`;
         body.appendChild(sub);
       }
