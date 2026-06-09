@@ -289,9 +289,9 @@ td.wrap{white-space:normal;min-width:120px;}
     </div>
   </div>
   <!-- 個人/全体 タブ -->
-  <div id="curr-tab-switcher" style="display:none;margin-bottom:14px;gap:8px;display:flex">
-    <button class="btn btn-dark btn-sm" id="curr-tab-individual" onclick="switchCurrTab('individual')">👤 個人</button>
-    <button class="btn btn-ghost btn-sm" id="curr-tab-overview" onclick="switchCurrTab('overview')">📊 全体</button>
+  <div id="curr-tab-switcher" style="display:none;margin-bottom:16px;gap:10px">
+    <button id="curr-tab-individual" onclick="switchCurrTab('individual')" style="font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:700;padding:10px 24px;border-radius:9px;border:2px solid var(--gold);background:var(--gold);color:white;cursor:pointer;">👤 個人</button>
+    <button id="curr-tab-overview" onclick="switchCurrTab('overview')" style="font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:700;padding:10px 24px;border-radius:9px;border:2px solid var(--gold);background:white;color:var(--gold);cursor:pointer;">📊 全体</button>
   </div>
 
   <div id="curr-individual-section">
@@ -725,13 +725,13 @@ function switchCurrTab(tab){
   if(tab==='individual'){
     individual.style.display='';
     overview.style.display='none';
-    btnI.className='btn btn-dark btn-sm';
-    btnO.className='btn btn-ghost btn-sm';
+    btnI.style.cssText='font-family:"Noto Sans JP",sans-serif;font-size:14px;font-weight:700;padding:10px 24px;border-radius:9px;border:2px solid var(--gold);background:var(--gold);color:white;cursor:pointer;';
+    btnO.style.cssText='font-family:"Noto Sans JP",sans-serif;font-size:14px;font-weight:700;padding:10px 24px;border-radius:9px;border:2px solid var(--gold);background:white;color:var(--gold);cursor:pointer;';
   } else {
     individual.style.display='none';
     overview.style.display='';
-    btnI.className='btn btn-ghost btn-sm';
-    btnO.className='btn btn-dark btn-sm';
+    btnI.style.cssText='font-family:"Noto Sans JP",sans-serif;font-size:14px;font-weight:700;padding:10px 24px;border-radius:9px;border:2px solid var(--gold);background:white;color:var(--gold);cursor:pointer;';
+    btnO.style.cssText='font-family:"Noto Sans JP",sans-serif;font-size:14px;font-weight:700;padding:10px 24px;border-radius:9px;border:2px solid var(--gold);background:var(--gold);color:white;cursor:pointer;';
     renderOverview();
   }
 }
@@ -751,8 +751,8 @@ function renderCurriculumPage(){
   if(overview){
     const btnI=document.getElementById('curr-tab-individual');
     const btnO=document.getElementById('curr-tab-overview');
-    if(btnI)btnI.className='btn btn-dark btn-sm';
-    if(btnO)btnO.className='btn btn-ghost btn-sm';
+    if(btnI)btnI.style.cssText='font-family:"Noto Sans JP",sans-serif;font-size:14px;font-weight:700;padding:10px 24px;border-radius:9px;border:2px solid var(--gold);background:var(--gold);color:white;cursor:pointer;';
+    if(btnO)btnO.style.cssText='font-family:"Noto Sans JP",sans-serif;font-size:14px;font-weight:700;padding:10px 24px;border-radius:9px;border:2px solid var(--gold);background:white;color:var(--gold);cursor:pointer;';
     const ind=document.getElementById('curr-individual-section');
     if(ind)ind.style.display='';
   }
