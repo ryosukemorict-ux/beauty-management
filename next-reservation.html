@@ -357,12 +357,38 @@ function recalcRate(input) {
 }
 
 function updateTotals() {
-  const rows = document.querySelectorAll('#table-body tr:not(.subtotal):not(.total)');
+  const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+  const storeFilter = document.getElementById('store-filter-table').value;
   let monthV = 0, monthN = 0;
-  rows.forEach(row => {
-    row.querySelectorAll('select[data-type="visitor"]').forEach(s => monthV += parseInt(s.value)||0);
-    row.querySelectorAll('select[data-type="next_res"]').forEach(s => monthN += parseInt(s.value)||0);
+
+  for(let d=1; d<=daysInMonth; d++) {
+    const dateStr = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const rows = document.querySelectorAll(`#table-body tr`);
+    rows.forEach(row => {
+      row.querySelectorAll(`select[data-date="${dateStr}"][data-type="visitor"]`).forEach(s => monthV += parseInt(s.value)||0);
+      row.querySelectorAll(`select[data-date="${dateStr}"][data-type="next_res"]`).forEach(s => monthN += parseInt(s.value)||0);
+    });
+  }
+
+  // 10日ごと小計更新
+  document.querySelectorAll('#table-body tr.subtotal').forEach(subTr => {
+    const label = subTr.querySelector('td')?.textContent || '';
+    const match = label.match(/〜(\d+)日/);
+    const endDay = match ? parseInt(match[1]) : daysInMonth;
+    const startDay = endDay === 10 ? 1 : endDay === 20 ? 11 : 21;
+    let sv = 0, sn = 0;
+    for(let d=startDay; d<=endDay; d++) {
+      const dateStr = `${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      document.querySelectorAll(`select[data-date="${dateStr}"][data-type="visitor"]`).forEach(s => sv += parseInt(s.value)||0);
+      document.querySelectorAll(`select[data-date="${dateStr}"][data-type="next_res"]`).forEach(s => sn += parseInt(s.value)||0);
+    }
+    const sr = sv > 0 ? Math.round(sn/sv*100) : 0;
+    const tds = subTr.querySelectorAll('td');
+    if(tds[1]) tds[1].textContent = sv || '-';
+    if(tds[2]) tds[2].textContent = sn || '-';
+    if(tds[3]) tds[3].innerHTML = sv > 0 ? `<span class="rate-badge ${sr>=70?'rate-high':sr>=50?'rate-mid':'rate-low'}">${sr}%</span>` : '-';
   });
+
   const monthRate = monthV > 0 ? Math.round(monthN/monthV*100) : 0;
   document.getElementById('table-summary').innerHTML = `
     <div class="stat"><div class="stat-n">${monthV}</div><div class="stat-l">月間来客数</div></div>
@@ -370,6 +396,7 @@ function updateTotals() {
     <div class="stat"><div class="stat-n" style="color:${monthRate>=70?'var(--green)':monthRate>=50?'#856404':'var(--red)'}">${monthRate}%</div><div class="stat-l">月間次回予約率</div></div>
   `;
 }
+
 
 // ===== SAVE =====
 async function saveAll() {
