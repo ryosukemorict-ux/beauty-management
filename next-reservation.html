@@ -348,6 +348,7 @@ function recalcRate(input) {
     badge.className = 'rate-badge ' + (rate>=70?'rate-high':rate>=50?'rate-mid':(v>0?'rate-low':''));
   }
   updateTotals();
+autoSave(staffId, date);
 }
 
 function updateTotals() {
@@ -374,7 +375,6 @@ function updateTotals() {
         document.querySelectorAll(`select[data-staff="${s.id}"][data-date="${ds}"][data-type="visitor"]`).forEach(el => sv += parseInt(el.value)||0);
         document.querySelectorAll(`select[data-staff="${s.id}"][data-date="${ds}"][data-type="next_res"]`).forEach(el => sn += parseInt(el.value)||0);
       }
-      autoSave(input.dataset.staff, input.dataset.date);
       const sr = sv>0 ? Math.round(sn/sv*100) : 0;
       const rc = sr>=70?'rate-high':sr>=50?'rate-mid':(sv>0?'rate-low':'');
       if(tds[idx+1]) tds[idx+1].innerHTML = `${sv||'-'} / ${sn||'-'} / <span class="rate-badge ${rc}">${sv>0?sr+'%':'-'}</span>`;
