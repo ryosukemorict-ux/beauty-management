@@ -960,9 +960,8 @@ function renderAll(){
   await loadAll();
   const saved=localStorage.getItem('last_cid');
   const nonMgr=nonAdminStudents().filter(function(s){return s.is_active!==false;});
-  if(saved&&students.find(function(s){return s.id===saved;}))CID=saved;
+  if(saved&&nonMgr.find(function(s){return s.id===saved;}))CID=saved;
   else if(nonMgr.length)CID=nonMgr[0].id;
-  else if(students.length)CID=students[0].id;
   currentPage='dashboard';
   applyAuth();
   renderDashboard();
