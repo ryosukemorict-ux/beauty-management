@@ -343,8 +343,8 @@ function recalcRate(input) {
   const staffId = input.dataset.staff;
   const date = input.dataset.date;
   const row = input.closest('tr');
-  const vInput = row.querySelector(`input[data-staff="${staffId}"][data-date="${date}"][data-type="visitor"]`);
-  const nInput = row.querySelector(`input[data-staff="${staffId}"][data-date="${date}"][data-type="next_res"]`);
+  const vInput = row.querySelector(`select[data-staff="${staffId}"][data-date="${date}"][data-type="visitor"]`);
+const nInput = row.querySelector(`select[data-staff="${staffId}"][data-date="${date}"][data-type="next_res"]`);
   const v = parseInt(vInput?.value) || 0;
   const n = parseInt(nInput?.value) || 0;
   const rate = v > 0 ? Math.round(n/v*100) : 0;
@@ -357,7 +357,7 @@ function recalcRate(input) {
 
 // ===== SAVE =====
 async function saveAll() {
-  const inputs = document.querySelectorAll('#table-body input[type="number"]');
+  const inputs = document.querySelectorAll('#table-body select');
   const dataMap = {};
   inputs.forEach(inp => {
     const key = `${inp.dataset.staff}_${inp.dataset.date}`;
