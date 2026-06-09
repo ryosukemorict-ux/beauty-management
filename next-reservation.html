@@ -96,7 +96,7 @@ select.num-sel:focus{outline:none;border-color:var(--gold);}
           <option value="els">エルズ</option>
           <option value="soleil">soleil by ailes</option>
         </select>
-        <button class="btn btn-dark" onclick="saveAll()">💾 保存</button>
+     <span id="save-status" style="font-size:12px;color:var(--mid)"></span>
       </div>
       <div class="notice">📝 各自の来客数・次回予約数を入力してください。次回予約率は自動計算されます。</div>
       <div id="table-summary" class="summary"></div>
@@ -366,6 +366,7 @@ function updateTotals() {
         document.querySelectorAll(`select[data-staff="${s.id}"][data-date="${ds}"][data-type="visitor"]`).forEach(el => sv += parseInt(el.value)||0);
         document.querySelectorAll(`select[data-staff="${s.id}"][data-date="${ds}"][data-type="next_res"]`).forEach(el => sn += parseInt(el.value)||0);
       }
+      autoSave(input.dataset.staff, input.dataset.date);
       const sr = sv>0 ? Math.round(sn/sv*100) : 0;
       const rc = sr>=70?'rate-high':sr>=50?'rate-mid':(sv>0?'rate-low':'');
       if(tds[idx+1]) tds[idx+1].innerHTML = `${sv||'-'} / ${sn||'-'} / <span class="rate-badge ${rc}">${sv>0?sr+'%':'-'}</span>`;
@@ -387,6 +388,24 @@ function updateTotals() {
       if(tds[lastIdx+2]) tds[lastIdx+2].innerHTML = `<span class="rate-badge ${rc2}">${tv>0?tr2+'%':'-'}</span>`;
     }
   });
+}
+let saveTimers = {};
+function autoSave(staffId, date) {
+  const key = `${staffId}_${date}`;
+  clearTimeout(saveTimers[key]);
+  document.getElementById('save-status').textContent = '編集中...';
+  saveTimers[key] = setTimeout(async () => {
+    const vSel = document.querySelector(`select[data-staff="${staffId}"][data-date="${date}"][data-type="visitor"]`);
+    const nSel = document.querySelector(`select[data-staff="${staffId}"][data-date="${date}"][data-type="next_res"]`);
+    const v = parseInt(vSel?.value)||0;
+    const n = parseInt(nSel?.value)||0;
+    const { error } = await sb.from('next_reservations').upsert(
+      [{staff_id:staffId, date:date, visitor_count:v, next_reservation_count:n}],
+      {onConflict:'staff_id,date'}
+    );
+    document.getElementById('save-status').textContent = error ? '❌ 保存エラー' : '✅ 保存済み';
+    setTimeout(() => document.getElementById('save-status').textContent = '', 2000);
+  }, 1000);
 }
 
 async function saveAll() {
