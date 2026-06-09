@@ -473,35 +473,3 @@ async function renderRanking() {
     </div>`;
   }).join('');
 }
-<div id="sec-graph" class="section">
-  <div class="panel">
-    <div class="panel-title">📈 店舗平均グラフ</div>
-    <div class="filter-bar">
-      <label>表示期間：</label>
-      <select class="filter-sel" id="graph-months" onchange="renderGraph()">
-        <option value="6">直近6ヶ月</option>
-        <option value="12">直近12ヶ月</option>
-        <option value="3">直近3ヶ月</option>
-      </select>
-      <button class="btn btn-outline" onclick="renderGraph()">更新</button>
-    </div>
-    <div class="chart-wrap"><canvas id="store-chart"></canvas></div>
-  </div>
-  <div class="panel">
-    <div class="panel-title">📈 個人別グラフ</div>
-    <div class="filter-bar">
-      <label>店舗：</label>
-      <select class="filter-sel" id="store-filter-graph" onchange="renderGraph()">
-        <option value="both">全員</option>
-        <option value="els">エルズ</option>
-        <option value="soleil">soleil by ailes</option>
-      </select>
-    </div>
-    <div class="chart-wrap"><canvas id="growth-chart"></canvas></div>
-  </div>
-</div>
-
-init();
-</script>
-</body>
-</html>
