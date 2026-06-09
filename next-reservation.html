@@ -263,9 +263,12 @@ function renderTable(){
           const sr=sv>0?Math.round(sn/sv*100):0;
           return `<td>${sv||'-'} / ${sn||'-'} / ${badge(sr,sv>0)}</td>`;
         }).join('');
-              let tv=0,tn=0;
-                           document.querySelectorAll('#table-body select[data-type="visitor"]').forEach(el=>tv+=parseInt(el.value)||0);
-          document.querySelectorAll('#table-body select[data-type="next_res"]').forEach(el=>tn+=parseInt(el.value)||0);
+              let tv=0,tn=0;          allReservations.forEach(r=>{
+            const rd=new Date(r.date);
+            if(rd.getFullYear()===currentYear&&rd.getMonth()+1===currentMonth){
+              tv+=r.visitor_count||0;tn+=r.next_reservation_count||0;
+            }
+          });
             const tr2=tv>0?Math.round(tn/tv*100):0;
         sub.innerHTML=`<td>${lbl}</td>${sc}${sf==='both'?`<td>${tv>0?tv:'-'}</td><td>${tn>0?tn:'-'}</td><td>${badge(tr2,tv>0)}</td>`:''}`;
         body.appendChild(sub);
