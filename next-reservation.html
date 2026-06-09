@@ -320,13 +320,26 @@ function renderTable() {
     body.appendChild(tr);
 
     // 10日ごと小計
-    if(d % 10 === 0 || d === daysInMonth) {
-      const subTr = document.createElement('tr');
-      subTr.className = 'subtotal';
-      const label = d === daysInMonth ? '月末合計' : `〜${d}日 小計`;
-      subTr.innerHTML = `<td>${label}</td>${staff.map(s => {
-  let sv=0,sn=0;
-  for(let sd=startDay||1;sd<=d;sd++){
+  if(d % 10 === 0 || d === daysInMonth) {
+  const startDay = d<=10 ? 1 : d<=20 ? 11 : 21;
+  const subTr = document.createElement('tr');
+  subTr.className = 'subtotal';
+  const label = d === daysInMonth ? '月末合計' : `〜${d}日 小計`;
+  const staffCells = staff.map(s => {
+    let sv=0, sn=0;
+    for(let sd=startDay; sd<=d; sd++){
+      const ds=`${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(sd).padStart(2,'0')}`;
+      document.querySelectorAll(`select[data-staff="${s.id}"][data-date="${ds}"][data-type="visitor"]`).forEach(el=>sv+=parseInt(el.value)||0);
+      document.querySelectorAll(`select[data-staff="${s.id}"][data-date="${ds}"][data-type="next_res"]`).forEach(el=>sn+=parseInt(el.value)||0);
+    }
+    const sr=sv>0?Math.round(sn/sv*100):0;
+    const rc=sr>=70?'rate-high':sr>=50?'rate-mid':(sv>0?'rate-low':'');
+    return `<td>${sv||'-'} / ${sn||'-'} / <span class="rate-badge ${rc}">${sv>0?sr+'%':'-'}</span></td>`;
+  }).join('');
+  subTr.innerHTML = `<td>${label}</td>${staffCells}${storeFilter==='both'?'<td></td><td></td><td></td>':''}`;
+  body.appendChild(subTr);
+}
+
     const ds=`${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(sd).padStart(2,'0')}`;
     const rec=allReservations.find(r=>r.staff_id===s.id&&r.date===ds);
     if(rec){sv+=rec.visitor_count||0;sn+=rec.next_reservation_count||0;}
