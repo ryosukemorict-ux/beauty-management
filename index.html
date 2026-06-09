@@ -288,6 +288,13 @@ td.wrap{white-space:normal;min-width:120px;}
       <button class="btn btn-outline btn-sm" onclick="window.print()">🖨 印刷</button>
     </div>
   </div>
+  <!-- 個人/全体 タブ -->
+  <div id="curr-tab-switcher" style="display:none;margin-bottom:14px;gap:8px;display:flex">
+    <button class="btn btn-dark btn-sm" id="curr-tab-individual" onclick="switchCurrTab('individual')">👤 個人</button>
+    <button class="btn btn-ghost btn-sm" id="curr-tab-overview" onclick="switchCurrTab('overview')">📊 全体</button>
+  </div>
+
+  <div id="curr-individual-section">
   <div class="filter-bar">
     <label>絞り込み：</label>
     <select class="filter-sel" id="ind-cat-filter" onchange="renderCurrTable()">
@@ -334,6 +341,8 @@ td.wrap{white-space:normal;min-width:120px;}
     </table>
   </div>
   <div class="notice" id="curr-notice">👁 閲覧モードです。ログインすると編集できます。</div>
+  </div><!-- end curr-individual-section -->
+
   <div id="curr-overview" style="display:none;margin-top:20px">
     <div class="panel">
       <div class="panel-title">📊 全体進捗一覧</div>
@@ -708,6 +717,25 @@ function askReactivate(id){
   });
 }
 
+function switchCurrTab(tab){
+  const individual=document.getElementById('curr-individual-section');
+  const overview=document.getElementById('curr-overview');
+  const btnI=document.getElementById('curr-tab-individual');
+  const btnO=document.getElementById('curr-tab-overview');
+  if(tab==='individual'){
+    individual.style.display='';
+    overview.style.display='none';
+    btnI.className='btn btn-dark btn-sm';
+    btnO.className='btn btn-ghost btn-sm';
+  } else {
+    individual.style.display='none';
+    overview.style.display='';
+    btnI.className='btn btn-ghost btn-sm';
+    btnO.className='btn btn-dark btn-sm';
+    renderOverview();
+  }
+}
+
 function renderCurriculumPage(){
   const editable=canEditCurriculum();
   const overview=canViewOverview();
@@ -716,7 +744,18 @@ function renderCurriculumPage(){
   document.getElementById('curr-notice').style.display=editable?'none':'';
   document.getElementById('curr-add-row-btn').style.display=editable?'':'none';
   document.getElementById('del-col-th').style.display=editable?'':'none';
-  document.getElementById('curr-overview').style.display=overview?'':'none';
+  document.getElementById('curr-overview').style.display='none';
+  const switcher=document.getElementById('curr-tab-switcher');
+  if(switcher)switcher.style.display=overview?'flex':'none';
+  // Reset to individual tab
+  if(overview){
+    const btnI=document.getElementById('curr-tab-individual');
+    const btnO=document.getElementById('curr-tab-overview');
+    if(btnI)btnI.className='btn btn-dark btn-sm';
+    if(btnO)btnO.className='btn btn-ghost btn-sm';
+    const ind=document.getElementById('curr-individual-section');
+    if(ind)ind.style.display='';
+  }
   const nonMgr=nonAdminStudents().filter(function(s){return s.is_active!==false;});
   const allActive=nonAdminStudents().filter(function(s){return s.is_active!==false;});
   const viewerOpts=nonMgr.map(function(s){return '<option value="'+esc(s.id)+'"'+(s.id===CID?' selected':'')+'>'+esc(s.name)+'　['+esc(s.store)+']</option>';}).join('');
