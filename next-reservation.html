@@ -262,7 +262,8 @@ function renderTable(){
   }
   const sr=sv>0?Math.round(sn/sv*100):0;
   return `<td>${sv||'-'} / ${sn||'-'} / ${badge(sr,sv>0)}</td>`;
-}).join('');
+        }).join('');
+        }
                 let tv=0,tn=0;
         if(sf==='both'){
           document.querySelectorAll(`#table-body select[data-type="visitor"]`).forEach(s=>{
