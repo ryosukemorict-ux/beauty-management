@@ -235,7 +235,7 @@ function renderTable(){
     const isWe=new Date(ds).getDay()===0||new Date(ds).getDay()===6;
     let rv=0,rn=0;
     const cells=staff.map(s=>{
-      const rec=allReservations.find(r=>r.staff_id===s.id&&r.date===ds);
+      const rec=allReservations.find(r=>String(r.staff_id)===String(s.id)&&r.date===ds);
       const v=rec?rec.visitor_count:0,n=rec?rec.next_reservation_count:0;
       const rate=v>0?Math.round(n/v*100):0;
       rv+=v;rn+=n;
