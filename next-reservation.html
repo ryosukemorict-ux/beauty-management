@@ -344,7 +344,7 @@ function recalcRate(input) {
   const date = input.dataset.date;
   const row = input.closest('tr');
   const vInput = row.querySelector(`select[data-staff="${staffId}"][data-date="${date}"][data-type="visitor"]`);
-const nInput = row.querySelector(`select[data-staff="${staffId}"][data-date="${date}"][data-type="next_res"]`);
+  const nInput = row.querySelector(`select[data-staff="${staffId}"][data-date="${date}"][data-type="next_res"]`);
   const v = parseInt(vInput?.value) || 0;
   const n = parseInt(nInput?.value) || 0;
   const rate = v > 0 ? Math.round(n/v*100) : 0;
@@ -353,6 +353,24 @@ const nInput = row.querySelector(`select[data-staff="${staffId}"][data-date="${d
     badge.textContent = v > 0 ? rate+'%' : '-';
     badge.className = 'rate-badge ' + (rate>=70?'rate-high':rate>=50?'rate-mid':(v>0?'rate-low':''));
   }
+  updateTotals();
+}
+
+function updateTotals() {
+  const rows = document.querySelectorAll('#table-body tr:not(.subtotal):not(.total)');
+  let monthV = 0, monthN = 0;
+  rows.forEach(row => {
+    row.querySelectorAll('select[data-type="visitor"]').forEach(s => monthV += parseInt(s.value)||0);
+    row.querySelectorAll('select[data-type="next_res"]').forEach(s => monthN += parseInt(s.value)||0);
+  });
+  const monthRate = monthV > 0 ? Math.round(monthN/monthV*100) : 0;
+  document.getElementById('table-summary').innerHTML = `
+    <div class="stat"><div class="stat-n">${monthV}</div><div class="stat-l">月間来客数</div></div>
+    <div class="stat"><div class="stat-n">${monthN}</div><div class="stat-l">月間次回予約数</div></div>
+    <div class="stat"><div class="stat-n" style="color:${monthRate>=70?'var(--green)':monthRate>=50?'#856404':'var(--red)'}">${monthRate}%</div><div class="stat-l">月間次回予約率</div></div>
+  `;
+}
+
 }
 
 // ===== SAVE =====
