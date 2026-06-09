@@ -267,7 +267,6 @@ function renderTable(){
       if(sf==='both'){
         for(let x=sd;x<=d;x++){
           const xds=`${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(x).padStart(2,'0')}`;
-          document.querySelectorAll(`select[data-date="${xds}"][data-type="visitor"]`).forEach(el=>tv+=parseInt(el.value)||0);
           allReservations.filter(r=>r.date===xds).forEach(r=>{tv+=r.visitor_count||0;tn+=r.next_reservation_count||0;});
         }
       }
