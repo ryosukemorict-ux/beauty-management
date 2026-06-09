@@ -442,8 +442,8 @@ async function loadAll(){
     console.error(e);
     document.getElementById('loading').innerHTML='<div style="color:red;padding:20px">エラー: '+e.message+'</div>';
     return;
-  }
-  document.getElementById('loading').style.display='none';
+  }document.getElementById('loading').style.display='none';
+alert('スタッフ数:'+students.length+' 対象:'+students.filter(function(s){return ['Jrスタイリスト','カラーリスト','アシスタント'].includes(s.position);}).length);
 }
 
 function showPage(name){
