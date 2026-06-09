@@ -501,7 +501,7 @@ const [s,c,cu,pr]=await Promise.all([
       sb.from('progress').select('*'),
 ]);
     students=s.data||[];categories=c.data||[];curricula=cu.data||[];progressRows=pr.data||[];
-}catch(e){console.error(e);}
+}catch(e){console.error(e);document.getElementById('loading').innerHTML='エラー: '+e.message;}
 document.getElementById('loading').style.display='none';
 }
 
