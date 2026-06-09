@@ -558,7 +558,7 @@ function renderDashboard(){
     const soon=f.comingSoon;
     const clickable=accessible&&!soon;
     const extra=locked||soon?disabled_style:'';
-    return `<div style="${card_style}${extra}" ${clickable?`onclick="showPage('${f.id}')"`:''}
+    return `<div style="${card_style}${extra}" ${clickable?`onclick="${f.url?`window.location.href='${f.url}'`:`showPage('${f.id}')`}"`:''}`
       onmouseenter="if(!this.style.opacity)this.style.cssText+=';border-color:#c9a96e;box-shadow:0 4px 16px rgba(201,169,110,0.3);transform:translateY(-2px)'"
       onmouseleave="if(!this.style.opacity)this.style.cssText=this.style.cssText.replace(/border-color:[^;]+;|box-shadow:[^;]+;|transform:[^;]+;/g,'')">
       <div style="font-size:36px;margin-bottom:10px">${f.icon}</div>
