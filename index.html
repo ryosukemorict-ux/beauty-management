@@ -298,9 +298,7 @@ td.wrap{white-space:normal;min-width:120px;}
       <option value="未着手">未着手</option>
       <option value="練習中">練習中</option>
       <option value="合格">合格</option>
-      <option value="再確認">再確認</option>
-    </select>
-    <button class="btn btn-ghost btn-sm" onclick="clearCurrFilter()">リセット</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearCurrFilter()">リセット</button>
   </div>
   <div class="summary">
     <div class="stat"><div class="stat-n" id="s-total">0</div><div class="stat-l">総項目数</div></div>
@@ -345,7 +343,6 @@ td.wrap{white-space:normal;min-width:120px;}
           <option value="未着手">未着手</option>
           <option value="練習中">練習中</option>
           <option value="合格">合格</option>
-          <option value="再確認">再確認</option>
         </select>
         <select class="filter-sel" id="ov-cat-filter" onchange="renderOverview()">
           <option value="">すべてのカテゴリ</option>
@@ -358,9 +355,8 @@ td.wrap{white-space:normal;min-width:120px;}
       </div>
       <div class="summary">
         <div class="stat"><div class="stat-n" id="ov-total">0</div><div class="stat-l">対象人数</div></div>
-        <div class="stat"><div class="stat-n" id="ov-pass" style="color:var(--green)">0</div><div class="stat-l">合格者数</div></div>
+        <div class="stat"><div class="stat-n" id="ov-pass" style="color:var(--green)">0</div><div class="stat-l">合格済み人数</div></div>
         <div class="stat"><div class="stat-n" id="ov-prog" style="color:var(--blue)">0</div><div class="stat-l">練習中</div></div>
-        <div class="stat"><div class="stat-n" id="ov-review" style="color:var(--red)">0</div><div class="stat-l">再確認</div></div>
       </div>
     </div>
     <p class="scroll-hint">← 横にスクロールできます →</p>
@@ -415,14 +411,15 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
 const ADMIN_STORES=['管理（全体）','エルズ（管理）','soleil（管理）'];
 const STAFF_EDITOR_ROLES=['代表','管理者','店長','チーフ'];
 const CURR_EDITOR_ROLES=['代表','管理者','店長','チーフ','スタイリスト'];
-const STATS=['未着手','練習中','合格','再確認'];
+const STATS=['未着手','練習中','合格'];
 const POSITIONS=['代表','店長','チーフ','スタイリスト','Jrスタイリスト','カラーリスト','アシスタント','レセプション','管理者'];
 const CAT_COLORS={シャンプー:'#e8d9a0',ドライ:'#f5c6c6',ブロー:'#f5c6d8',カラー:'#f5d9b8',矯正:'#e0e0e0','コテ巻き':'#b8d4f5',ヘッドスパ:'#d4b8f5',カット:'#d9c4b0',パーマ:'#d0d0d0'};
 
 function hash(s){let h=0;for(let i=0;i<s.length;i++)h=(Math.imul(31,h)+s.charCodeAt(i))|0;return String(h);}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function isAdminStore(store){return ADMIN_STORES.includes(store);}
-function nonAdminStudents(){return students.filter(s=>!isAdminStore(s.store));}
+const CURR_TARGET_ROLES=['Jrスタイリスト','カラーリスト','アシスタント','レセプション'];
+function nonAdminStudents(){return students.filter(function(s){return CURR_TARGET_ROLES.includes(s.position);});}
 
 let students=[],categories=[],curricula=[],progressRows=[];
 let CID=null,ME=null,currentPage='curriculum';
@@ -464,7 +461,7 @@ function showPage(name){
 const FUNC_LIST=[
   {id:'curriculum',icon:'📋',name:'カリキュラム進捗',desc:'スタッフのカリキュラム進捗を管理',minRole:null},
   {id:'staff',icon:'👥',name:'人材マスター',desc:'スタッフ情報の登録・管理',minRole:'staff_editor'},
-  {id:'appointment',icon:'📅',name:'次回予約管理',desc:'次回予約の管理',minRole:null,url:'next-reservation.html'},
+  {id:'appointment',icon:'📅',name:'次回予約・来来率',desc:'予約状況と来来率の管理',minRole:null,url:'next-reservation.html'},
   {id:'meeting',icon:'📝',name:'会議報告',desc:'幹部・店舗会議の記録',minRole:null,comingSoon:true},
   {id:'interview',icon:'💬',name:'面談報告',desc:'スタッフ面談の記録',minRole:null,comingSoon:true},
   {id:'evaluation',icon:'⭐',name:'人事評価制度',desc:'評価の記録と管理',minRole:null,comingSoon:true},
@@ -881,10 +878,9 @@ function renderOverview(){
     if(!filtered.length&&!sF&&!cF)allRows.push({s:s,r:null,catName:'',curName:'',total:total,pass:pass,pct:pct});
   });
   const uq=new Set(allRows.map(function(x){return x.s.id;}));
-  document.getElementById('ov-total').textContent=uq.size;
+  document.getElementById('ov-total').textContent=fStudents.length;
   document.getElementById('ov-pass').textContent=new Set(allRows.filter(function(x){return x.r&&x.r.status==='合格';}).map(function(x){return x.s.id;})).size;
   document.getElementById('ov-prog').textContent=new Set(allRows.filter(function(x){return x.r&&x.r.status==='練習中';}).map(function(x){return x.s.id;})).size;
-  document.getElementById('ov-review').textContent=new Set(allRows.filter(function(x){return x.r&&x.r.status==='再確認';}).map(function(x){return x.s.id;})).size;
   const tb=document.getElementById('ov-tbody');
   if(!allRows.length){tb.innerHTML='<tr><td colspan="15" class="empty-td">該当データなし</td></tr>';return;}
   tb.innerHTML=allRows.map(function(row){
