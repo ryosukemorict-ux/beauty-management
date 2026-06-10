@@ -551,7 +551,7 @@ function doLogin(){
     }
   }
   ME=s;
-  localStorage.setItem('logged
+  localStorage.setItem('logged_in_id',s.id);
   closeModal('login-modal');
   currentPage='dashboard';
   applyAuth();
