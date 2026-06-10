@@ -561,6 +561,7 @@ function doLogin(){
 
 function doLogout(){
   ME=null;
+  localStorage.removeItem('logged_in_id');
   currentPage='dashboard';
   applyAuth();
   renderAll();
