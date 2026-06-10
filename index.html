@@ -557,6 +557,7 @@ function doLogin(){
   applyAuth();
   renderAll();
   showPage('dashboard');
+  checkBirthdays(s);
 }
 
 function doLogout(){
@@ -566,7 +567,6 @@ function doLogout(){
   applyAuth();
   renderAll();
   showPage('dashboard');
-  checkBirthdays(s);
 }
 function checkBirthdays(loginUser){
   const today=new Date();
