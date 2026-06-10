@@ -199,8 +199,8 @@ td.wrap{white-space:normal;min-width:120px;}
           <option value="管理者">管理者</option>
         </select>
       </div>
-      <div class="form-group"><label>生年月日</label><input class="form-inp" id="sm-birthdate" type="date"></div>
-      <div class="form-group"><label>入社日</label><input class="form-inp" id="sm-joindate" type="date"></div>
+      <div class="form-group"><label>生年月日</label><div style="display:flex;gap:6px"><select class="form-sel" id="sm-birth-y" style="flex:2"><option value="">年</option></select><select class="form-sel" id="sm-birth-m" style="flex:1"><option value="">月</option></select><select class="form-sel" id="sm-birth-d" style="flex:1"><option value="">日</option></select></div></div>
+      <div class="form-group"><label>入社日</label><div style="display:flex;gap:6px"><select class="form-sel" id="sm-join-y" style="flex:2"><option value="">年</option></select><select class="form-sel" id="sm-join-m" style="flex:1"><option value="">月</option></select><select class="form-sel" id="sm-join-d" style="flex:1"><option value="">日</option></select></div></div>
       <div class="form-group" id="sm-leavedate-row" style="display:none"><label>退社日（退社処理の場合）</label><input class="form-inp" id="sm-leavedate" type="date"></div>
       <div class="form-group" id="sm-pw-row"><label>パスワード</label><input class="form-inp" id="sm-pw" type="password" placeholder="初期値：2026" autocomplete="new-password"></div>
       <div class="modal-err" id="sm-err"></div>
