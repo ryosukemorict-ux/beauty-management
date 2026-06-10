@@ -566,8 +566,28 @@ function doLogout(){
   applyAuth();
   renderAll();
   showPage('dashboard');
+  checkBirthdays(s);
 }
-
+function checkBirthdays(loginUser){
+  const today=new Date();
+  students.filter(function(s){return s.id!==loginUser.id&&s.is_active!==false&&s.birthdate;}).forEach(function(s){
+    const bd=new Date(s.birthdate);
+    const thisYear=new Date(today.getFullYear(),bd.getMonth(),bd.getDate());
+    const diff=Math.ceil((thisYear-today)/(1000*60*60*24));
+    if(diff>=0&&diff<=3){
+      const key='birthday_alerted_'+s.id+'_'+today.getFullYear();
+      if(localStorage.getItem(key))return;
+      localStorage.setItem(key,'1');
+      showBirthdayPopup(s.name,diff);
+    }
+  });
+}
+function showBirthdayPopup(name,days){
+  const el=document.createElement('div');
+  el.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:99999;display:flex;align-items:center;justify-content:center;';
+  el.innerHTML='<div style="background:white;border-radius:20px;padding:28px 24px;max-width:320px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.2)"><div style="font-size:52px;margin-bottom:12px">🎂</div><div style="font-size:13px;font-weight:700;color:#c9a96e;margin-bottom:6px;letter-spacing:1px">'+(days===0?'今日！':days===1?'明日！':'あと'+days+'日！')+'</div><div style="font-size:20px;font-weight:700;color:#1a1410;margin-bottom:12px">'+name+'さんの誕生日🎉</div><div style="font-size:13px;color:#7a6a58;line-height:1.7;margin-bottom:20px">みんなでお祝いしましょう！<br>素敵な1日になりますように🌸</div><button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:linear-gradient(135deg,#c9a96e,#8b5e3c);color:white;border:none;border-radius:30px;padding:10px 30px;font-size:14px;font-weight:700;cursor:pointer;font-family:\'Noto Sans JP\',sans-serif;">やったー！</button></div>';
+  document.body.appendChild(el);
+}
 function applyAuth(){
   const badge=document.getElementById('user-badge');
   const btn=document.getElementById('auth-btn');
