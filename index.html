@@ -676,8 +676,8 @@ function openStaffModal(id){
     document.getElementById('sm-name').value=s.name;
     document.getElementById('sm-store').value=s.store||'エルズ';
     document.getElementById('sm-position').value=s.position||'';
-    document.getElementById('sm-birthdate').value=s.birthdate||'';
-    document.getElementById('sm-joindate').value=s.join_date||'';
+    initDateSels('sm-birth',s.birthdate||null);
+    initDateSels('sm-join',s.join_date||null);
     document.getElementById('sm-leavedate').value=s.leave_date||'';
     document.getElementById('sm-pw').value='';
     document.getElementById('sm-pw-row').style.display='';
@@ -694,9 +694,8 @@ async function saveStaff(){
   const id=document.getElementById('sm-save-btn').dataset.id;
   const name=document.getElementById('sm-name').value.trim();
   const store=document.getElementById('sm-store').value;
-  const position=document.getElementById('sm-position').value;
-  const birthdate=document.getElementById('sm-birthdate').value||null;
-  const join_date=document.getElementById('sm-joindate').value||null;
+  const birthdate=getDateVal('sm-birth');
+  const join_date=getDateVal('sm-join');
   const leave_date=document.getElementById('sm-leavedate').value||null;
   const pw=document.getElementById('sm-pw').value;
   if(!name){document.getElementById('sm-err').textContent='名前を入力してください';return;}
