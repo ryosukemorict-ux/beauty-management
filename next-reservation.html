@@ -163,7 +163,7 @@ let allStaff=[],allReservations=[];
 let growthChart=null,storeChartObj=null;
 let saveTimers={};
 
-const posOrder=['店長','副店長','スタイリスト','アシスタント'];
+const posOrder=['店長','チーフ','スタイリスト','カラーリスト','アシスタント'];
 
 async function init(){
   const{data,error}=await sb.from('students').select('id,name,store,position,is_active').eq('is_active',true);
@@ -209,12 +209,11 @@ function changeMonthRank(d){
 }
 
 function getStaff(filterId){
-  const f=document.getElementById(filterId).value;
-  return allStaff.filter(s=>{
+  const f=document.getElementById(filterId).value;return allStaff.filter(s=>{
     if(f==='els')return s.store==='els'||s.store==='エルズ';
     if(f==='soleil')return s.store==='soleil'||s.store==='soleil by ailes';
     return true;
-  });
+  }).filter(s=>posOrder.includes(s.position));
 }
 
 function opts(sel){
@@ -232,8 +231,8 @@ function renderTable(){
   const staff=getStaff('store-filter-table');
   const days=new Date(currentYear,currentMonth,0).getDate();
   const head=document.getElementById('table-head');
-  head.innerHTML=`<tr><th style="min-width:65px">日付</th>${staff.map(s=>`<th style="min-width:110px">${s.name}<br><span style="font-size:10px;opacity:.7">${s.store||''}</span></th>`).join('')}${sf==='both'?'<th>合計<br>来客</th><th>合計<br>予約</th><th>合計<br>率</th>':''}</tr>
-  <tr style="background:rgba(201,169,110,.15)"><th></th>${staff.map(()=>`<th style="font-size:10px;font-weight:400">来客/予約/率</th>`).join('')}${sf==='both'?'<th></th><th></th><th></th>':''}</tr>`;
+  head.innerHTML=`<tr><th style="min-width:65px;position:sticky;top:0;left:0;z-index:3;background:var(--dark)">日付</th>${staff.map(s=>`<th style="min-width:110px;position:sticky;top:0;z-index:2;background:var(--dark)">${s.name}<br><span style="font-size:10px;opacity:.7">${s.store||''}</span></th>`).join('')}${sf==='both'?'<th style="position:sticky;top:0;z-index:2;background:var(--dark)">合計<br>来客</th><th style="position:sticky;top:0;z-index:2;background:var(--dark)">合計<br>予約</th><th style="position:sticky;top:0;z-index:2;background:var(--dark)">合計<br>率</th>':''}`;
+  <tr style="background:rgba(201,169,110,.15)"><th style="position:sticky;top:37px;left:0;z-index:3;background:rgba(201,169,110,.15)"></th>${staff.map(()=>`<th style="font-size:10px;font-weight:400;position:sticky;top:37px;z-index:2;background:rgba(201,169,110,.15)">来客/予約/率</th>`).join('')}${sf==='both'?'<th style="position:sticky;top:37px;z-index:2;background:rgba(201,169,110,.15)"></th><th style="position:sticky;top:37px;z-index:2;background:rgba(201,169,110,.15)"></th><th style="position:sticky;top:37px;z-index:2;background:rgba(201,169,110,.15)"></th>':''}`;
   const body=document.getElementById('table-body');
   body.innerHTML='';
   let mv=0,mn=0;
