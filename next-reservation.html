@@ -144,12 +144,13 @@ select.ns{width:38px;min-width:38px;max-width:38px;border:1px solid var(--gold-l
       <div class="panel-title">📈 個人別グラフ</div>
       <div class="filter-bar">
         <label>店舗：</label>
-        <select class="filter-sel" id="store-filter-graph" onchange="renderGraph()">
+        <select class="filter-sel" id="store-filter-graph" onchange="buildStaffCheckboxes()">
           <option value="both">全員</option>
           <option value="els">エルズ</option>
           <option value="soleil">soleil by ailes</option>
         </select>
       </div>
+      <div id="staff-checkboxes" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
       <div class="chart-wrap"><canvas id="growth-chart"></canvas></div>
     </div>
   </div>
