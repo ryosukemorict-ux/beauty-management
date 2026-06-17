@@ -192,7 +192,7 @@ function switchTab(tab){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById('sec-'+tab).classList.add('active');
   if(tab==='ranking')renderRanking();
-  if(tab==='graph')renderGraph();
+  if(tab==='graph'){buildStaffCheckboxes();renderGraph();}
 }
 
 function changeMonth(d){
@@ -456,7 +456,6 @@ function buildStaffCheckboxes(staff,checked=[]){
 
 init();
 
-init();
 </script>
 </body>
 </html>
