@@ -31,7 +31,7 @@ table.tbl th{background:var(--dark);color:var(--gold-light);padding:7px 5px;text
 table.tbl th:first-child{position:sticky;left:0;z-index:2;background:var(--dark);}
 table.tbl td:first-child{position:sticky;left:0;z-index:1;background:#fff;}
 table.tbl td:first-child{position:sticky;left:0;z-index:1;background:#fff;}
-table.tbl td{padding:5px 4px;text-align:center;border-bottom:1px solid var(--gold-light);vertical-align:middle;min-width:110px;}
+table.tbl td{padding:5px 4px;text-align:center;border-bottom:1px solid var(--gold-light);vertical-align:middle;}
 table.tbl tr:hover td{background:rgba(201,169,110,0.06);}table.tbl tr:hover td:first-child{background:#fff;}
 table.tbl tr.sub td{background:rgba(201,169,110,0.15);font-weight:700;font-size:11px;}
 .cw{display:flex;align-items:center;justify-content:center;gap:2px;}
@@ -247,8 +247,7 @@ function renderTable(){
       const rec=allReservations.find(r=>String(r.staff_id)===String(s.id)&&r.date===ds);
       const v=rec?rec.visitor_count:0,n=rec?rec.next_reservation_count:0;
       const rate=v>0?Math.round(n/v*100):0;
-      rv+=v;rn+=n;
-      return `<td><div class="cw"><select class="ns" data-staff="${s.id}" data-date="${ds}" data-type="visitor" onchange="recalc(this)">${opts(v)}</select><select class="ns" data-staff="${s.id}" data-date="${ds}" data-type="next_res" onchange="recalc(this)">${opts(n)}</select>${badge(rate,v>0)}</div></td>`;
+      rv+=v;rn+=n;return `<td><div class="cw" style="min-width:100px"><select class="ns" data-staff="${s.id}" data-date="${ds}" data-type="visitor" onchange="recalc(this)">${opts(v)}</select><select class="ns" data-staff="${s.id}" data-date="${ds}" data-type="next_res" onchange="recalc(this)">${opts(n)}</select>${badge(rate,v>0)}</div></td>`;
     }).join('');
     mv+=rv;mn+=rn;
     const rrate=rv>0?Math.round(rn/rv*100):0;
