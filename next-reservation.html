@@ -421,13 +421,15 @@ async function renderGraph(){
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'Noto Sans JP',size:11}}},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y!=null?c.parsed.y+'%':'データなし'}`}}},scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%'}},x:{ticks:{font:{size:11}}}}}
   });
 
-  let staff=allStaff.filter(s=>{
+  let staff=allStaff.filter(s=>posOrder.includes(s.position)).filter(s=>{
+    const sf=document.getElementById('store-filter-graph').value;
     if(sf==='els')return s.store==='els'||s.store==='エルズ';
     if(sf==='soleil')return s.store==='soleil'||s.store==='soleil by ailes';
     return true;
   });
+  const checked=Array.from(document.querySelectorAll('#staff-checkboxes input:checked')).map(el=>el.value);
   const colors=['#c9a96e','#4a7c59','#2980b9','#7d3c98','#c0392b','#e67e22','#1abc9c','#e74c3c','#3498db','#9b59b6','#f39c12','#27ae60','#8e44ad','#d35400'];
-  const datasets=staff.map((s,idx)=>({
+  const datasets=staff.filter(s=>checked.includes(s.id)).map((s,idx)=>({
     label:s.name,
     data:ml.map(({y,m})=>{
       const px=`${y}-${String(m).padStart(2,'0')}`;
@@ -436,16 +438,23 @@ async function renderGraph(){
       const tn=recs.reduce((a,r)=>a+r.next_reservation_count,0);
       return tv>0?Math.round(tn/tv*100):null;
     }),
-    borderColor:colors[idx%colors.length],backgroundColor:colors[idx%colors.length]+'22',
+    borderColor:colors[staff.indexOf(s)%colors.length],backgroundColor:colors[staff.indexOf(s)%colors.length]+'22',
     tension:0.4,spanGaps:true,pointRadius:5,pointHoverRadius:7,
   }));
-
   if(growthChart)growthChart.destroy();
   growthChart=new Chart(document.getElementById('growth-chart').getContext('2d'),{
     type:'line',data:{labels,datasets},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'Noto Sans JP',size:11}}},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y!=null?c.parsed.y+'%':'データなし'}`}}},scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%',font:{size:11}},title:{display:true,text:'次回予約率 (%)',font:{size:11}}},x:{ticks:{font:{size:11}}}}}
   });
+  buildStaffCheckboxes(staff,checked);
 }
+function buildStaffCheckboxes(staff,checked=[]){
+  if(!staff){const sf=document.getElementById('store-filter-graph').value;staff=allStaff.filter(s=>posOrder.includes(s.position)).filter(s=>{if(sf==='els')return s.store==='els'||s.store==='エルズ';if(sf==='soleil')return s.store==='soleil'||s.store==='soleil by ailes';return true;});}
+  const colors=['#c9a96e','#4a7c59','#2980b9','#7d3c98','#c0392b','#e67e22','#1abc9c','#e74c3c','#3498db','#9b59b6','#f39c12','#27ae60','#8e44ad','#d35400'];
+  document.getElementById('staff-checkboxes').innerHTML=staff.map((s,idx)=>{const c=colors[idx%colors.length];const isChecked=checked.includes(s.id);return`<label style="display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;border:2px solid ${c};background:${isChecked?c:'white'};color:${isChecked?'white':c};font-size:12px;cursor:pointer;font-weight:600;"><input type="checkbox" value="${s.id}" ${isChecked?'checked':''} onchange="renderGraph()" style="display:none">${s.name}</label>`;}).join('');
+}
+
+init();
 
 init();
 </script>
