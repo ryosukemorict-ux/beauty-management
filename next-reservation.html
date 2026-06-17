@@ -163,7 +163,7 @@ let allStaff=[],allReservations=[];
 let growthChart=null,storeChartObj=null;
 let saveTimers={};
 
-const posOrder=['店長','チーフ','スタイリスト','カラーリスト','アシスタント'];
+const posOrder=['店長','チーフ','スタイリスト','Jrスタイリスト','カラーリスト','アシスタント'];
 
 async function init(){
   const{data,error}=await sb.from('students').select('id,name,store,position,is_active').eq('is_active',true);
