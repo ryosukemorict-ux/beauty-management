@@ -288,9 +288,9 @@ function renderTable(){
 function updateSummary(v,n){
   const r=v>0?Math.round(n/v*100):0;
     document.getElementById('table-summary').innerHTML=`
-    <div class="stat"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div class="stat-l">月間来客数</div><div class="stat-n">${v}</div></div></div>
-    <div class="stat"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div class="stat-l">月間次回予約数</div><div class="stat-n">${n}</div></div></div>
-    <div class="stat"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div class="stat-l">月間次回予約率</div><div class="stat-n" style="color:${r>=70?'var(--green)':r>=50?'#856404':'var(--red)'}">${r}%</div></div></div>`; } 
+    <div class="stat"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div class="stat-l">来客数</div><div class="stat-n">${v}</div></div></div>
+    <div class="stat"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div class="stat-l">次回予約数</div><div class="stat-n">${n}</div></div></div>
+    <div class="stat"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div class="stat-l">次回予約率</div><div class="stat-n" style="color:${r>=70?'var(--green)':r>=50?'#856404':'var(--red)'}">${r}%</div></div></div>`; } 
 function recalc(input){
   const sid=input.dataset.staff,date=input.dataset.date;
   const row=input.closest('tr');
