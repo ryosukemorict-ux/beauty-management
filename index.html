@@ -493,6 +493,10 @@ function renderDashboard(){
     document.getElementById('dash-name').textContent='';
     document.getElementById('dash-sub').textContent='';
   }
+  const philosophyQuotes=['常に笑顔を忘れない','小さな変化に気づく','感謝を言葉にする','仲間を大切にする','挑戦を止めない','現状維持をしない','学び続ける','人として成長する','お客様目線を忘れない','"また来たい"を本気で作る','必ずありがとうを伝える'];
+const todayQuote=philosophyQuotes[new Date().getDate()%philosophyQuotes.length];
+const philosophyCard='<div style="background:linear-gradient(135deg,#1a1410 0%,#2e241e 100%);border-radius:16px;padding:20px 18px;margin-bottom:16px;text-align:center;cursor:pointer;" onclick="window.location.href=\'philosophy.html\'">'+'<div style="font-size:10px;letter-spacing:3px;color:#c9a96e;margin-bottom:10px">✦ TODAY\'S PHILOSOPHY ✦</div>'+'<div style="font-size:16px;font-weight:700;color:white;line-height:1.6;margin-bottom:12px">「'+todayQuote+'」</div>'+'<div style="font-size:11px;color:#c4b49e;">企業理念を読む →</div>'+'</div>';
+document.getElementById('func-grid').insertAdjacentHTML('beforebegin',philosophyCard);
   const grid=document.getElementById('func-grid');
   const card_style='background:white;border:2px solid #e8d5b0;border-radius:14px;padding:22px 12px 18px;text-align:center;transition:all 0.2s;';
   const disabled_style='opacity:0.4;cursor:not-allowed;';
