@@ -905,7 +905,13 @@ async function clearDate(id,field,btn){
   if(inp)inp.value='';
   btn.remove();
 }
-
+async function clearOvDate(id,field,btn){
+  await updateProgress(id,field,null);
+  const wrap=btn.parentElement;
+  const inp=wrap.querySelector('input[type="date"]');
+  if(inp)inp.value='';
+  btn.remove();
+}
 async function updateProgress(id,field,value){
   await sb.from('progress').update({[field]:value||null}).eq('id',id);
   const r=progressRows.find(function(r){return r.id===id;});if(r)r[field]=value;
