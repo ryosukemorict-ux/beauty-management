@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head> 
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>数値管理 | ailes group</title>
@@ -157,7 +157,7 @@ tbody tr:hover td:first-child{background:#fffbf7;}
   <div class="total-panel">
     <div class="total-panel-label">✦ 店舗合計</div>
     <div class="total-grid">
-         <div class="total-item"><div class="total-item-label">総売目標</div><div class="total-item-val" id="tot-target">—</div><div class="total-item-sub" id="tot-target-sub"></div></div>
+      <div class="total-item"><div class="total-item-label">総売目標</div><div class="total-item-val" id="tot-target">—</div><div class="total-item-sub" id="tot-target-sub"></div></div>
       <div class="total-item"><div class="total-item-label">総売結果</div><div class="total-item-val" id="tot-result">—</div><div class="total-item-sub" id="tot-result-sub"></div></div>
       <div class="total-item"><div class="total-item-label">指名技術売上</div><div class="total-item-val" id="tot-meimei">—</div><div class="total-item-sub" id="tot-meimei-sub"></div></div>
       <div class="total-item"><div class="total-item-label">フリー売上</div><div class="total-item-val" id="tot-free">—</div><div class="total-item-sub" id="tot-free-sub"></div></div>
@@ -392,8 +392,8 @@ function renderTable(){
     return '<tr>'
       +'<td>'+esc(s.name)+'<span class="pos-badge">'+esc(s.position||'')+'</span></td>'
       +'<td><input type="number" class="num-inp" data-sid="'+s.id+'" data-f="target" placeholder="0" value="'+esc(d.target||'')+'"></td>'
-        +'<td><span class="auto-val" id="result-'+s.id+'">'+(result?Math.round(result*(1+TAX_RATE)).toLocaleString():'—')+'</span>'
-        +'<span class="auto-val-sub" id="result-sub-'+s.id+'">'+(result?'(税抜 '+result.toLocaleString()+')':'')+'</span></td>'
+      +'<td><span class="auto-val" id="result-'+s.id+'">'+(result?Math.round(result*(1+TAX_RATE)).toLocaleString():'—')+'</span>'
+      +'<span class="auto-val-sub" id="result-sub-'+s.id+'">'+(result?'(税抜 '+result.toLocaleString()+')':'')+'</span></td>'
       +'<td><input type="number" class="num-inp" data-sid="'+s.id+'" data-f="meimei_sales" placeholder="0" value="'+esc(d.meimei_sales||'')+'"></td>'
       +'<td><select class="tbl-sel" data-sid="'+s.id+'" data-f="meimei_clients">'+numOpts(200,d.meimei_clients)+'</select></td>'
       +'<td><select class="tbl-sel" data-sid="'+s.id+'" data-f="free_clients">'+numOpts(200,d.free_clients)+'</select></td>'
@@ -412,7 +412,7 @@ function renderTable(){
       if(!salesData[key])salesData[key]={};
       salesData[key][field]=val;
       const result=calcResult(salesData[key]);
-            const el2=document.getElementById('result-'+sid);
+      const el2=document.getElementById('result-'+sid);
       if(el2)el2.textContent=result?Math.round(result*(1+TAX_RATE)).toLocaleString():'—';
       const el3=document.getElementById('result-sub-'+sid);
       if(el3)el3.textContent=result?'(税抜 '+result.toLocaleString()+')':'';
@@ -442,7 +442,7 @@ function updateTotals(){
     clients+=Math.round((Number(d.meimei_clients||0)+Number(d.free_clients||0))*pct);
     tanden+=Math.round(Number(d.tanden||0)*pct);
   });
-    document.getElementById('tot-target').textContent=target?'¥'+Math.round(target*(1+TAX_RATE)).toLocaleString():'—';
+  document.getElementById('tot-target').textContent=target?'¥'+Math.round(target*(1+TAX_RATE)).toLocaleString():'—';
   document.getElementById('tot-target-sub').textContent=target?'(税抜 ¥'+target.toLocaleString()+')':'';
   document.getElementById('tot-result').textContent=result?'¥'+Math.round(result*(1+TAX_RATE)).toLocaleString():'—';
   document.getElementById('tot-result-sub').textContent=result?'(税抜 ¥'+result.toLocaleString()+')':'';
