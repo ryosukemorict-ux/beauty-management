@@ -35,7 +35,7 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
 .table-wrap{background:white;border:1px solid var(--gold-light);border-radius:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;box-shadow:0 2px 8px rgba(0,0,0,0.04);}
 table{width:100%;border-collapse:collapse;min-width:1000px;}
 thead{background:var(--dark);}
-thead th{padding:6px 8px;text-align:center;font-size:10px;font-weight:500;letter-spacing:1px;color:var(--gold-light);white-space:nowrap;border-right:1px solid rgba(255,255,255,0.15);position:sticky;top:0;z-index:2;}
+thead th{padding:6px 8px;text-align:center;font-size:10px;font-weight:500;letter-spacing:1px;color:var(--gold-light);white-space:nowrap;border-right:1px solid rgba(255,255,255,0.15);position:sticky;top:0;z-index:2;pointer-events:all;user-select:none;}
 thead th:last-child{border-right:none;}
 thead th:first-child{text-align:left;position:sticky;left:0;top:0;z-index:4;background:var(--dark);}
 tbody tr{border-bottom:1px solid #e8ddd4;}
@@ -121,17 +121,17 @@ tbody tr:hover td:first-child{background:#fffbf7;}
       <thead>
         <tr>
           <th style="text-align:left;min-width:130px">スタッフ</th>
-          <th onclick="sortBy('target')" style="cursor:pointer;">総売目標<span id="sort-target"></span></th>
-          <th onclick="sortBy('result')" style="cursor:pointer;">総売結果<br><small style="font-size:9px;opacity:0.7">自動計算</small><span id="sort-result"></span></th>
-          <th onclick="sortBy('meimei_sales')" style="cursor:pointer;">指名技術売上<span id="sort-meimei_sales"></span></th>
-          <th onclick="sortBy('meimei_clients')" style="cursor:pointer;">指名入客数<span id="sort-meimei_clients"></span></th>
-          <th onclick="sortBy('free_clients')" style="cursor:pointer;">フリー入客数<span id="sort-free_clients"></span></th>
-          <th onclick="sortBy('free_sales')" style="cursor:pointer;">フリー売上<span id="sort-free_sales"></span></th>
-          <th onclick="sortBy('unit_price')" style="cursor:pointer;">客単価<span id="sort-unit_price"></span></th>
-          <th onclick="sortBy('return_new')" style="cursor:pointer;">再来率<br>新規<span id="sort-return_new"></span></th>
-          <th onclick="sortBy('return_reg')" style="cursor:pointer;">再来率<br>顧客<span id="sort-return_reg"></span></th>
-          <th onclick="sortBy('tanden')" style="cursor:pointer;">店販売上<span id="sort-tanden"></span></th>
-          <th onclick="sortBy('late')" style="cursor:pointer;">遅刻数<span id="sort-late"></span></th>
+          <th data-sort="target">総売目標<span id="sort-target"></span></th>
+          <th data-sort="result">総売結果<br><small style="font-size:9px;opacity:0.7">自動計算</small><span id="sort-result"></span></th>
+          <th data-sort="meimei_sales">指名技術売上<span id="sort-meimei_sales"></span></th>
+          <th data-sort="meimei_clients">指名入客数<span id="sort-meimei_clients"></span></th>
+          <th data-sort="free_clients">フリー入客数<span id="sort-free_clients"></span></th>
+          <th data-sort="free_sales">フリー売上<span id="sort-free_sales"></span></th>
+          <th data-sort="unit_price">客単価<span id="sort-unit_price"></span></th>
+          <th data-sort="return_new">再来率<br>新規<span id="sort-return_new"></span></th>
+          <th data-sort="return_reg">再来率<br>顧客<span id="sort-return_reg"></span></th>
+          <th data-sort="tanden">店販売上<span id="sort-tanden"></span></th>
+          <th data-sort="late">遅刻数<span id="sort-late"></span></th>
         </tr>
       </thead>
       <tbody id="sales-tbody">
@@ -346,6 +346,14 @@ async function loadAll(){
 
 document.getElementById('add-month-modal').addEventListener('click',function(e){
   if(e.target===this)closeAddModal();
+});
+
+// ヘッダーソートをtouchstart+clickで対応
+document.querySelectorAll('thead th[data-sort]').forEach(function(th){
+  th.style.cursor='pointer';
+  function doSort(){sortBy(th.dataset.sort);}
+  th.addEventListener('click',doSort);
+  th.addEventListener('touchstart',function(e){e.preventDefault();doSort();},{passive:false});
 });
 
 loadAll();
