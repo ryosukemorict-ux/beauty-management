@@ -435,6 +435,8 @@ let students=[],categories=[],curricula=[],progressRows=[];
 let CID=null,ME=null,currentPage='curriculum';
 
 function canEditCurriculum(){return ME&&(isAdminStore(ME.store)||CURR_EDITOR_ROLES.includes(ME.position));}
+function isSelfInputRole(){return ME&&CURR_TARGET_ROLES.includes(ME.position);}
+function canEditSelf(studentId){return isSelfInputRole()&&ME.id===studentId;}
 function canEditStaff(){return ME&&(isAdminStore(ME.store)||STAFF_EDITOR_ROLES.includes(ME.position));}
 function canViewOverview(){return ME&&(isAdminStore(ME.store)||CURR_EDITOR_ROLES.includes(ME.position));}
 
