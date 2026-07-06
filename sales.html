@@ -32,6 +32,7 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
 .total-item{text-align:center;}
 .total-item-val{font-size:17px;font-weight:700;color:var(--gold-light);}
 .total-item-label{font-size:10px;color:var(--soft);margin-top:2px;}
+.total-item-sub{font-size:10px;color:var(--soft);margin-top:1px;}
 .scroll-hint{font-size:11px;color:var(--soft);text-align:right;margin-bottom:4px;}
 .table-wrap{background:white;border:1px solid var(--gold-light);border-radius:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;box-shadow:0 2px 8px rgba(0,0,0,0.04);}
 table{width:100%;border-collapse:collapse;min-width:900px;}
@@ -80,6 +81,7 @@ tbody tr:hover td:first-child{background:#fffbf7;}
 .tbl-sel{font-family:'Noto Sans JP',sans-serif;font-size:11px;padding:3px 16px 3px 4px;border-radius:4px;border:1px solid var(--soft);background:white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%237a6a58'/%3E%3C/svg%3E") no-repeat right 3px center;appearance:none;-webkit-appearance:none;cursor:pointer;color:#3a3028;width:58px;}
 .tbl-sel:focus{outline:none;border-color:var(--gold);}
 .auto-val{font-size:12px;font-weight:700;color:var(--dark);}
+.auto-val-sub{font-size:9px;color:var(--mid);font-weight:400;display:block;}
 .empty-msg{text-align:center;color:var(--soft);padding:40px;font-size:13px;}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;align-items:center;justify-content:center;}
 .modal-overlay.show{display:flex;}
@@ -154,13 +156,12 @@ tbody tr:hover td:first-child{background:#fffbf7;}
   </div>
   <div class="total-panel">
     <div class="total-panel-label">✦ 店舗合計</div>
-    <div class="total-grid">
-      <div class="total-item"><div class="total-item-val" id="tot-target">—</div><div class="total-item-label">総売目標</div></div>
-      <div class="total-item"><div class="total-item-val" id="tot-result">—</div><div class="total-item-label">総売結果</div></div>
-      <div class="total-item"><div class="total-item-val" id="tot-meimei">—</div><div class="total-item-label">指名技術売上</div></div>
-      <div class="total-item"><div class="total-item-val" id="tot-free">—</div><div class="total-item-label">フリー売上</div></div>
+          <div class="total-item"><div class="total-item-val" id="tot-target">—</div><div class="total-item-sub" id="tot-target-sub"></div><div class="total-item-label">総売目標</div></div>
+      <div class="total-item"><div class="total-item-val" id="tot-result">—</div><div class="total-item-sub" id="tot-result-sub"></div><div class="total-item-label">総売結果</div></div>
+      <div class="total-item"><div class="total-item-val" id="tot-meimei">—</div><div class="total-item-sub" id="tot-meimei-sub"></div><div class="total-item-label">指名技術売上</div></div>
+      <div class="total-item"><div class="total-item-val" id="tot-free">—</div><div class="total-item-sub" id="tot-free-sub"></div><div class="total-item-label">フリー売上</div></div>
       <div class="total-item"><div class="total-item-val" id="tot-clients">—</div><div class="total-item-label">総入客数</div></div>
-      <div class="total-item"><div class="total-item-val" id="tot-tanden">—</div><div class="total-item-label">店販売上</div></div>
+      <div class="total-item"><div class="total-item-val" id="tot-tanden">—</div><div class="total-item-sub" id="tot-tanden-sub"></div><div class="total-item-label">店販売上</div></div>
     </div>
   </div>
   <p class="scroll-hint">← 横にスクロールできます →</p>
@@ -243,6 +244,7 @@ const SUPABASE_ANON='sb_publishable_a3X1ltKqAaTv6CyxHIReug_xEPqqCSS';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
 const POS_ORDER=['代表','店長','チーフ','スタイリスト','Jrスタイリスト','カラーリスト','アシスタント','レセプション'];
 const EXCLUDE_ROLES=['管理者'];
+const TAX_RATE=0.10;
 let students=[],salesData={},currentMonth='',currentStore='all',months=[];
 let sortField=null,sortAsc=true;
 let allocation={ailes_pct:50,soleil_pct:50};
@@ -389,7 +391,8 @@ function renderTable(){
     return '<tr>'
       +'<td>'+esc(s.name)+'<span class="pos-badge">'+esc(s.position||'')+'</span></td>'
       +'<td><input type="number" class="num-inp" data-sid="'+s.id+'" data-f="target" placeholder="0" value="'+esc(d.target||'')+'"></td>'
-      +'<td><span class="auto-val" id="result-'+s.id+'">'+(result?result.toLocaleString():'—')+'</span></td>'
+        +'<td><span class="auto-val" id="result-'+s.id+'">'+(result?Math.round(result*(1+TAX_RATE)).toLocaleString():'—')+'</span>'
+        +'<span class="auto-val-sub" id="result-sub-'+s.id+'">'+(result?'(税抜 '+result.toLocaleString()+')':'')+'</span></td>'
       +'<td><input type="number" class="num-inp" data-sid="'+s.id+'" data-f="meimei_sales" placeholder="0" value="'+esc(d.meimei_sales||'')+'"></td>'
       +'<td><select class="tbl-sel" data-sid="'+s.id+'" data-f="meimei_clients">'+numOpts(200,d.meimei_clients)+'</select></td>'
       +'<td><select class="tbl-sel" data-sid="'+s.id+'" data-f="free_clients">'+numOpts(200,d.free_clients)+'</select></td>'
@@ -408,8 +411,10 @@ function renderTable(){
       if(!salesData[key])salesData[key]={};
       salesData[key][field]=val;
       const result=calcResult(salesData[key]);
-      const el2=document.getElementById('result-'+sid);
-      if(el2)el2.textContent=result?result.toLocaleString():'—';
+            const el2=document.getElementById('result-'+sid);
+      if(el2)el2.textContent=result?Math.round(result*(1+TAX_RATE)).toLocaleString():'—';
+      const el3=document.getElementById('result-sub-'+sid);
+      if(el3)el3.textContent=result?'(税抜 '+result.toLocaleString()+')':'';
       updateTotals();
       saveSalesData(sid,field,val);
     });
@@ -436,12 +441,17 @@ function updateTotals(){
     clients+=Math.round((Number(d.meimei_clients||0)+Number(d.free_clients||0))*pct);
     tanden+=Math.round(Number(d.tanden||0)*pct);
   });
-  document.getElementById('tot-target').textContent=target?'¥'+target.toLocaleString():'—';
-  document.getElementById('tot-result').textContent=result?'¥'+result.toLocaleString():'—';
-  document.getElementById('tot-meimei').textContent=meimei?'¥'+meimei.toLocaleString():'—';
-  document.getElementById('tot-free').textContent=free?'¥'+free.toLocaleString():'—';
+    document.getElementById('tot-target').textContent=target?'¥'+Math.round(target*(1+TAX_RATE)).toLocaleString():'—';
+  document.getElementById('tot-target-sub').textContent=target?'(税抜 ¥'+target.toLocaleString()+')':'';
+  document.getElementById('tot-result').textContent=result?'¥'+Math.round(result*(1+TAX_RATE)).toLocaleString():'—';
+  document.getElementById('tot-result-sub').textContent=result?'(税抜 ¥'+result.toLocaleString()+')':'';
+  document.getElementById('tot-meimei').textContent=meimei?'¥'+Math.round(meimei*(1+TAX_RATE)).toLocaleString():'—';
+  document.getElementById('tot-meimei-sub').textContent=meimei?'(税抜 ¥'+meimei.toLocaleString()+')':'';
+  document.getElementById('tot-free').textContent=free?'¥'+Math.round(free*(1+TAX_RATE)).toLocaleString():'—';
+  document.getElementById('tot-free-sub').textContent=free?'(税抜 ¥'+free.toLocaleString()+')':'';
   document.getElementById('tot-clients').textContent=clients?clients+'名':'—';
-  document.getElementById('tot-tanden').textContent=tanden?'¥'+tanden.toLocaleString():'—';
+  document.getElementById('tot-tanden').textContent=tanden?'¥'+Math.round(tanden*(1+TAX_RATE)).toLocaleString():'—';
+  document.getElementById('tot-tanden-sub').textContent=tanden?'(税抜 ¥'+tanden.toLocaleString()+')':'';
 }
 
 async function loadAll(){
