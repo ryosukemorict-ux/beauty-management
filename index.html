@@ -826,7 +826,8 @@ const staff=students.filter(function(s){return s.is_active!==false&&TEACHER_ROLE
 }
 
 function renderCurrTable(){
-  const editable=canEditCurriculum();
+const editable=canEditCurriculum();
+const selfEditable=!editable&&canEditSelf(CID);
   const catF=document.getElementById('ind-cat-filter')?document.getElementById('ind-cat-filter').value:'';
   const statusF=document.getElementById('ind-status-filter')?document.getElementById('ind-status-filter').value:'';
   let rows=progressRows.filter(function(r){return r.student_id===CID;});
