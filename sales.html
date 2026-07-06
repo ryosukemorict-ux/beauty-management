@@ -51,10 +51,12 @@ tbody tr:hover td:first-child{background:#fffbf7;}
 .num-inp.pct{width:52px;}
 .tbl-sel{font-family:'Noto Sans JP',sans-serif;font-size:11px;padding:3px 18px 3px 5px;border-radius:4px;border:1px solid var(--soft);background:white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a6a58'/%3E%3C/svg%3E") no-repeat right 4px center;appearance:none;-webkit-appearance:none;cursor:pointer;color:#3a3028;width:62px;}
 .tbl-sel:focus{outline:none;border-color:var(--gold);}
-.sort-btns{display:inline-flex;flex-direction:row;margin-left:4px;gap:4px;vertical-align:middle;}
-.sort-btn{background:rgba(255,255,255,0.15);border:none;color:rgba(255,255,255,0.7);font-size:11px;padding:2px 5px;cursor:pointer;line-height:1;border-radius:3px;display:inline-block;}
+.sort-btns{display:inline-flex;flex-direction:row;margin-left:6px;gap:6px;vertical-align:middle;}
+.sort-btn{background:rgba(255,255,255,0.2);border:none;color:white;font-size:14px;padding:4px 10px;cursor:pointer;line-height:1;border-radius:4px;display:inline-block;font-weight:700;}
 .sort-btn.active{background:var(--gold);color:white;}
-.sort-btn:hover{background:rgba(255,255,255,0.3);}
+.sort-btn:hover{background:rgba(255,255,255,0.4);}
+.reset-btn{background:rgba(255,255,255,0.15);border:none;color:white;font-size:10px;padding:3px 8px;cursor:pointer;border-radius:4px;margin-left:4px;white-space:nowrap;}
+.reset-btn:hover{background:var(--gold);}
 .scroll-hint{font-size:11px;color:var(--soft);text-align:right;margin-bottom:4px;}
 .empty-msg{text-align:center;color:var(--soft);padding:40px;font-size:13px;}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;align-items:center;justify-content:center;}
@@ -123,7 +125,7 @@ tbody tr:hover td:first-child{background:#fffbf7;}
     <table>
       <thead>
         <tr>
-          <th style="text-align:left;min-width:130px">スタッフ<span class="sort-btns"><button class="sort-btn" onclick="sortBy('reset',true)">▲</button><button class="sort-btn" onclick="sortBy('reset',false)">▼</button></span></th>
+          <th style="text-align:left;min-width:150px">役職順<span class="sort-btns"><button class="sort-btn" id="sb-reset-asc" onclick="sortBy('reset',true)">▲</button><button class="sort-btn" id="sb-reset-desc" onclick="sortBy('reset',false)">▼</button></span></th>
           <th>総売目標<span class="sort-btns"><button class="sort-btn" id="sb-target-asc" onclick="sortBy('target',true)">▲</button><button class="sort-btn" id="sb-target-desc" onclick="sortBy('target',false)">▼</button></span></th>
           <th>総売結果<br><small style="font-size:9px;opacity:0.7">自動計算</small><span class="sort-btns"><button class="sort-btn" id="sb-result-asc" onclick="sortBy('result',true)">▲</button><button class="sort-btn" id="sb-result-desc" onclick="sortBy('result',false)">▼</button></span></th>
           <th>指名技術売上<span class="sort-btns"><button class="sort-btn" id="sb-meimei_sales-asc" onclick="sortBy('meimei_sales',true)">▲</button><button class="sort-btn" id="sb-meimei_sales-desc" onclick="sortBy('meimei_sales',false)">▼</button></span></th>
@@ -231,8 +233,12 @@ function getKey(sid){return currentMonth+'_'+sid;}
 
 function sortBy(field,asc){
   if(field==='reset'){
-    sortField=null;sortAsc=true;
+    sortField='reset';
+    sortAsc=asc;
     document.querySelectorAll('.sort-btn').forEach(function(b){b.classList.remove('active');});
+    const id='sb-reset-'+(asc?'asc':'desc');
+    const el=document.getElementById(id);
+    if(el)el.classList.add('active');
     renderTable();
     return;
   }
@@ -247,7 +253,9 @@ function sortBy(field,asc){
 
 function getSortedList(){
   const list=getStaffList();
-  if(!sortField)return list;
+  if(!sortField||sortField==='reset'){
+    return sortAsc?list:list.slice().reverse();
+  }
   return list.slice().sort(function(a,b){
     let av,bv;
     if(sortField==='result'){
