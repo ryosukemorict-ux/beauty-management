@@ -51,7 +51,10 @@ tbody tr:hover td:first-child{background:#fffbf7;}
 .num-inp.pct{width:52px;}
 .tbl-sel{font-family:'Noto Sans JP',sans-serif;font-size:11px;padding:3px 18px 3px 5px;border-radius:4px;border:1px solid var(--soft);background:white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a6a58'/%3E%3C/svg%3E") no-repeat right 4px center;appearance:none;-webkit-appearance:none;cursor:pointer;color:#3a3028;width:62px;}
 .tbl-sel:focus{outline:none;border-color:var(--gold);}
-.auto-val{font-size:13px;font-weight:700;color:var(--dark);}
+.sort-btns{display:inline-flex;flex-direction:column;margin-left:3px;gap:0;}
+.sort-btn{background:none;border:none;color:rgba(255,255,255,0.4);font-size:8px;padding:0;cursor:pointer;line-height:1;display:block;}
+.sort-btn.active{color:var(--gold);}
+.sort-btn:hover{color:white;}
 .scroll-hint{font-size:11px;color:var(--soft);text-align:right;margin-bottom:4px;}
 .empty-msg{text-align:center;color:var(--soft);padding:40px;font-size:13px;}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;align-items:center;justify-content:center;}
@@ -120,18 +123,18 @@ tbody tr:hover td:first-child{background:#fffbf7;}
     <table>
       <thead>
         <tr>
-          <th data-sort="reset" style="text-align:left;min-width:130px">スタッフ ↕</th>
-          <th data-sort="target">総売目標 ↕<span id="sort-target"></span></th>
-          <th data-sort="result">総売結果<br><small style="font-size:9px;opacity:0.7">自動計算</small> ↕<span id="sort-result"></span></th>
-          <th data-sort="meimei_sales">指名技術売上 ↕<span id="sort-meimei_sales"></span></th>
-          <th data-sort="meimei_clients">指名入客数 ↕<span id="sort-meimei_clients"></span></th>
-          <th data-sort="free_clients">フリー入客数 ↕<span id="sort-free_clients"></span></th>
-          <th data-sort="free_sales">フリー売上 ↕<span id="sort-free_sales"></span></th>
-          <th data-sort="unit_price">客単価 ↕<span id="sort-unit_price"></span></th>
-          <th data-sort="return_new">再来率<br>新規 ↕<span id="sort-return_new"></span></th>
-          <th data-sort="return_reg">再来率<br>顧客 ↕<span id="sort-return_reg"></span></th>
-          <th data-sort="tanden">店販売上 ↕<span id="sort-tanden"></span></th>
-          <th data-sort="late">遅刻数 ↕<span id="sort-late"></span></th>
+          <th style="text-align:left;min-width:130px">スタッフ<span class="sort-btns"><button class="sort-btn" onclick="sortBy('reset',true)">▲</button><button class="sort-btn" onclick="sortBy('reset',false)">▼</button></span></th>
+          <th>総売目標<span class="sort-btns"><button class="sort-btn" id="sb-target-asc" onclick="sortBy('target',true)">▲</button><button class="sort-btn" id="sb-target-desc" onclick="sortBy('target',false)">▼</button></span></th>
+          <th>総売結果<br><small style="font-size:9px;opacity:0.7">自動計算</small><span class="sort-btns"><button class="sort-btn" id="sb-result-asc" onclick="sortBy('result',true)">▲</button><button class="sort-btn" id="sb-result-desc" onclick="sortBy('result',false)">▼</button></span></th>
+          <th>指名技術売上<span class="sort-btns"><button class="sort-btn" id="sb-meimei_sales-asc" onclick="sortBy('meimei_sales',true)">▲</button><button class="sort-btn" id="sb-meimei_sales-desc" onclick="sortBy('meimei_sales',false)">▼</button></span></th>
+          <th>指名入客数<span class="sort-btns"><button class="sort-btn" id="sb-meimei_clients-asc" onclick="sortBy('meimei_clients',true)">▲</button><button class="sort-btn" id="sb-meimei_clients-desc" onclick="sortBy('meimei_clients',false)">▼</button></span></th>
+          <th>フリー入客数<span class="sort-btns"><button class="sort-btn" id="sb-free_clients-asc" onclick="sortBy('free_clients',true)">▲</button><button class="sort-btn" id="sb-free_clients-desc" onclick="sortBy('free_clients',false)">▼</button></span></th>
+          <th>フリー売上<span class="sort-btns"><button class="sort-btn" id="sb-free_sales-asc" onclick="sortBy('free_sales',true)">▲</button><button class="sort-btn" id="sb-free_sales-desc" onclick="sortBy('free_sales',false)">▼</button></span></th>
+          <th>客単価<span class="sort-btns"><button class="sort-btn" id="sb-unit_price-asc" onclick="sortBy('unit_price',true)">▲</button><button class="sort-btn" id="sb-unit_price-desc" onclick="sortBy('unit_price',false)">▼</button></span></th>
+          <th>再来率<br>新規<span class="sort-btns"><button class="sort-btn" id="sb-return_new-asc" onclick="sortBy('return_new',true)">▲</button><button class="sort-btn" id="sb-return_new-desc" onclick="sortBy('return_new',false)">▼</button></span></th>
+          <th>再来率<br>顧客<span class="sort-btns"><button class="sort-btn" id="sb-return_reg-asc" onclick="sortBy('return_reg',true)">▲</button><button class="sort-btn" id="sb-return_reg-desc" onclick="sortBy('return_reg',false)">▼</button></span></th>
+          <th>店販売上<span class="sort-btns"><button class="sort-btn" id="sb-tanden-asc" onclick="sortBy('tanden',true)">▲</button><button class="sort-btn" id="sb-tanden-desc" onclick="sortBy('tanden',false)">▼</button></span></th>
+          <th>遅刻数<span class="sort-btns"><button class="sort-btn" id="sb-late-asc" onclick="sortBy('late',true)">▲</button><button class="sort-btn" id="sb-late-desc" onclick="sortBy('late',false)">▼</button></span></th>
         </tr>
       </thead>
       <tbody id="sales-tbody">
@@ -226,16 +229,17 @@ function getStaffList(){
 
 function getKey(sid){return currentMonth+'_'+sid;}
 
-function sortBy(field){
+function sortBy(field,asc){
   if(field==='reset'){
     sortField=null;sortAsc=true;
-    document.querySelectorAll('[id^="sort-"]').forEach(function(el){el.textContent='';});
+    document.querySelectorAll('.sort-btn').forEach(function(b){b.classList.remove('active');});
     renderTable();return;
   }
-  if(sortField===field){sortAsc=!sortAsc;}else{sortField=field;sortAsc=false;}
-  document.querySelectorAll('[id^="sort-"]').forEach(function(el){el.textContent='';});
-  const el=document.getElementById('sort-'+field);
-  if(el)el.textContent=sortAsc?' ▲':' ▼';
+  sortField=field;sortAsc=asc;
+  document.querySelectorAll('.sort-btn').forEach(function(b){b.classList.remove('active');});
+  const id='sb-'+field+'-'+(asc?'asc':'desc');
+  const el=document.getElementById(id);
+  if(el)el.classList.add('active');
   renderTable();
 }
 
@@ -350,17 +354,6 @@ async function loadAll(){
 
 document.getElementById('add-month-modal').addEventListener('click',function(e){
   if(e.target===this)closeAddModal();
-});
-
-// ヘッダーソートをtouchstart+clickで対応
-document.querySelectorAll('thead th[data-sort]').forEach(function(th){
-  th.style.cursor='pointer';
-  function doSort(){
-    alert('sort:'+th.dataset.sort);
-    sortBy(th.dataset.sort);
-  }
-  th.addEventListener('click',doSort);
-  th.addEventListener('touchstart',function(e){e.preventDefault();doSort();},{passive:false});
 });
 
 loadAll();
