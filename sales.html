@@ -320,9 +320,9 @@ async function saveProductivity(){
   for(const el of inputs){
     const pos=el.dataset.pos;
     const val=el.value===''?0:Number(el.value);
-    await sb.from('role_productivity').upsert({id:pos,monthly_target:val,updated_at:new Date().toISOString()});
-    roleProductivity[pos]=val;
+    await sb.from('role_productivity').upsert({month:currentMonth,position:pos,monthly_target:val,updated_at:new Date().toISOString()},{onConflict:'month,position'});
   }
+  await loadProductivity();
   closeProductivityModal();
   renderTable();
 }
@@ -371,7 +371,7 @@ function confirmAddMonth(){
 function onMonthChange(){
   currentMonth=document.getElementById('month-sel').value;
   salesData={};
-  Promise.all([loadSalesData(),loadAllocation()]).then(function(){renderTable();});
+  Promise.all([loadSalesData(),loadAllocation(),loadProductivity()]).then(function(){renderTable();});
 }
 
 function switchStore(store){
