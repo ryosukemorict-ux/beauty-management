@@ -268,7 +268,10 @@ function confirmAddMonth(){
   renderTable();
 }
 
-function onMonthChange(){currentMonth=document.getElementById('month-sel').value;renderTable();}
+function onMonthChange(){
+  currentMonth=document.getElementById('month-sel').value;
+  loadSalesData().then(function(){renderTable();});
+}
 
 function switchStore(store){
   currentStore=store;
@@ -365,6 +368,7 @@ function renderTable(){
       const el2=document.getElementById('result-'+sid);
       if(el2)el2.textContent=result?result.toLocaleString():'—';
       updateTotals();
+      saveSalesData(sid,field,val);
     });
   });
   updateTotals();
@@ -376,7 +380,7 @@ function updateTotals(){
   list.forEach(function(s){
     const d=salesData[getKey(s.id)]||{};
     target+=Number(d.target||0);
-    result+=calcResult(d); 
+    result+=calcResult(d);
     meimei+=Number(d.meimei_sales||0);
     free+=Number(d.free_sales||0);
     clients+=Number(d.meimei_clients||0)+Number(d.free_clients||0);
@@ -400,8 +404,47 @@ async function loadAll(){
   const thisMonth=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0');
   currentMonth=months.includes(thisMonth)?thisMonth:months[0];
   document.getElementById('month-sel').value=currentMonth;
+  await loadSalesData();
   document.getElementById('loading').style.display='none';
   renderTable();
+}
+
+async function loadSalesData(){
+  const {data}=await sb.from('sales_data').select('*').eq('month',currentMonth);
+  if(data){
+    data.forEach(function(row){
+      const key=currentMonth+'_'+row.student_id;
+      salesData[key]={
+        target:row.target,
+        meimei_sales:row.meimei_sales,
+        meimei_clients:row.meimei_clients,
+        free_clients:row.free_clients,
+        free_sales:row.free_sales,
+        unit_price:row.unit_price,
+        return_new:row.return_new,
+        return_reg:row.return_reg,
+        tanden:row.tanden,
+        late:row.late,
+        db_id:row.id
+      };
+    });
+  }
+}
+
+async function saveSalesData(sid,field,val){
+  const key=currentMonth+'_'+sid;
+  const existing=salesData[key];
+  if(existing&&existing.db_id){
+    await sb.from('sales_data').update({[field]:val,updated_at:new Date().toISOString()}).eq('id',existing.db_id);
+  } else {
+    const {data}=await sb.from('sales_data').insert({
+      month:currentMonth,student_id:sid,[field]:val
+    }).select().single();
+    if(data){
+      if(!salesData[key])salesData[key]={};
+      salesData[key].db_id=data.id;
+    }
+  }
 }
 
 document.getElementById('add-month-modal').addEventListener('click',function(e){
