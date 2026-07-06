@@ -376,7 +376,7 @@ function updateTotals(){
   list.forEach(function(s){
     const d=salesData[getKey(s.id)]||{};
     target+=Number(d.target||0);
-    result+=calcResult(d);
+    result+=calcResult(d); 
     meimei+=Number(d.meimei_sales||0);
     free+=Number(d.free_sales||0);
     clients+=Number(d.meimei_clients||0)+Number(d.free_clients||0);
