@@ -120,18 +120,18 @@ tbody tr:hover td:first-child{background:#fffbf7;}
     <table>
       <thead>
         <tr>
-          <th style="text-align:left;min-width:130px">スタッフ</th>
-          <th data-sort="target">総売目標<span id="sort-target"></span></th>
-          <th data-sort="result">総売結果<br><small style="font-size:9px;opacity:0.7">自動計算</small><span id="sort-result"></span></th>
-          <th data-sort="meimei_sales">指名技術売上<span id="sort-meimei_sales"></span></th>
-          <th data-sort="meimei_clients">指名入客数<span id="sort-meimei_clients"></span></th>
-          <th data-sort="free_clients">フリー入客数<span id="sort-free_clients"></span></th>
-          <th data-sort="free_sales">フリー売上<span id="sort-free_sales"></span></th>
-          <th data-sort="unit_price">客単価<span id="sort-unit_price"></span></th>
-          <th data-sort="return_new">再来率<br>新規<span id="sort-return_new"></span></th>
-          <th data-sort="return_reg">再来率<br>顧客<span id="sort-return_reg"></span></th>
-          <th data-sort="tanden">店販売上<span id="sort-tanden"></span></th>
-          <th data-sort="late">遅刻数<span id="sort-late"></span></th>
+          <th data-sort="reset" style="text-align:left;min-width:130px">スタッフ ↕</th>
+          <th data-sort="target">総売目標 ↕<span id="sort-target"></span></th>
+          <th data-sort="result">総売結果<br><small style="font-size:9px;opacity:0.7">自動計算</small> ↕<span id="sort-result"></span></th>
+          <th data-sort="meimei_sales">指名技術売上 ↕<span id="sort-meimei_sales"></span></th>
+          <th data-sort="meimei_clients">指名入客数 ↕<span id="sort-meimei_clients"></span></th>
+          <th data-sort="free_clients">フリー入客数 ↕<span id="sort-free_clients"></span></th>
+          <th data-sort="free_sales">フリー売上 ↕<span id="sort-free_sales"></span></th>
+          <th data-sort="unit_price">客単価 ↕<span id="sort-unit_price"></span></th>
+          <th data-sort="return_new">再来率<br>新規 ↕<span id="sort-return_new"></span></th>
+          <th data-sort="return_reg">再来率<br>顧客 ↕<span id="sort-return_reg"></span></th>
+          <th data-sort="tanden">店販売上 ↕<span id="sort-tanden"></span></th>
+          <th data-sort="late">遅刻数 ↕<span id="sort-late"></span></th>
         </tr>
       </thead>
       <tbody id="sales-tbody">
@@ -227,8 +227,12 @@ function getStaffList(){
 function getKey(sid){return currentMonth+'_'+sid;}
 
 function sortBy(field){
+  if(field==='reset'){
+    sortField=null;sortAsc=true;
+    document.querySelectorAll('[id^="sort-"]').forEach(function(el){el.textContent='';});
+    renderTable();return;
+  }
   if(sortField===field){sortAsc=!sortAsc;}else{sortField=field;sortAsc=false;}
-  // アイコン更新
   document.querySelectorAll('[id^="sort-"]').forEach(function(el){el.textContent='';});
   const el=document.getElementById('sort-'+field);
   if(el)el.textContent=sortAsc?' ▲':' ▼';
