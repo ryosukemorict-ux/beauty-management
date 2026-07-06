@@ -161,7 +161,8 @@ const SUPABASE_URL = 'https://nrweporylfaorlqektsk.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yd2Vwb3J5bGZhb3JscWVrdHNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0ODUzMDAsImV4cCI6MjA5NDA2MTMwMH0.48m8FDoD3oFaqxXEZ625wr5zD001c1ghuUOmcaNaICQ';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let currentYear=2026,currentMonth=6,rankYear=2026,rankMonth=6;
+const __today=new Date();
+let currentYear=__today.getFullYear(),currentMonth=__today.getMonth()+1,rankYear=__today.getFullYear(),rankMonth=__today.getMonth()+1;
 let allStaff=[],allReservations=[];
 let growthChart=null,storeChartObj=null;
 let saveTimers={};
