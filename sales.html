@@ -270,6 +270,7 @@ function confirmAddMonth(){
 
 function onMonthChange(){
   currentMonth=document.getElementById('month-sel').value;
+  salesData={};
   loadSalesData().then(function(){renderTable();});
 }
 
