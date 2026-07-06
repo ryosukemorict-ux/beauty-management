@@ -355,7 +355,10 @@ document.getElementById('add-month-modal').addEventListener('click',function(e){
 // ヘッダーソートをtouchstart+clickで対応
 document.querySelectorAll('thead th[data-sort]').forEach(function(th){
   th.style.cursor='pointer';
-  function doSort(){sortBy(th.dataset.sort);}
+  function doSort(){
+    alert('sort:'+th.dataset.sort);
+    sortBy(th.dataset.sort);
+  }
   th.addEventListener('click',doSort);
   th.addEventListener('touchstart',function(e){e.preventDefault();doSort();},{passive:false});
 });
