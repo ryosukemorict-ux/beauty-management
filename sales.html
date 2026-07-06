@@ -415,15 +415,15 @@ async function loadSalesData(){
     data.forEach(function(row){
       const key=currentMonth+'_'+row.student_id;
       salesData[key]={
-        target:row.target,
-        meimei_sales:row.meimei_sales,
+        target:row.target?Math.round(row.target):null,
+        meimei_sales:row.meimei_sales?Math.round(row.meimei_sales):null,
         meimei_clients:row.meimei_clients,
         free_clients:row.free_clients,
-        free_sales:row.free_sales,
-        unit_price:row.unit_price,
+        free_sales:row.free_sales?Math.round(row.free_sales):null,
+        unit_price:row.unit_price?Math.round(row.unit_price):null,
         return_new:row.return_new,
         return_reg:row.return_reg,
-        tanden:row.tanden,
+        tanden:row.tanden?Math.round(row.tanden):null,
         late:row.late,
         db_id:row.id
       };
