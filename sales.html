@@ -121,10 +121,17 @@ tbody tr:hover td:first-child{background:#fffbf7;}
       <thead>
         <tr>
           <th style="text-align:left;min-width:130px">スタッフ</th>
-          <th>総売目標</th><th>総売結果<br><small style="font-size:9px;opacity:0.7">自動計算</small></th>
-          <th>指名技術売上</th><th>指名入客数</th>
-          <th>フリー入客数</th><th>フリー売上</th><th>客単価</th>
-          <th>再来率<br>新規</th><th>再来率<br>顧客</th><th>店販売上</th><th>遅刻数</th>
+          <th onclick="sortBy('target')" style="cursor:pointer;">総売目標<span id="sort-target"></span></th>
+          <th onclick="sortBy('result')" style="cursor:pointer;">総売結果<br><small style="font-size:9px;opacity:0.7">自動計算</small><span id="sort-result"></span></th>
+          <th onclick="sortBy('meimei_sales')" style="cursor:pointer;">指名技術売上<span id="sort-meimei_sales"></span></th>
+          <th onclick="sortBy('meimei_clients')" style="cursor:pointer;">指名入客数<span id="sort-meimei_clients"></span></th>
+          <th onclick="sortBy('free_clients')" style="cursor:pointer;">フリー入客数<span id="sort-free_clients"></span></th>
+          <th onclick="sortBy('free_sales')" style="cursor:pointer;">フリー売上<span id="sort-free_sales"></span></th>
+          <th onclick="sortBy('unit_price')" style="cursor:pointer;">客単価<span id="sort-unit_price"></span></th>
+          <th onclick="sortBy('return_new')" style="cursor:pointer;">再来率<br>新規<span id="sort-return_new"></span></th>
+          <th onclick="sortBy('return_reg')" style="cursor:pointer;">再来率<br>顧客<span id="sort-return_reg"></span></th>
+          <th onclick="sortBy('tanden')" style="cursor:pointer;">店販売上<span id="sort-tanden"></span></th>
+          <th onclick="sortBy('late')" style="cursor:pointer;">遅刻数<span id="sort-late"></span></th>
         </tr>
       </thead>
       <tbody id="sales-tbody">
@@ -142,6 +149,7 @@ const POS_ORDER=['代表','店長','チーフ','スタイリスト','Jrスタイ
 const EXCLUDE_ROLES=['管理者'];
 
 let students=[],salesData={},currentMonth='',currentStore='all',months=[];
+let sortField=null,sortAsc=true;
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
@@ -218,6 +226,31 @@ function getStaffList(){
 
 function getKey(sid){return currentMonth+'_'+sid;}
 
+function sortBy(field){
+  if(sortField===field){sortAsc=!sortAsc;}else{sortField=field;sortAsc=false;}
+  // アイコン更新
+  document.querySelectorAll('[id^="sort-"]').forEach(function(el){el.textContent='';});
+  const el=document.getElementById('sort-'+field);
+  if(el)el.textContent=sortAsc?' ▲':' ▼';
+  renderTable();
+}
+
+function getSortedList(){
+  const list=getStaffList();
+  if(!sortField)return list;
+  return list.slice().sort(function(a,b){
+    let av,bv;
+    if(sortField==='result'){
+      av=calcResult(salesData[getKey(a.id)]||{});
+      bv=calcResult(salesData[getKey(b.id)]||{});
+    } else {
+      av=Number((salesData[getKey(a.id)]||{})[sortField]||0);
+      bv=Number((salesData[getKey(b.id)]||{})[sortField]||0);
+    }
+    return sortAsc?(av-bv):(bv-av);
+  });
+}
+
 // 0〜maxのoptionsを生成
 function numOpts(max,val,step){
   step=step||1;
@@ -234,7 +267,7 @@ function calcResult(d){
 }
 
 function renderTable(){
-  const list=getStaffList();
+  const list=getSortedList();
   const tb=document.getElementById('sales-tbody');
   if(!list.length){tb.innerHTML='<tr><td colspan="12" class="empty-msg">対象スタッフがいません</td></tr>';return;}
   tb.innerHTML=list.map(function(s){
