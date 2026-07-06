@@ -418,7 +418,9 @@ function renderTable(){
 }
 
 function updateTotals(){
-  const list=getStaffList();
+  let list=students.slice();
+  if(currentStore==='ailes')list=list.filter(function(s){return s.store==='エルズ'||RYOTEN_STORES.includes(s.store);});
+  else if(currentStore==='soleil')list=list.filter(function(s){return s.store==='soleil'||RYOTEN_STORES.includes(s.store);});
   let target=0,result=0,meimei=0,free=0,clients=0,tanden=0;
   list.forEach(function(s){
     const d=salesData[getKey(s.id)]||{};
