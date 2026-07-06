@@ -142,12 +142,25 @@ tbody tr:hover td:first-child{background:#fffbf7;}
   </div>
 </div>
 
+<div class="modal-overlay" id="productivity-modal">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-title">📊 人事生産性設定</div>
+    <div style="font-size:12px;color:var(--mid);margin-bottom:16px;text-align:center">役職ごとの月間売上目標（税込）</div>
+    <div id="productivity-fields"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeProductivityModal()">キャンセル</button>
+      <button class="btn btn-dark" onclick="saveProductivity()">保存</button>
+    </div>
+  </div>
+</div>
+
 <div class="main">
   <div class="month-selector">
     <label>対象月</label>
     <select class="month-sel" id="month-sel" onchange="onMonthChange()"></select>
     <button onclick="showAddModal()" style="font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:6px 14px;border-radius:7px;border:1.5px solid var(--gold-light);background:white;color:var(--mid);cursor:pointer;">＋ 月を追加</button>
     <button onclick="showAllocModal()" style="font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:6px 14px;border-radius:7px;border:1.5px solid var(--gold-light);background:white;color:var(--mid);cursor:pointer;">⚙️ 按分設定</button>
+    <button id="btn-productivity" onclick="showProductivityModal()" style="display:none;font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:6px 14px;border-radius:7px;border:1.5px solid var(--gold-light);background:white;color:var(--mid);cursor:pointer;">📊 人事生産性</button>
   </div>
   <div class="store-tabs">
     <button class="store-tab active" id="tab-all" onclick="switchStore('all')">全店舗</button>
@@ -253,6 +266,11 @@ let allocation={ailes_pct:50,soleil_pct:50};
 // 両店スタッフのID（亀田代表）
 const RYOTEN_STORES=['両店'];
 
+// 人事生産性(役職ごとの月間売上目標・税込)の編集権限
+const PRODUCTIVITY_EDIT_ROLES=['代表','管理者','店長','チーフ'];
+let ME=null;
+let roleProductivity={};
+
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 function showAllocModal(){
@@ -270,6 +288,39 @@ async function saveAlloc(){
   allocation={ailes_pct:a,soleil_pct:s};
   closeAllocModal();
   updateTotals();
+}
+
+function canEditProductivity(){return ME&&PRODUCTIVITY_EDIT_ROLES.includes(ME.position);}
+
+async function loadProductivity(){
+  const {data}=await sb.from('role_productivity').select('*');
+  roleProductivity={};
+  if(data)data.forEach(function(r){roleProductivity[r.id]=Number(r.monthly_target)||0;});
+}
+
+function showProductivityModal(){
+  if(!canEditProductivity())return;
+  const wrap=document.getElementById('productivity-fields');
+  wrap.innerHTML=POS_ORDER.map(function(pos){
+    const val=roleProductivity[pos]||'';
+    return '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--mid);display:block;margin-bottom:4px">'+pos+'（税込・円）</label>'
+      +'<input type="number" class="prod-input" data-pos="'+pos+'" value="'+val+'" placeholder="0" style="font-family:\'Noto Sans JP\',sans-serif;font-size:14px;padding:8px 12px;border-radius:8px;border:1.5px solid var(--gold-light);width:100%;outline:none;">'
+      +'</div>';
+  }).join('');
+  document.getElementById('productivity-modal').classList.add('show');
+}
+function closeProductivityModal(){document.getElementById('productivity-modal').classList.remove('show');}
+
+async function saveProductivity(){
+  const inputs=document.querySelectorAll('.prod-input');
+  for(const el of inputs){
+    const pos=el.dataset.pos;
+    const val=el.value===''?0:Number(el.value);
+    await sb.from('role_productivity').upsert({id:pos,monthly_target:val,updated_at:new Date().toISOString()});
+    roleProductivity[pos]=val;
+  }
+  closeProductivityModal();
+  renderTable();
 }
 
 function buildMonths(){
@@ -391,7 +442,7 @@ function renderTable(){
     const result=calcResult(d);
     return '<tr>'
       +'<td>'+esc(s.name)+'<span class="pos-badge">'+esc(s.position||'')+'</span></td>'
-      +'<td><input type="number" class="num-inp" data-sid="'+s.id+'" data-f="target" placeholder="0" value="'+esc(d.target||'')+'"></td>'
+      +(function(){var rt=roleProductivity[s.position]||0;return '<td><span class="auto-val">'+(rt?rt.toLocaleString():'—')+'</span><span class="auto-val-sub">'+(rt?'(税抜 '+Math.round(rt/(1+TAX_RATE)).toLocaleString()+')':'')+'</span></td>';})()
       +'<td><span class="auto-val" id="result-'+s.id+'">'+(result?Math.round(result*(1+TAX_RATE)).toLocaleString():'—')+'</span>'
       +'<span class="auto-val-sub" id="result-sub-'+s.id+'">'+(result?'(税抜 '+result.toLocaleString()+')':'')+'</span></td>'
       +'<td><input type="number" class="num-inp" data-sid="'+s.id+'" data-f="meimei_sales" placeholder="0" value="'+esc(d.meimei_sales||'')+'"></td>'
@@ -435,15 +486,15 @@ function updateTotals(){
       ?(currentStore==='ailes'?(allocation.ailes_pct||50)/100
         :currentStore==='soleil'?(allocation.soleil_pct||50)/100:1)
       :1;
-    target+=Math.round(Number(d.target||0)*pct);
+    target+=Math.round(Number(roleProductivity[s.position]||0)*pct);
     result+=Math.round(calcResult(d)*pct);
     meimei+=Math.round(Number(d.meimei_sales||0)*pct);
     free+=Math.round(Number(d.free_sales||0)*pct);
     clients+=Math.round((Number(d.meimei_clients||0)+Number(d.free_clients||0))*pct);
     tanden+=Math.round(Number(d.tanden||0)*pct);
   });
-  document.getElementById('tot-target').textContent=target?'¥'+Math.round(target*(1+TAX_RATE)).toLocaleString():'—';
-  document.getElementById('tot-target-sub').textContent=target?'(税抜 ¥'+target.toLocaleString()+')':'';
+  document.getElementById('tot-target').textContent=target?'¥'+target.toLocaleString():'—';
+  document.getElementById('tot-target-sub').textContent=target?'(税抜 ¥'+Math.round(target/(1+TAX_RATE)).toLocaleString()+')':'';
   document.getElementById('tot-result').textContent=result?'¥'+Math.round(result*(1+TAX_RATE)).toLocaleString():'—';
   document.getElementById('tot-result-sub').textContent=result?'(税抜 ¥'+result.toLocaleString()+')':'';
   document.getElementById('tot-meimei').textContent=meimei?'¥'+Math.round(meimei*(1+TAX_RATE)).toLocaleString():'—';
@@ -457,6 +508,12 @@ function updateTotals(){
 
 async function loadAll(){
   document.getElementById('loading').style.display='flex';
+  const savedLogin=localStorage.getItem('logged_in_id');
+  if(savedLogin){
+    const {data:meData}=await sb.from('students').select('*').eq('id',savedLogin).single();
+    if(meData)ME=meData;
+  }
+  if(canEditProductivity())document.getElementById('btn-productivity').style.display='';
   const {data}=await sb.from('students').select('*').order('created_at');
   students=(data||[]).filter(function(s){return s.is_active!==false&&!EXCLUDE_ROLES.includes(s.position);});
   months=buildMonths();
@@ -467,6 +524,7 @@ async function loadAll(){
   document.getElementById('month-sel').value=currentMonth;
   await loadSalesData();
   await loadAllocation();
+  await loadProductivity();
   document.getElementById('loading').style.display='none';
   renderTable();
 }
@@ -492,7 +550,7 @@ async function loadSalesData(){
         return_new:row.return_new,
         return_reg:row.return_reg,
         tanden:row.tanden?Math.round(row.tanden):null, 
-        late:row.late, 
+        late:row.late,
         db_id:row.id
       };
     });
