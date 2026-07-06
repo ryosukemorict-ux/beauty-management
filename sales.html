@@ -271,7 +271,7 @@ function confirmAddMonth(){
 function onMonthChange(){
   currentMonth=document.getElementById('month-sel').value;
   salesData={};
-  loadSalesData().then(function(){alert('rows:'+Object.keys(salesData).length);renderTable();});
+  loadSalesData().then(function(){renderTable();});
 }
 
 function switchStore(store){
