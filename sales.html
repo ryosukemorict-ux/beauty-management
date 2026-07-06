@@ -293,9 +293,13 @@ async function saveAlloc(){
 function canEditProductivity(){return ME&&PRODUCTIVITY_EDIT_ROLES.includes(ME.position);}
 
 async function loadProductivity(){
-  const {data}=await sb.from('role_productivity').select('*');
+  const {data}=await sb.from('role_productivity').select('*').lte('month',currentMonth).order('month',{ascending:false});
   roleProductivity={};
-  if(data)data.forEach(function(r){roleProductivity[r.id]=Number(r.monthly_target)||0;});
+  if(data){
+    data.forEach(function(r){
+      if(!(r.position in roleProductivity))roleProductivity[r.position]=Number(r.monthly_target)||0;
+    });
+  }
 }
 
 function showProductivityModal(){
