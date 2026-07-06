@@ -859,7 +859,7 @@ const selfEditable=!editable&&canEditSelf(CID);
     const goalH=getGoalHours(r.curriculum_id);
     const cc=CAT_COLORS[catName]||'#f0ece8';
     const catBadge='<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:500;background:'+cc+'">'+esc(catName)+'</span>';
-　　 const plannedCell=(editable||selfEditable)?'<div style="display:flex;align-items:center;gap:3px"><input type="date" class="date-inp" data-id="'+r.id+'" data-f="planned_start_date" value="'+esc(r.planned_start_date||'')+'">'+( r.planned_start_date?'<button onclick="clearDate(\''+r.id+'\',\'planned_start_date\',this)" style="background:none;border:none;color:#c4b49e;cursor:pointer;font-size:14px;padding:0 2px">×</button>':'')+'</div>':'<span class="plain">'+esc(r.planned_start_date||'—')+'
+    const plannedCell=(editable||selfEditable)?'<div style="display:flex;align-items:center;gap:3px"><input type="date" class="date-inp" data-id="'+r.id+'" data-f="planned_start_date" value="'+esc(r.planned_start_date||'')+'">'+( r.planned_start_date?'<button onclick="clearDate(\''+r.id+'\',\'planned_start_date\',this)" style="background:none;border:none;color:#c4b49e;cursor:pointer;font-size:14px;padding:0 2px">×</button>':'')+'</div>':'<span class="plain">'+esc(r.planned_start_date||'—')+'</span>';
     const startCell=(editable||selfEditable)?'<div style="display:flex;align-items:center;gap:3px"><input type="date" class="date-inp" data-id="'+r.id+'" data-f="start_date" value="'+esc(r.start_date||'')+'">'+( r.start_date?'<button onclick="clearDate(\''+r.id+'\',\'start_date\',this)" style="background:none;border:none;color:#c4b49e;cursor:pointer;font-size:14px;padding:0 2px">×</button>':'')+'</div>':'<span class="plain">'+esc(r.start_date||'—')+'</span>';
     const examCell=(editable||selfEditable)?'<div style="display:flex;align-items:center;gap:3px"><input type="date" class="date-inp" data-id="'+r.id+'" data-f="exam_date" value="'+esc(r.exam_date||'')+'">'+( r.exam_date?'<button onclick="clearDate(\''+r.id+'\',\'exam_date\',this)" style="background:none;border:none;color:#c4b49e;cursor:pointer;font-size:14px;padding:0 2px">×</button>':'')+'</div>':'<span class="plain">'+esc(r.exam_date||'—')+'</span>';
     const countCell=(editable||selfEditable)?'<select class="tbl-sel" data-id="'+r.id+'" data-f="exam_count">'+countOpts(r.exam_count)+'</select>':'<span class="plain">'+(r.exam_count||0)+'</span>';
@@ -883,7 +883,7 @@ const selfEditable=!editable&&canEditSelf(CID);
         updateProgress(el.dataset.id,el.dataset.f,el.value);
       });
     });
-    if(editable||selfEditable){tb.querySelectorAll('input[type="number"],input[type="date"]').forEach(function(el){
+    tb.querySelectorAll('input[type="number"],input[type="date"]').forEach(function(el){
       el.addEventListener('change',function(){updateProgress(el.dataset.id,el.dataset.f,el.value||null);});
     });
     tb.querySelectorAll('.del-btn').forEach(function(b){
@@ -895,7 +895,6 @@ const selfEditable=!editable&&canEditSelf(CID);
         });
       });
     });
-  }
   }
 }
 
