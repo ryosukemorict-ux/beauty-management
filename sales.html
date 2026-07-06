@@ -120,11 +120,32 @@ tbody tr:hover td:first-child{background:#fffbf7;}
   </div>
 </div>
 
+<div class="modal-overlay" id="allocation-modal">
+  <div class="modal">
+    <div class="modal-title">⚙️ 代表按分設定</div>
+    <div style="font-size:12px;color:var(--mid);margin-bottom:16px;text-align:center">亀田代表の売上を店舗ごとに按分します</div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label style="font-size:12px;color:var(--mid);display:block;margin-bottom:4px">エルズ（%）</label>
+      <input type="number" id="alloc-ailes" min="0" max="100" placeholder="50" style="font-family:'Noto Sans JP',sans-serif;font-size:14px;padding:8px 12px;border-radius:8px;border:1.5px solid var(--gold-light);width:100%;outline:none;">
+    </div>
+    <div class="form-group" style="margin-bottom:16px">
+      <label style="font-size:12px;color:var(--mid);display:block;margin-bottom:4px">soleil（%）</label>
+      <input type="number" id="alloc-soleil" min="0" max="100" placeholder="50" style="font-family:'Noto Sans JP',sans-serif;font-size:14px;padding:8px 12px;border-radius:8px;border:1.5px solid var(--gold-light);width:100%;outline:none;">
+    </div>
+    <div id="alloc-err" style="font-size:12px;color:var(--red);text-align:center;min-height:16px;margin-bottom:8px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAllocModal()">キャンセル</button>
+      <button class="btn btn-dark" onclick="saveAlloc()">保存</button>
+    </div>
+  </div>
+</div>
+
 <div class="main">
   <div class="month-selector">
     <label>対象月</label>
     <select class="month-sel" id="month-sel" onchange="onMonthChange()"></select>
     <button onclick="showAddModal()" style="font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:6px 14px;border-radius:7px;border:1.5px solid var(--gold-light);background:white;color:var(--mid);cursor:pointer;">＋ 月を追加</button>
+    <button onclick="showAllocModal()" style="font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:6px 14px;border-radius:7px;border:1.5px solid var(--gold-light);background:white;color:var(--mid);cursor:pointer;">⚙️ 按分設定</button>
   </div>
   <div class="store-tabs">
     <button class="store-tab active" id="tab-all" onclick="switchStore('all')">全店舗</button>
@@ -224,8 +245,29 @@ const POS_ORDER=['代表','店長','チーフ','スタイリスト','Jrスタイ
 const EXCLUDE_ROLES=['管理者'];
 let students=[],salesData={},currentMonth='',currentStore='all',months=[];
 let sortField=null,sortAsc=true;
+let allocation={ailes_pct:50,soleil_pct:50};
+
+// 両店スタッフのID（亀田代表）
+const RYOTEN_STORES=['両店'];
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function showAllocModal(){
+  document.getElementById('alloc-ailes').value=allocation.ailes_pct||50;
+  document.getElementById('alloc-soleil').value=allocation.soleil_pct||50;
+  document.getElementById('alloc-err').textContent='';
+  document.getElementById('allocation-modal').classList.add('show');
+}
+function closeAllocModal(){document.getElementById('allocation-modal').classList.remove('show');}
+async function saveAlloc(){
+  const a=Number(document.getElementById('alloc-ailes').value);
+  const s=Number(document.getElementById('alloc-soleil').value);
+  if(a+s!==100){document.getElementById('alloc-err').textContent='合計が100%になるように入力してください';return;}
+  await sb.from('sales_allocation').upsert({month:currentMonth,ailes_pct:a,soleil_pct:s,updated_at:new Date().toISOString()},{onConflict:'month'});
+  allocation={ailes_pct:a,soleil_pct:s};
+  closeAllocModal();
+  updateTotals();
+}
 
 function buildMonths(){
   const list=[];
@@ -270,7 +312,8 @@ function confirmAddMonth(){
 
 function onMonthChange(){
   currentMonth=document.getElementById('month-sel').value;
-  loadSalesData().then(function(){renderTable();});
+  salesData={};
+  Promise.all([loadSalesData(),loadAllocation()]).then(function(){renderTable();});
 }
 
 function switchStore(store){
@@ -282,8 +325,8 @@ function switchStore(store){
 
 function getStaffList(){
   let list=students.slice();
-  if(currentStore==='ailes')list=list.filter(function(s){return s.store==='エルズ'||s.store==='両店';});
-  else if(currentStore==='soleil')list=list.filter(function(s){return s.store==='soleil'||s.store==='両店';});
+  if(currentStore==='ailes')list=list.filter(function(s){return s.store==='エルズ';});
+  else if(currentStore==='soleil')list=list.filter(function(s){return s.store==='soleil';});
   list.sort(function(a,b){
     const ai=POS_ORDER.indexOf(a.position||'');
     const bi=POS_ORDER.indexOf(b.position||'');
@@ -379,12 +422,17 @@ function updateTotals(){
   let target=0,result=0,meimei=0,free=0,clients=0,tanden=0;
   list.forEach(function(s){
     const d=salesData[getKey(s.id)]||{};
-    target+=Number(d.target||0);
-    result+=calcResult(d);
-    meimei+=Number(d.meimei_sales||0);
-    free+=Number(d.free_sales||0);
-    clients+=Number(d.meimei_clients||0)+Number(d.free_clients||0);
-    tanden+=Number(d.tanden||0);
+    // 両店スタッフは按分して計上
+    const pct=RYOTEN_STORES.includes(s.store)
+      ?(currentStore==='ailes'?(allocation.ailes_pct||50)/100
+        :currentStore==='soleil'?(allocation.soleil_pct||50)/100:1)
+      :1;
+    target+=Math.round(Number(d.target||0)*pct);
+    result+=Math.round(calcResult(d)*pct);
+    meimei+=Math.round(Number(d.meimei_sales||0)*pct);
+    free+=Math.round(Number(d.free_sales||0)*pct);
+    clients+=Math.round((Number(d.meimei_clients||0)+Number(d.free_clients||0))*pct);
+    tanden+=Math.round(Number(d.tanden||0)*pct);
   });
   document.getElementById('tot-target').textContent=target?'¥'+target.toLocaleString():'—';
   document.getElementById('tot-result').textContent=result?'¥'+result.toLocaleString():'—';
@@ -405,8 +453,15 @@ async function loadAll(){
   currentMonth=months.includes(thisMonth)?thisMonth:months[0];
   document.getElementById('month-sel').value=currentMonth;
   await loadSalesData();
+  await loadAllocation();
   document.getElementById('loading').style.display='none';
   renderTable();
+}
+
+async function loadAllocation(){
+  const {data}=await sb.from('sales_allocation').select('*').eq('month',currentMonth).single();
+  if(data){allocation={ailes_pct:data.ailes_pct,soleil_pct:data.soleil_pct};}
+  else{allocation={ailes_pct:50,soleil_pct:50};}
 }
 
 async function loadSalesData(){
