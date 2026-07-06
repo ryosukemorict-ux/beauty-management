@@ -86,7 +86,7 @@ select.ns{width:38px;min-width:38px;max-width:38px;border:1px solid var(--gold-l
       <div class="filter-bar">
         <div class="month-nav">
           <button onclick="changeMonth(-1)">‹</button>
-          <div class="month-label" id="month-label-table">2026年6月</div>
+<div class="month-label" id="month-label-table"></div>
           <button onclick="changeMonth(1)">›</button>
         </div>
         <label>店舗：</label>
@@ -112,7 +112,7 @@ select.ns{width:38px;min-width:38px;max-width:38px;border:1px solid var(--gold-l
       <div class="filter-bar">
         <div class="month-nav">
           <button onclick="changeMonthRank(-1)">‹</button>
-          <div class="month-label" id="month-label-rank">2026年6月</div>
+　　　　　　<div class="month-label" id="month-label-rank"></div>
           <button onclick="changeMonthRank(1)">›</button>
         </div>
         <label>店舗：</label>
@@ -170,6 +170,8 @@ let saveTimers={};
 const posOrder=['店長','チーフ','スタイリスト','Jrスタイリスト','カラーリスト','アシスタント'];
 
 async function init(){
+  document.getElementById('month-label-table').textContent=`${currentYear}年${currentMonth}月`;
+  document.getElementById('month-label-rank').textContent=`${rankYear}年${rankMonth}月`;
   const{data,error}=await sb.from('students').select('id,name,store,position,is_active').eq('is_active',true);
   if(!error&&data){
     allStaff=data.sort((a,b)=>{
