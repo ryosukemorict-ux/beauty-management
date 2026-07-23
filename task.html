@@ -126,6 +126,7 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
 <div class="main">
   <div class="tab-bar">
     <div class="tab active" onclick="switchTab('today')">📋 今日のタスク</div>
+    <div class="tab" onclick="switchTab('members')">👥 メンバー別</div>
     <div class="tab" onclick="switchTab('calendar')">📅 月間カレンダー</div>
   </div>
 
@@ -145,6 +146,10 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
       <button class="btn btn-ghost btn-sm" onclick="goToday()">今日</button>
     </div>
     <div id="today-list"></div>
+  </div>
+
+  <div id="sec-members" style="display:none">
+    <div id="members-wrap"></div>
   </div>
 
   <div id="sec-calendar" style="display:none">
@@ -195,18 +200,20 @@ function renderPosFilter(){
   document.getElementById('btn-manage').style.display=ME?'':'none';
 }
 
-function onPosFilterChange(){renderToday();renderCalTaskSel();renderCalendar();}
+function onPosFilterChange(){renderToday();renderCalTaskSel();renderCalendar();if(currentTab==='members')renderMembers();}
 
 function switchTab(tab){
   currentTab=tab;
-  document.querySelectorAll('.tab').forEach(function(t,i){t.classList.toggle('active',['today','calendar'][i]===tab);});
+  document.querySelectorAll('.tab').forEach(function(t,i){t.classList.toggle('active',['today','members','calendar'][i]===tab);});
   document.getElementById('sec-today').style.display=tab==='today'?'':'none';
+  document.getElementById('sec-members').style.display=tab==='members'?'':'none';
   document.getElementById('sec-calendar').style.display=tab==='calendar'?'':'none';
   if(tab==='calendar'){renderCalTaskSel();renderCalendar();}
+  if(tab==='members'){renderMembers();}
 }
 
-function changeDay(d){todayDate.setDate(todayDate.getDate()+d);renderToday();}
-function goToday(){todayDate=new Date();renderToday();}
+function changeDay(d){todayDate.setDate(todayDate.getDate()+d);renderToday();if(currentTab==='members')renderMembers();}
+function goToday(){todayDate=new Date();renderToday();if(currentTab==='members')renderMembers();}
 
 function isDueOn(task,date){
   const dow=date.getDay(),dom=date.getDate();
@@ -428,6 +435,45 @@ async function editMemo(taskId,dateStr){
   renderToday();
 }
 
+async function renderMembers(){
+  const wrap=document.getElementById('members-wrap');
+  const posF=document.getElementById('pos-filter').value;
+  if(posF==='all'){
+    wrap.innerHTML='<div class="empty-msg">上の「役職」で特定の役職を選ぶと、メンバーごとの一覧が見られます</div>';
+    return;
+  }
+  const dateStr=ymd(todayDate);
+  const monthStr=dateStr.slice(0,7);
+  const monthFirst=monthStr+'-01';
+  const monthLast=ymd(new Date(todayDate.getFullYear(),todayDate.getMonth()+1,0));
+  await loadLogsForRange(monthFirst,monthLast);
+  const staffList=students.filter(function(s){return s.position===posF&&s.is_active!==false;});
+  const dueTasks=tasks.filter(function(t){return t.position===posF&&isDueOn(t,todayDate)&&t.frequency_type!=='as_needed';});
+  if(dueTasks.some(function(t){return t.frequency_type==='monthly_count';}))await loadMonthlyTargets(monthStr);
+  if(!staffList.length){wrap.innerHTML='<div class="empty-msg">対象のスタッフがいません</div>';return;}
+  if(!dueTasks.length){wrap.innerHTML='<div class="empty-msg">本日該当するタスクはありません</div>';return;}
+  let html='<div style="overflow-x:auto"><table style="border-collapse:collapse;width:100%;font-size:12px">';
+  html+='<thead><tr><th style="position:sticky;left:0;background:var(--dark);color:white;padding:8px 10px;text-align:left;white-space:nowrap">名前</th>'+dueTasks.map(function(t){return '<th style="background:var(--dark);color:white;padding:8px 8px;white-space:nowrap;font-weight:500">'+esc(t.title)+'</th>';}).join('')+'</tr></thead><tbody>';
+  html+=staffList.map(function(s){
+    const cells=dueTasks.map(function(t){
+      if(t.frequency_type==='monthly_count'){
+        const done=monthlyCumulative(t.id,s.id);
+        const target=monthlyTargets[t.id]||1;
+        const ok=done>=target;
+        return '<td style="text-align:center;padding:6px 8px;border-bottom:1px solid #f0e8df;background:'+(ok?'#eef7f2':'#fdf0ef')+';color:'+(ok?'var(--green)':'var(--red)')+';font-weight:700">'+done+'/'+target+'</td>';
+      }
+      const target=targetCount(t);
+      const l=getLog(t.id,s.id,dateStr);
+      const cnt=l?l.done_count:0;
+      const ok=cnt>=target;
+      return '<td style="text-align:center;padding:6px 8px;border-bottom:1px solid #f0e8df;background:'+(ok?'#eef7f2':'#fdf0ef')+';color:'+(ok?'var(--green)':'var(--red)')+';font-weight:700">'+(ok?'✓':(target>1?cnt+'/'+target:'未'))+'</td>';
+    }).join('');
+    return '<tr><td style="position:sticky;left:0;background:white;padding:6px 10px;border-bottom:1px solid #f0e8df;white-space:nowrap;font-weight:700">'+esc(s.name)+'</td>'+cells+'</tr>';
+  }).join('');
+  html+='</tbody></table></div>';
+  wrap.innerHTML=html;
+}
+
 function renderCalTaskSel(){
   const posF=document.getElementById('pos-filter').value;
   let list=tasks;
@@ -544,7 +590,7 @@ function renderMgmtList(){
 }
 
 function askDeleteTask(id){
-  const t=tasks.find(function(t){return t.id===id;});if(!t)return; 
+  const t=tasks.find(function(t){return t.id===id;});if(!t)return;
   if(!confirm('「'+t.title+'」を削除しますか？')) return;
   deleteTask(id);
 }
