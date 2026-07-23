@@ -573,7 +573,7 @@ async function addTask(){
     await setMonthlyTarget(data.id,ymd(new Date()).slice(0,7),t0);
   }
   document.getElementById('tm-title').value='';
-  document.getElementById('tm-err').textContent='';
+  document.getElementById('tm-err').textContent=''; 
   renderMgmtList();
   renderToday();
   renderCalTaskSel();
