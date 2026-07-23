@@ -106,6 +106,8 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
         <option value="weekly">曜日指定（週1回など）</option>
         <option value="monthly">毎月◯日</option>
         <option value="interval_months">◯ヶ月ごと</option>
+        <option value="monthly_count">月次・回数指定（面談など）</option>
+        <option value="as_needed">随時対応（クレーム対応など）</option>
       </select>
     </div>
     <div id="tm-freq-detail"></div>
@@ -172,6 +174,7 @@ const FULL_EDIT_ROLES=['代表','管理者','店長','チーフ'];
 const DOW_LABELS=['日','月','火','水','木','金','土'];
 
 let students=[],tasks=[],taskLogs={},ME=null;
+let monthlyTargets={},taskEvents={};
 let currentTab='today';
 let todayDate=new Date();
 let calMonth=new Date();
@@ -210,6 +213,7 @@ function isDueOn(task,date){
   const fd=task.frequency_detail||{};
   switch(task.frequency_type){
     case 'daily': case 'multiple_daily': return true;
+    case 'monthly_count': case 'as_needed': return true;
     case 'weekly': return (fd.weekdays||[]).includes(dow);
     case 'monthly': return dom===(fd.day||1);
     case 'interval_months': {
@@ -222,12 +226,18 @@ function isDueOn(task,date){
   }
   return false;
 }
-function targetCount(task){return task.frequency_type==='multiple_daily'?(task.frequency_detail&&task.frequency_detail.times||1):1;}
+function targetCount(task){
+  if(task.frequency_type==='multiple_daily')return (task.frequency_detail&&task.frequency_detail.times)||1;
+  if(task.frequency_type==='monthly_count')return monthlyTargets[task.id]||1;
+  return 1;
+}
 function freqLabel(task){
   const fd=task.frequency_detail||{};
   switch(task.frequency_type){
     case 'daily':return '毎日';
     case 'multiple_daily':return '毎日・'+(fd.times||1)+'回';
+    case 'monthly_count':return '月次・回数指定（今月の目標：'+(monthlyTargets[task.id]||1)+'回）';
+    case 'as_needed':return '随時対応（発生の都度記録）';
     case 'weekly':return '毎週 '+(fd.weekdays||[]).map(function(w){return DOW_LABELS[w];}).join('・');
     case 'monthly':return '毎月'+(fd.day||1)+'日';
     case 'interval_months':return (fd.interval||1)+'ヶ月ごと（'+(fd.day||1)+'日）';
@@ -266,30 +276,85 @@ async function setLog(taskId,studentId,dateStr,doneCount){
 async function renderToday(){
   document.getElementById('today-label').textContent=(todayDate.getMonth()+1)+'月'+todayDate.getDate()+'日('+DOW_LABELS[todayDate.getDay()]+')';
   const dateStr=ymd(todayDate);
-  await loadLogsForRange(dateStr,dateStr);
+  const monthStr=dateStr.slice(0,7);
+  const monthFirst=monthStr+'-01';
+  const monthLast=ymd(new Date(todayDate.getFullYear(),todayDate.getMonth()+1,0));
   const posF=document.getElementById('pos-filter').value;
   let list=tasks.filter(function(t){return isDueOn(t,todayDate);});
   if(posF!=='all')list=list.filter(function(t){return t.position===posF;});
+
+  const hasMonthlyCount=list.some(function(t){return t.frequency_type==='monthly_count';});
+  const hasAsNeeded=list.some(function(t){return t.frequency_type==='as_needed';});
+  await loadLogsForRange(monthFirst,monthLast);
+  if(hasMonthlyCount)await loadMonthlyTargets(monthStr);
+  if(hasAsNeeded)await loadTaskEvents(monthFirst,monthLast);
+
   const wrap=document.getElementById('today-list');
   if(!list.length){wrap.innerHTML='<div class="empty-msg">対象のタスクはありません</div>';return;}
   wrap.innerHTML=list.map(function(t){
-    const target=targetCount(t);
-    const staffInPos=students.filter(function(s){return s.position===t.position&&s.is_active!==false;});
-    const doneStaff=staffInPos.filter(function(s){const l=getLog(t.id,s.id,dateStr);return l&&l.done_count>=target;});
-    const aggBadge='<span class="progress-badge'+(doneStaff.length===staffInPos.length&&staffInPos.length>0?' full':'')+'">'+doneStaff.length+'/'+staffInPos.length+'人 完了</span>';
-    let myCheck='';
-    if(ME&&ME.position===t.position){
-      const myLog=getLog(t.id,ME.id,dateStr);
-      const myCount=myLog?myLog.done_count:0;
-      if(target>1){
-        myCheck='<div class="cnt-wrap"><button class="cnt-btn" onclick="bumpCount(\''+t.id+'\',\''+dateStr+'\',-1,'+target+')">−</button><div class="cnt-val">'+myCount+'/'+target+'</div><button class="cnt-btn" onclick="bumpCount(\''+t.id+'\',\''+dateStr+'\',1,'+target+')">＋</button></div>';
-      } else {
-        myCheck='<div class="chk-box'+(myCount>=1?' done':'')+'" onclick="toggleCheck(\''+t.id+'\',\''+dateStr+'\','+myCount+')">'+(myCount>=1?'✓':'')+'</div>';
-      }
-    }
-    const delBtn=canEditPosition(t.position)?'<button class="mgmt-del" onclick="askDeleteTask(\''+t.id+'\')" title="削除">×</button>':'';
-    return '<div class="task-card"><div class="task-top"><div><div class="task-title">'+esc(t.title)+'<span class="task-pos-badge">'+esc(t.position)+'</span></div><div class="task-meta">'+esc(freqLabel(t))+'</div></div><div class="task-check">'+myCheck+'</div></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">'+aggBadge+delBtn+'</div></div>';
+    if(t.frequency_type==='as_needed')return renderAsNeededCard(t);
+    if(t.frequency_type==='monthly_count')return renderMonthlyCountCard(t,monthStr);
+    return renderScheduledCard(t,dateStr);
   }).join('');
+}
+
+function renderScheduledCard(t,dateStr){
+  const target=targetCount(t);
+  const staffInPos=students.filter(function(s){return s.position===t.position&&s.is_active!==false;});
+  const doneStaff=staffInPos.filter(function(s){const l=getLog(t.id,s.id,dateStr);return l&&l.done_count>=target;});
+  const aggBadge='<span class="progress-badge'+(doneStaff.length===staffInPos.length&&staffInPos.length>0?' full':'')+'">'+doneStaff.length+'/'+staffInPos.length+'人 完了</span>';
+  let myCheck='';
+  const myLog=ME?getLog(t.id,ME.id,dateStr):null;
+  if(ME&&ME.position===t.position){
+    const myCount=myLog?myLog.done_count:0;
+    if(target>1){
+      myCheck='<div class="cnt-wrap"><button class="cnt-btn" onclick="bumpCount(\''+t.id+'\',\''+dateStr+'\',-1,'+target+')">−</button><div class="cnt-val">'+myCount+'/'+target+'</div><button class="cnt-btn" onclick="bumpCount(\''+t.id+'\',\''+dateStr+'\',1,'+target+')">＋</button></div>';
+    } else {
+      myCheck='<div class="chk-box'+(myCount>=1?' done':'')+'" onclick="toggleCheck(\''+t.id+'\',\''+dateStr+'\','+myCount+')">'+(myCount>=1?'✓':'')+'</div>';
+    }
+  }
+  const memoBtn=(ME&&ME.position===t.position)?'<button class="mgmt-del" style="font-size:14px" onclick="editMemo(\''+t.id+'\',\''+dateStr+'\')" title="メモ">📝</button>':'';
+  const memoText=(myLog&&myLog.memo)?'<div class="task-meta">📝 '+esc(myLog.memo)+'</div>':'';
+  const delBtn=canEditPosition(t.position)?'<button class="mgmt-del" onclick="askDeleteTask(\''+t.id+'\')" title="削除">×</button>':'';
+  return '<div class="task-card"><div class="task-top"><div><div class="task-title">'+esc(t.title)+'<span class="task-pos-badge">'+esc(t.position)+'</span></div><div class="task-meta">'+esc(freqLabel(t))+'</div>'+memoText+'</div><div class="task-check">'+myCheck+memoBtn+'</div></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">'+aggBadge+delBtn+'</div></div>';
+}
+
+function monthlyCumulative(taskId,studentId){
+  let sum=0;
+  Object.keys(taskLogs).forEach(function(k){
+    if(k.indexOf(taskId+'_'+studentId+'_')===0)sum+=taskLogs[k].done_count||0;
+  });
+  return sum;
+}
+
+function renderMonthlyCountCard(t,monthStr){
+  const target=monthlyTargets[t.id]||1;
+  const staffInPos=students.filter(function(s){return s.position===t.position&&s.is_active!==false;});
+  let totalDone=0;
+  staffInPos.forEach(function(s){totalDone+=monthlyCumulative(t.id,s.id);});
+  const totalTargetAll=target*staffInPos.length;
+  const aggBadge='<span class="progress-badge'+(totalDone>=totalTargetAll&&totalTargetAll>0?' full':'')+'">全体 '+totalDone+'/'+totalTargetAll+'件（今月）</span>';
+  let myAction='';
+  if(ME&&ME.position===t.position){
+    const myDone=monthlyCumulative(t.id,ME.id);
+    myAction='<div class="cnt-wrap"><div class="cnt-val">'+myDone+'/'+target+'</div><button class="cnt-btn" onclick="bumpMonthlyCount(\''+t.id+'\')">＋</button></div>';
+  }
+  const editTarget=canEditPosition(t.position)?'<button class="mgmt-del" style="font-size:12px" onclick="editMonthlyTarget(\''+t.id+'\')" title="今月の目標を編集">🎯編集</button>':'';
+  const memoBtn=(ME&&ME.position===t.position)?'<button class="mgmt-del" style="font-size:14px" onclick="editMemo(\''+t.id+'\',\''+ymd(todayDate)+'\')" title="メモ">📝</button>':'';
+  const delBtn=canEditPosition(t.position)?'<button class="mgmt-del" onclick="askDeleteTask(\''+t.id+'\')" title="削除">×</button>':'';
+  return '<div class="task-card"><div class="task-top"><div><div class="task-title">'+esc(t.title)+'<span class="task-pos-badge">'+esc(t.position)+'</span></div><div class="task-meta">'+esc(freqLabel(t))+'</div></div><div class="task-check">'+myAction+memoBtn+'</div></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;flex-wrap:wrap;gap:6px">'+aggBadge+'<div>'+editTarget+delBtn+'</div></div></div>';
+}
+
+function renderAsNeededCard(t){
+  const events=taskEvents[t.id]||[];
+  const aggBadge='<span class="progress-badge">今月 '+events.length+'件</span>';
+  let myAction='';
+  if(ME&&ME.position===t.position){
+    myAction='<button class="btn btn-gold btn-sm" onclick="logEvent(\''+t.id+'\')">＋ 記録する</button>';
+  }
+  const delBtn=canEditPosition(t.position)?'<button class="mgmt-del" onclick="askDeleteTask(\''+t.id+'\')" title="削除">×</button>':'';
+  const recentList=events.slice(0,3).map(function(e){const d=new Date(e.occurred_at);return '<div class="task-meta">・'+(d.getMonth()+1)+'/'+d.getDate()+(e.memo?'　'+esc(e.memo):'')+'</div>';}).join('');
+  return '<div class="task-card"><div class="task-top"><div><div class="task-title">'+esc(t.title)+'<span class="task-pos-badge">'+esc(t.position)+'</span></div><div class="task-meta">'+esc(freqLabel(t))+'</div>'+recentList+'</div><div class="task-check">'+myAction+'</div></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">'+aggBadge+delBtn+'</div></div>';
 }
 
 async function toggleCheck(taskId,dateStr,current){
@@ -301,6 +366,65 @@ async function bumpCount(taskId,dateStr,delta,target){
   let cur=log?log.done_count:0;
   cur=Math.max(0,Math.min(target,cur+delta));
   await setLog(taskId,ME.id,dateStr,cur);
+  renderToday();
+}
+async function bumpMonthlyCount(taskId){
+  const dateStr=ymd(todayDate);
+  const log=getLog(taskId,ME.id,dateStr);
+  const cur=log?log.done_count:0;
+  await setLog(taskId,ME.id,dateStr,cur+1);
+  renderToday();
+}
+
+async function loadMonthlyTargets(monthStr){
+  const {data}=await sb.from('task_monthly_targets').select('*').lte('month',monthStr).order('month',{ascending:false});
+  monthlyTargets={};
+  (data||[]).forEach(function(r){
+    if(!(r.task_id in monthlyTargets))monthlyTargets[r.task_id]=r.target_count;
+  });
+}
+async function setMonthlyTarget(taskId,monthStr,count){
+  await sb.from('task_monthly_targets').upsert({task_id:taskId,month:monthStr,target_count:count,updated_at:new Date().toISOString()},{onConflict:'task_id,month'});
+  monthlyTargets[taskId]=count;
+}
+function editMonthlyTarget(taskId){
+  const cur=monthlyTargets[taskId]||1;
+  const val=prompt('今月の目標回数を入力してください',cur);
+  if(val===null)return;
+  const n=Number(val);
+  if(!n||n<1)return;
+  setMonthlyTarget(taskId,ymd(todayDate).slice(0,7),n).then(renderToday);
+}
+
+async function loadTaskEvents(startYmd,endYmd){
+  const {data}=await sb.from('task_events').select('*').gte('occurred_at',startYmd).lte('occurred_at',endYmd+'T23:59:59').order('occurred_at',{ascending:false});
+  taskEvents={};
+  (data||[]).forEach(function(r){
+    if(!taskEvents[r.task_id])taskEvents[r.task_id]=[];
+    taskEvents[r.task_id].push(r);
+  });
+}
+async function logEvent(taskId){
+  const memo=prompt('メモがあれば入力してください（空でもOK）','');
+  if(memo===null)return;
+  await sb.from('task_events').insert({task_id:taskId,student_id:ME.id,memo:memo||null});
+  renderToday();
+}
+
+async function editMemo(taskId,dateStr){
+  const log=getLog(taskId,ME.id,dateStr);
+  const cur=log&&log.memo?log.memo:'';
+  const memo=prompt('メモを入力してください',cur);
+  if(memo===null)return;
+  const key=taskId+'_'+ME.id+'_'+dateStr;
+  const existing=taskLogs[key];
+  if(existing){
+    await sb.from('task_logs').update({memo:memo,updated_at:new Date().toISOString()}).eq('id',existing.id);
+    existing.memo=memo;
+  } else {
+    const {data}=await sb.from('task_logs').insert({task_id:taskId,student_id:ME.id,date:dateStr,done_count:0,memo:memo}).select().single();
+    if(data)taskLogs[key]=data;
+  }
   renderToday();
 }
 
@@ -371,6 +495,10 @@ function onFreqChange(){
     wrap.innerHTML='<div class="form-group"><label>毎月何日</label><input class="form-inp" id="tm-day" type="number" min="1" max="31" value="1"></div>';
   } else if(v==='interval_months'){
     wrap.innerHTML='<div class="form-group"><label>何ヶ月ごと</label><input class="form-inp" id="tm-interval" type="number" min="1" value="3"></div><div class="form-group"><label>実施日（毎月何日）</label><input class="form-inp" id="tm-day" type="number" min="1" max="31" value="1"></div>';
+  } else if(v==='monthly_count'){
+    wrap.innerHTML='<div class="form-group"><label>今月の目標回数（対象人数などに応じて後からいつでも変更できます）</label><input class="form-inp" id="tm-monthly-target" type="number" min="1" value="1"></div>';
+  } else if(v==='as_needed'){
+    wrap.innerHTML='<div style="font-size:12px;color:var(--mid)">発生したタイミングで「＋ 記録する」ボタンから記録するタスクです。頻度の設定は不要です。</div>';
   } else {
     wrap.innerHTML='';
   }
@@ -389,9 +517,15 @@ async function addTask(){
     detail={weekdays:days};
   } else if(freq==='monthly')detail={day:Number(document.getElementById('tm-day').value)||1};
   else if(freq==='interval_months')detail={interval:Number(document.getElementById('tm-interval').value)||1,day:Number(document.getElementById('tm-day').value)||1,start_month:ymd(new Date()).slice(0,7)};
+  else if(freq==='monthly_count')detail={};
+  else if(freq==='as_needed')detail={};
   const {data,error}=await sb.from('tasks').insert({position:position,title:title,frequency_type:freq,frequency_detail:detail,is_active:true}).select().single();
   if(error){document.getElementById('tm-err').textContent='エラー: '+error.message;return;}
   tasks.push(data);
+  if(freq==='monthly_count'){
+    const t0=Number(document.getElementById('tm-monthly-target').value)||1;
+    await setMonthlyTarget(data.id,ymd(new Date()).slice(0,7),t0);
+  }
   document.getElementById('tm-title').value='';
   document.getElementById('tm-err').textContent='';
   renderMgmtList();
