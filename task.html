@@ -422,13 +422,15 @@ async function bumpCount(taskId,dateStr,delta,target,studentId){
   await setLog(taskId,studentId,dateStr,cur);
   renderToday();
 }
-async function bumpMonthlyCount(taskId,studentId){
+async function bumpMonthlyCount(taskId,studentId,delta){
   studentId=studentId||(ME&&ME.id);
   if(!studentId)return;
+  delta=delta||1;
   const dateStr=ymd(todayDate);
   const log=getLog(taskId,studentId,dateStr);
   const cur=log?log.done_count:0;
-  await setLog(taskId,studentId,dateStr,cur+1);
+  const next=Math.max(0,cur+delta);
+  await setLog(taskId,studentId,dateStr,next);
   renderToday();
 }
 
@@ -565,8 +567,10 @@ async function renderMatrix(){
           const done=monthlyCumulative(t.id,s.id);
           const target=monthlyTargets[t.id]||1;
           const ok=done>=target;
-          const attr=(canViewPerson(s.id))?' onclick="quickBumpMonthly(\''+t.id+'\',\''+s.id+'\')" style="cursor:pointer;':' style="';
-          return '<td'+attr+'text-align:center;padding:6px 8px;border-bottom:1px solid #f0e8df;background:'+(ok?'#eef7f2':'#fdf0ef')+';color:'+(ok?'var(--green)':'var(--red)')+';font-weight:700">'+done+'/'+target+'</td>';
+          if(!canViewPerson(s.id)){
+            return '<td style="text-align:center;padding:6px 8px;border-bottom:1px solid #f0e8df;background:'+(ok?'#eef7f2':'#fdf0ef')+';color:'+(ok?'var(--green)':'var(--red)')+';font-weight:700">'+done+'/'+target+'</td>';
+          }
+          return '<td style="text-align:center;padding:4px 4px;border-bottom:1px solid #f0e8df;background:'+(ok?'#eef7f2':'#fdf0ef')+';color:'+(ok?'var(--green)':'var(--red)')+';font-weight:700"><div style="display:flex;align-items:center;justify-content:center;gap:3px"><button onclick="quickBumpMonthly(\''+t.id+'\',\''+s.id+'\',-1)" style="width:18px;height:18px;border-radius:5px;border:1px solid var(--gold-light);background:white;color:var(--mid);font-size:11px;line-height:1;cursor:pointer">−</button><span>'+done+'/'+target+'</span><button onclick="quickBumpMonthly(\''+t.id+'\',\''+s.id+'\',1)" style="width:18px;height:18px;border-radius:5px;border:1px solid var(--gold-light);background:white;color:var(--mid);font-size:11px;line-height:1;cursor:pointer">＋</button></div></td>';
         }
         if(viewMode==='daily'){
           const off=isOffDay(s.id,startYmd);
@@ -584,6 +588,14 @@ async function renderMatrix(){
         const st=scheduledStats(t,s.id,rangeStart,rangeEnd);
         if(!st.due)return '<td style="text-align:center;padding:6px 8px;border-bottom:1px solid #f0e8df;background:#f5f0eb;color:var(--soft)">－</td>';
         const ok=st.done>=st.due;
+        const dueDate=findDueDateInRange(t,rangeStart,rangeEnd);
+        const canTap=canViewPerson(s.id)&&dueDate;
+        if(canTap){
+          const dds=ymd(dueDate);
+          const l2=getLog(t.id,s.id,dds);
+          const cnt2=l2?l2.done_count:0;
+          return '<td onclick="quickToggle(\''+t.id+'\',\''+s.id+'\',\''+dds+'\','+cnt2+')" style="cursor:pointer;text-align:center;padding:6px 8px;border-bottom:1px solid #f0e8df;background:'+(ok?'#eef7f2':'#fdf0ef')+';color:'+(ok?'var(--green)':'var(--red)')+';font-weight:700">'+st.done+'/'+st.due+'</td>';
+        }
         return '<td style="text-align:center;padding:6px 8px;border-bottom:1px solid #f0e8df;background:'+(ok?'#eef7f2':'#fdf0ef')+';color:'+(ok?'var(--green)':'var(--red)')+';font-weight:700">'+st.done+'/'+st.due+'</td>';
       }).join('');
       return '<tr><td style="position:sticky;left:0;background:white;padding:6px 10px;border-bottom:1px solid #f0e8df;white-space:nowrap;font-weight:700">'+nameCell+'</td>'+cells+'</tr>';
@@ -593,17 +605,26 @@ async function renderMatrix(){
   wrap.innerHTML=html||'<div class="empty-msg">該当するタスクはありません</div>';
 }
 
+function findDueDateInRange(task,startDate,endDate){
+  for(let d=new Date(startDate);d<=endDate;d.setDate(d.getDate()+1)){
+    if(isDueOn(task,d))return new Date(d);
+  }
+  return null;
+}
+
 async function quickToggle(taskId,studentId,dateStr,current){
   if(!canViewPerson(studentId))return;
   await setLog(taskId,studentId,dateStr,current>=1?0:1);
   renderMatrix();
 }
-async function quickBumpMonthly(taskId,studentId){
+async function quickBumpMonthly(taskId,studentId,delta){
   if(!canViewPerson(studentId))return;
+  delta=delta||1;
   const dateStr=ymd(new Date());
   const log=getLog(taskId,studentId,dateStr);
   const cur=log?log.done_count:0;
-  await setLog(taskId,studentId,dateStr,cur+1);
+  const next=Math.max(0,cur+delta);
+  await setLog(taskId,studentId,dateStr,next);
   renderMatrix();
 }
 
