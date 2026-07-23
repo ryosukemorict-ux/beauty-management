@@ -541,10 +541,11 @@ async function renderMatrix(){
   positions.forEach(function(pos){
     const staffList=students.filter(function(s){return s.position===pos&&s.is_active!==false;});
     const dueTasks=tasks.filter(function(t){
-      if(t.position!==pos||t.frequency_type==='as_needed')return false;
-      if(t.frequency_type==='monthly_count')return true;
-      if(viewMode==='daily')return isDueOn(t,rangeStart);
-      return true;
+      if(t.position!==pos)return false;
+      if(viewMode==='daily')return t.frequency_type==='daily';
+      if(viewMode==='weekly')return t.frequency_type==='weekly';
+      if(viewMode==='monthly')return t.frequency_type==='monthly'||t.frequency_type==='monthly_count';
+      return false;
     });
     if(!staffList.length||!dueTasks.length)return;
     html+='<div class="section-title">'+esc(pos)+'</div>';
