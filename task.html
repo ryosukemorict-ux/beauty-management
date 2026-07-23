@@ -471,11 +471,6 @@ async function renderMembers(){
   html+='</tbody></table></div>';
   wrap.innerHTML=html;
 }
-    return '<tr><td style="position:sticky;left:0;background:white;padding:6px 10px;border-bottom:1px solid #f0e8df;white-space:nowrap;font-weight:700">'+esc(s.name)+'</td>'+cells+'</tr>';
-  }).join('');
-  html+='</tbody></table></div>';
-  wrap.innerHTML=html;
-}
 
 function renderCalTaskSel(){
   const posF=document.getElementById('pos-filter').value;
