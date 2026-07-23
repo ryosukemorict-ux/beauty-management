@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>タスク管理 | ailes group</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--cream:#faf6f0;--gold:#c9a96e;--gold-light:#e8d5b0;--dark:#1a1410;--mid:#7a6a58;--soft:#c4b49e;--accent:#8b5e3c;--green:#4a7c59;--red:#c0392b;--blue:#2980b9;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--dark);min-height:100vh;}
+.loading-screen{position:fixed;inset:0;background:var(--cream);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;z-index:9999;}
+.loading-spinner{width:40px;height:40px;border:3px solid var(--gold-light);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-text{font-size:13px;color:var(--mid);}
+.top-bar{background:var(--dark);color:var(--gold-light);padding:12px 20px;display:flex;align-items:center;gap:12px;}
+.top-bar-title{font-family:'Playfair Display',serif;font-size:18px;letter-spacing:2px;}
+.nav-bar{background:white;border-bottom:2px solid var(--gold-light);padding:0 16px;display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.nav-btn{font-size:13px;font-weight:500;padding:12px 18px;border:none;background:none;color:var(--mid);cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;margin-bottom:-2px;}
+.nav-btn.active{color:var(--gold);border-bottom-color:var(--gold);font-weight:700;}
+.main{max-width:900px;margin:0 auto;padding:20px 16px 80px;}
+.tab-bar{background:#fff;border-bottom:2px solid var(--gold-light);display:flex;padding:0 16px;gap:2px;margin-bottom:14px;border-radius:10px;overflow:hidden;border:1px solid var(--gold-light);}
+.tab{padding:10px 16px;font-size:13px;font-weight:500;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;color:var(--mid);}
+.tab.active{border-bottom-color:var(--gold);color:var(--dark);font-weight:700;}
+.filter-bar{background:white;border:1px solid var(--gold-light);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.filter-bar label{font-size:12px;color:var(--mid);font-weight:500;}
+.filter-sel{font-family:'Noto Sans JP',sans-serif;font-size:13px;padding:7px 26px 7px 10px;border-radius:8px;border:1.5px solid var(--gold-light);outline:none;cursor:pointer;background:white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a6a58'/%3E%3C/svg%3E") no-repeat right 8px center;appearance:none;-webkit-appearance:none;color:var(--dark);}
+.filter-sel:focus{border-color:var(--gold);}
+.btn{font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:500;padding:8px 16px;border-radius:7px;border:none;cursor:pointer;}
+.btn-dark{background:var(--dark);color:white;}
+.btn-gold{background:var(--gold);color:white;}
+.btn-ghost{background:#ede8e2;color:var(--mid);}
+.btn-red{background:#fdf0ef;color:var(--red);border:1px solid #f5c6c3;}
+.btn-sm{padding:6px 12px;font-size:12px;}
+.date-nav{display:flex;align-items:center;gap:10px;}
+.date-nav button{background:none;border:1px solid var(--gold-light);border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px;}
+.date-label{font-size:14px;font-weight:700;min-width:120px;text-align:center;}
+.task-card{background:white;border:1px solid var(--gold-light);border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.04);}
+.task-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;}
+.task-title{font-size:14px;font-weight:700;color:var(--dark);}
+.task-meta{font-size:11px;color:var(--soft);margin-top:2px;}
+.task-pos-badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;background:var(--gold-light);color:var(--accent);margin-left:6px;font-weight:500;}
+.task-check{display:flex;align-items:center;gap:8px;}
+.chk-box{width:26px;height:26px;border-radius:7px;border:2px solid var(--gold);background:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:white;flex-shrink:0;}
+.chk-box.done{background:var(--green);border-color:var(--green);}
+.cnt-wrap{display:flex;align-items:center;gap:6px;}
+.cnt-btn{width:26px;height:26px;border-radius:7px;border:1.5px solid var(--gold-light);background:white;cursor:pointer;font-size:14px;color:var(--mid);}
+.cnt-val{font-size:14px;font-weight:700;min-width:34px;text-align:center;}
+.progress-badge{font-size:11px;color:var(--mid);background:var(--cream);border-radius:20px;padding:3px 10px;white-space:nowrap;}
+.progress-badge.full{color:var(--green);background:#eef7f2;}
+.empty-msg{text-align:center;color:var(--soft);padding:40px;font-size:13px;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;align-items:center;justify-content:center;}
+.modal-overlay.show{display:flex;}
+.modal{background:white;border-radius:16px;padding:22px;max-width:420px;width:92%;box-shadow:0 8px 40px rgba(0,0,0,0.2);max-height:88vh;overflow-y:auto;}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:14px;text-align:center;}
+.form-group{margin-bottom:12px;}
+.form-group label{display:block;font-size:12px;color:var(--mid);margin-bottom:4px;}
+.form-inp,.form-sel{font-family:'Noto Sans JP',sans-serif;font-size:14px;padding:9px 12px;border-radius:8px;border:1.5px solid var(--gold-light);outline:none;background:#fdfaf6;width:100%;}
+.form-sel{background:white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a6a58'/%3E%3C/svg%3E") no-repeat right 12px center;appearance:none;-webkit-appearance:none;}
+.form-inp:focus,.form-sel:focus{border-color:var(--gold);}
+.modal-actions{display:flex;gap:10px;justify-content:center;margin-top:16px;}
+.modal-err{font-size:12px;color:var(--red);text-align:center;min-height:16px;}
+.mgmt-item{display:flex;align-items:center;gap:8px;background:var(--cream);border-radius:8px;padding:8px 10px;margin-bottom:6px;}
+.mgmt-item-name{flex:1;font-size:13px;}
+.mgmt-item-meta{font-size:11px;color:var(--soft);}
+.mgmt-del{background:none;border:none;color:var(--soft);font-size:16px;cursor:pointer;padding:2px 6px;}
+.mgmt-del:hover{color:var(--red);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.cal-dow{text-align:center;font-size:11px;color:var(--mid);padding:4px 0;font-weight:700;}
+.cal-cell{aspect-ratio:1;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;background:var(--cream);cursor:default;}
+.cal-cell.due{cursor:pointer;background:#fdf8f0;border:1.5px solid var(--gold-light);}
+.cal-cell.done{background:#eef7f2;border-color:var(--green);color:var(--green);font-weight:700;}
+.cal-cell.empty{background:transparent;}
+.cal-daynum{font-size:11px;}
+.section-title{font-size:13px;font-weight:700;color:var(--dark);margin:16px 0 8px;}
+</style>
+</head>
+<body>
+<div class="loading-screen" id="loading">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">データを読み込み中...</div>
+</div>
+<div class="top-bar">
+  <div class="top-bar-title">✦ ailes group</div>
+</div>
+<div class="nav-bar">
+  <button class="nav-btn" onclick="window.location.href='index.html'">🏠 ホーム</button>
+  <button class="nav-btn active">✅ タスク管理</button>
+</div>
+
+<div class="modal-overlay" id="task-modal">
+  <div class="modal">
+    <div class="modal-title">⚙️ タスク管理</div>
+    <div class="section-title">タスクを追加</div>
+    <div class="form-group"><label>役職</label>
+      <select class="form-sel" id="tm-position"></select>
+    </div>
+    <div class="form-group"><label>タスク名</label>
+      <input class="form-inp" id="tm-title" type="text" placeholder="例：レジ締め確認">
+    </div>
+    <div class="form-group"><label>頻度</label>
+      <select class="form-sel" id="tm-freq" onchange="onFreqChange()">
+        <option value="daily">毎日</option>
+        <option value="multiple_daily">毎日・複数回</option>
+        <option value="weekly">曜日指定（週1回など）</option>
+        <option value="monthly">毎月◯日</option>
+        <option value="interval_months">◯ヶ月ごと</option>
+      </select>
+    </div>
+    <div id="tm-freq-detail"></div>
+    <div class="modal-err" id="tm-err"></div>
+    <div class="modal-actions">
+      <button class="btn btn-gold" onclick="addTask()">追加する</button>
+    </div>
+    <div class="section-title">登録済みタスク</div>
+    <div id="mgmt-list"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('task-modal')">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="tab-bar">
+    <div class="tab active" onclick="switchTab('today')">📋 今日のタスク</div>
+    <div class="tab" onclick="switchTab('calendar')">📅 月間カレンダー</div>
+  </div>
+
+  <div class="filter-bar">
+    <label>役職：</label>
+    <select class="filter-sel" id="pos-filter" onchange="onPosFilterChange()"></select>
+    <button class="btn btn-outline btn-sm" id="btn-manage" style="display:none;border:1.5px solid var(--gold-light);background:white" onclick="openTaskModal()">⚙️ タスク管理</button>
+  </div>
+
+  <div id="sec-today">
+    <div class="filter-bar">
+      <div class="date-nav">
+        <button onclick="changeDay(-1)">‹</button>
+        <div class="date-label" id="today-label"></div>
+        <button onclick="changeDay(1)">›</button>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="goToday()">今日</button>
+    </div>
+    <div id="today-list"></div>
+  </div>
+
+  <div id="sec-calendar" style="display:none">
+    <div class="filter-bar">
+      <label>タスク：</label>
+      <select class="filter-sel" id="cal-task-sel" onchange="renderCalendar()" style="flex:1;min-width:160px"></select>
+      <div class="date-nav">
+        <button onclick="changeCalMonth(-1)">‹</button>
+        <div class="date-label" id="cal-month-label"></div>
+        <button onclick="changeCalMonth(1)">›</button>
+      </div>
+    </div>
+    <div class="task-card">
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL='https://nrweporylfaorlqektsk.supabase.co';
+const SUPABASE_ANON='sb_publishable_a3X1ltKqAaTv6CyxHIReug_xEPqqCSS';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
+
+const POS_ORDER=['代表','マネージャー','店長','チーフ','スタイリスト','Jrスタイリスト','カラーリスト','アシスタント','レセプション'];
+const EXCLUDE_ROLES=['管理者'];
+const FULL_EDIT_ROLES=['代表','管理者','店長','チーフ'];
+const DOW_LABELS=['日','月','火','水','木','金','土'];
+
+let students=[],tasks=[],taskLogs={},ME=null;
+let currentTab='today';
+let todayDate=new Date();
+let calMonth=new Date();
+let calTaskId=null;
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+
+function canEditAny(){return ME&&FULL_EDIT_ROLES.includes(ME.position);}
+function canEditPosition(pos){return ME&&(FULL_EDIT_ROLES.includes(ME.position)||ME.position===pos);}
+
+function renderPosFilter(){
+  const sel=document.getElementById('pos-filter');
+  const opts=['<option value="all">全役職</option>'].concat(POS_ORDER.map(function(p){return '<option value="'+p+'">'+p+'</option>';}));
+  sel.innerHTML=opts.join('');
+  sel.value=(ME&&!canEditAny())?ME.position:'all';
+  document.getElementById('btn-manage').style.display=ME?'':'none';
+}
+
+function onPosFilterChange(){renderToday();renderCalTaskSel();renderCalendar();}
+
+function switchTab(tab){
+  currentTab=tab;
+  document.querySelectorAll('.tab').forEach(function(t,i){t.classList.toggle('active',['today','calendar'][i]===tab);});
+  document.getElementById('sec-today').style.display=tab==='today'?'':'none';
+  document.getElementById('sec-calendar').style.display=tab==='calendar'?'':'none';
+  if(tab==='calendar'){renderCalTaskSel();renderCalendar();}
+}
+
+function changeDay(d){todayDate.setDate(todayDate.getDate()+d);renderToday();}
+function goToday(){todayDate=new Date();renderToday();}
+
+function isDueOn(task,date){
+  const dow=date.getDay(),dom=date.getDate();
+  const fd=task.frequency_detail||{};
+  switch(task.frequency_type){
+    case 'daily': case 'multiple_daily': return true;
+    case 'weekly': return (fd.weekdays||[]).includes(dow);
+    case 'monthly': return dom===(fd.day||1);
+    case 'interval_months': {
+      const startYm=fd.start_month||'2026-01';
+      const sp=startYm.split('-').map(Number);
+      const interval=fd.interval||1;
+      const diff=(date.getFullYear()-sp[0])*12+(date.getMonth()+1-sp[1]);
+      return diff>=0 && diff%interval===0 && dom===(fd.day||1);
+    }
+  }
+  return false;
+}
+function targetCount(task){return task.frequency_type==='multiple_daily'?(task.frequency_detail&&task.frequency_detail.times||1):1;}
+function freqLabel(task){
+  const fd=task.frequency_detail||{};
+  switch(task.frequency_type){
+    case 'daily':return '毎日';
+    case 'multiple_daily':return '毎日・'+(fd.times||1)+'回';
+    case 'weekly':return '毎週 '+(fd.weekdays||[]).map(function(w){return DOW_LABELS[w];}).join('・');
+    case 'monthly':return '毎月'+(fd.day||1)+'日';
+    case 'interval_months':return (fd.interval||1)+'ヶ月ごと（'+(fd.day||1)+'日）';
+  }
+  return '';
+}
+
+async function loadTasks(){
+  const {data}=await sb.from('tasks').select('*').eq('is_active',true).order('created_at');
+  tasks=data||[];
+}
+
+async function loadLogsForRange(startYmd,endYmd){
+  const {data}=await sb.from('task_logs').select('*').gte('date',startYmd).lte('date',endYmd);
+  taskLogs={};
+  (data||[]).forEach(function(r){
+    const key=r.task_id+'_'+r.student_id+'_'+r.date;
+    taskLogs[key]=r;
+  });
+}
+
+function getLog(taskId,studentId,dateStr){return taskLogs[taskId+'_'+studentId+'_'+dateStr];}
+
+async function setLog(taskId,studentId,dateStr,doneCount){
+  const key=taskId+'_'+studentId+'_'+dateStr;
+  const existing=taskLogs[key];
+  if(existing){
+    await sb.from('task_logs').update({done_count:doneCount,updated_at:new Date().toISOString()}).eq('id',existing.id);
+    existing.done_count=doneCount;
+  } else {
+    const {data}=await sb.from('task_logs').insert({task_id:taskId,student_id:studentId,date:dateStr,done_count:doneCount}).select().single();
+    if(data)taskLogs[key]=data;
+  }
+}
+
+async function renderToday(){
+  document.getElementById('today-label').textContent=(todayDate.getMonth()+1)+'月'+todayDate.getDate()+'日('+DOW_LABELS[todayDate.getDay()]+')';
+  const dateStr=ymd(todayDate);
+  await loadLogsForRange(dateStr,dateStr);
+  const posF=document.getElementById('pos-filter').value;
+  let list=tasks.filter(function(t){return isDueOn(t,todayDate);});
+  if(posF!=='all')list=list.filter(function(t){return t.position===posF;});
+  const wrap=document.getElementById('today-list');
+  if(!list.length){wrap.innerHTML='<div class="empty-msg">対象のタスクはありません</div>';return;}
+  wrap.innerHTML=list.map(function(t){
+    const target=targetCount(t);
+    const staffInPos=students.filter(function(s){return s.position===t.position&&s.is_active!==false;});
+    const doneStaff=staffInPos.filter(function(s){const l=getLog(t.id,s.id,dateStr);return l&&l.done_count>=target;});
+    const aggBadge='<span class="progress-badge'+(doneStaff.length===staffInPos.length&&staffInPos.length>0?' full':'')+'">'+doneStaff.length+'/'+staffInPos.length+'人 完了</span>';
+    let myCheck='';
+    if(ME&&ME.position===t.position){
+      const myLog=getLog(t.id,ME.id,dateStr);
+      const myCount=myLog?myLog.done_count:0;
+      if(target>1){
+        myCheck='<div class="cnt-wrap"><button class="cnt-btn" onclick="bumpCount(\''+t.id+'\',\''+dateStr+'\',-1,'+target+')">−</button><div class="cnt-val">'+myCount+'/'+target+'</div><button class="cnt-btn" onclick="bumpCount(\''+t.id+'\',\''+dateStr+'\',1,'+target+')">＋</button></div>';
+      } else {
+        myCheck='<div class="chk-box'+(myCount>=1?' done':'')+'" onclick="toggleCheck(\''+t.id+'\',\''+dateStr+'\','+myCount+')">'+(myCount>=1?'✓':'')+'</div>';
+      }
+    }
+    const delBtn=canEditPosition(t.position)?'<button class="mgmt-del" onclick="askDeleteTask(\''+t.id+'\')" title="削除">×</button>':'';
+    return '<div class="task-card"><div class="task-top"><div><div class="task-title">'+esc(t.title)+'<span class="task-pos-badge">'+esc(t.position)+'</span></div><div class="task-meta">'+esc(freqLabel(t))+'</div></div><div class="task-check">'+myCheck+'</div></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">'+aggBadge+delBtn+'</div></div>';
+  }).join('');
+}
+
+async function toggleCheck(taskId,dateStr,current){
+  await setLog(taskId,ME.id,dateStr,current>=1?0:1);
+  renderToday();
+}
+async function bumpCount(taskId,dateStr,delta,target){
+  const log=getLog(taskId,ME.id,dateStr);
+  let cur=log?log.done_count:0;
+  cur=Math.max(0,Math.min(target,cur+delta));
+  await setLog(taskId,ME.id,dateStr,cur);
+  renderToday();
+}
+
+function renderCalTaskSel(){
+  const posF=document.getElementById('pos-filter').value;
+  let list=tasks;
+  if(posF!=='all')list=list.filter(function(t){return t.position===posF;});
+  else if(ME)list=list.filter(function(t){return t.position===ME.position||canEditAny();});
+  const sel=document.getElementById('cal-task-sel');
+  sel.innerHTML=list.map(function(t){return '<option value="'+t.id+'">'+esc(t.title)+'（'+esc(t.position)+'）</option>';}).join('')||'<option value="">タスクなし</option>';
+  if(!calTaskId||!list.find(function(t){return t.id===calTaskId;}))calTaskId=list.length?list[0].id:null;
+  sel.value=calTaskId||'';
+}
+
+function changeCalMonth(d){calMonth.setMonth(calMonth.getMonth()+d);renderCalendar();}
+
+async function renderCalendar(){
+  calTaskId=document.getElementById('cal-task-sel').value||calTaskId;
+  document.getElementById('cal-month-label').textContent=(calMonth.getFullYear())+'年'+(calMonth.getMonth()+1)+'月';
+  const grid=document.getElementById('cal-grid');
+  const task=tasks.find(function(t){return t.id===calTaskId;});
+  if(!task||!ME){grid.innerHTML='<div class="empty-msg" style="grid-column:1/8">タスクを選択してください</div>';return;}
+  const y=calMonth.getFullYear(),m=calMonth.getMonth();
+  const first=new Date(y,m,1),last=new Date(y,m+1,0);
+  const startYmd=ymd(first),endYmd=ymd(last);
+  await loadLogsForRange(startYmd,endYmd);
+  const target=targetCount(task);
+  let html=DOW_LABELS.map(function(d){return '<div class="cal-dow">'+d+'</div>';}).join('');
+  for(let i=0;i<first.getDay();i++)html+='<div class="cal-cell empty"></div>';
+  for(let d=1;d<=last.getDate();d++){
+    const date=new Date(y,m,d);
+    const dateStr=ymd(date);
+    const due=isDueOn(task,date);
+    const log=getLog(task.id,ME.id,dateStr);
+    const doneCount=log?log.done_count:0;
+    const isDone=doneCount>=target;
+    const cls='cal-cell'+(due?' due':'')+(isDone?' done':'');
+    const onclick=due?'onclick="toggleCalDay(\''+task.id+'\',\''+dateStr+'\','+doneCount+','+target+')"':'';
+    html+='<div class="'+cls+'" '+onclick+'><div class="cal-daynum">'+d+'</div>'+(isDone?'✓':'')+'</div>';
+  }
+  grid.innerHTML=html;
+}
+async function toggleCalDay(taskId,dateStr,current,target){
+  await setLog(taskId,ME.id,dateStr,current>=target?0:target);
+  renderCalendar();
+}
+
+function openTaskModal(){
+  if(!ME)return;
+  const editablePositions=canEditAny()?POS_ORDER:[ME.position];
+  document.getElementById('tm-position').innerHTML=editablePositions.map(function(p){return '<option value="'+p+'">'+p+'</option>';}).join('');
+  document.getElementById('tm-title').value='';
+  document.getElementById('tm-freq').value='daily';
+  document.getElementById('tm-err').textContent='';
+  onFreqChange();
+  renderMgmtList();
+  document.getElementById('task-modal').classList.add('show');
+}
+
+function onFreqChange(){
+  const v=document.getElementById('tm-freq').value;
+  const wrap=document.getElementById('tm-freq-detail');
+  if(v==='multiple_daily'){
+    wrap.innerHTML='<div class="form-group"><label>1日に何回</label><input class="form-inp" id="tm-times" type="number" min="1" value="2"></div>';
+  } else if(v==='weekly'){
+    wrap.innerHTML='<div class="form-group"><label>曜日（複数選択可）</label><div style="display:flex;gap:6px;flex-wrap:wrap">'+DOW_LABELS.map(function(d,i){return '<label style="font-size:12px;display:flex;align-items:center;gap:3px"><input type="checkbox" class="tm-weekday" value="'+i+'">'+d+'</label>';}).join('')+'</div></div>';
+  } else if(v==='monthly'){
+    wrap.innerHTML='<div class="form-group"><label>毎月何日</label><input class="form-inp" id="tm-day" type="number" min="1" max="31" value="1"></div>';
+  } else if(v==='interval_months'){
+    wrap.innerHTML='<div class="form-group"><label>何ヶ月ごと</label><input class="form-inp" id="tm-interval" type="number" min="1" value="3"></div><div class="form-group"><label>実施日（毎月何日）</label><input class="form-inp" id="tm-day" type="number" min="1" max="31" value="1"></div>';
+  } else {
+    wrap.innerHTML='';
+  }
+}
+
+async function addTask(){
+  const position=document.getElementById('tm-position').value;
+  const title=document.getElementById('tm-title').value.trim();
+  const freq=document.getElementById('tm-freq').value;
+  if(!title){document.getElementById('tm-err').textContent='タスク名を入力してください';return;}
+  let detail={};
+  if(freq==='multiple_daily')detail={times:Number(document.getElementById('tm-times').value)||1};
+  else if(freq==='weekly'){
+    const days=Array.from(document.querySelectorAll('.tm-weekday:checked')).map(function(el){return Number(el.value);});
+    if(!days.length){document.getElementById('tm-err').textContent='曜日を選択してください';return;}
+    detail={weekdays:days};
+  } else if(freq==='monthly')detail={day:Number(document.getElementById('tm-day').value)||1};
+  else if(freq==='interval_months')detail={interval:Number(document.getElementById('tm-interval').value)||1,day:Number(document.getElementById('tm-day').value)||1,start_month:ymd(new Date()).slice(0,7)};
+  const {data,error}=await sb.from('tasks').insert({position:position,title:title,frequency_type:freq,frequency_detail:detail,is_active:true}).select().single();
+  if(error){document.getElementById('tm-err').textContent='エラー: '+error.message;return;}
+  tasks.push(data);
+  document.getElementById('tm-title').value='';
+  document.getElementById('tm-err').textContent='';
+  renderMgmtList();
+  renderToday();
+  renderCalTaskSel();
+}
+
+function renderMgmtList(){
+  const editablePositions=canEditAny()?POS_ORDER:[ME.position];
+  const list=tasks.filter(function(t){return editablePositions.includes(t.position);});
+  const wrap=document.getElementById('mgmt-list');
+  if(!list.length){wrap.innerHTML='<div style="font-size:12px;color:var(--soft)">タスクがありません</div>';return;}
+  wrap.innerHTML=list.map(function(t){
+    return '<div class="mgmt-item"><div class="mgmt-item-name">'+esc(t.title)+'<span class="task-pos-badge">'+esc(t.position)+'</span><div class="mgmt-item-meta">'+esc(freqLabel(t))+'</div></div><button class="mgmt-del" onclick="askDeleteTask(\''+t.id+'\')">×</button></div>';
+  }).join('');
+}
+
+function askDeleteTask(id){
+  const t=tasks.find(function(t){return t.id===id;});if(!t)return;
+  if(!confirm('「'+t.title+'」を削除しますか？')) return;
+  deleteTask(id);
+}
+async function deleteTask(id){
+  await sb.from('tasks').delete().eq('id',id);
+  tasks=tasks.filter(function(t){return t.id!==id;});
+  renderMgmtList();
+  renderToday();
+  renderCalTaskSel();
+}
+
+async function loadAll(){
+  document.getElementById('loading').style.display='flex';
+  const savedLogin=localStorage.getItem('logged_in_id');
+  if(savedLogin){
+    const {data:meData}=await sb.from('students').select('*').eq('id',savedLogin).single();
+    if(meData)ME=meData;
+  }
+  const {data}=await sb.from('students').select('*').order('created_at');
+  students=(data||[]).filter(function(s){return s.is_active!==false&&!EXCLUDE_ROLES.includes(s.position);});
+  await loadTasks();
+  renderPosFilter();
+  document.getElementById('loading').style.display='none';
+  renderToday();
+}
+
+document.getElementById('task-modal').addEventListener('click',function(e){if(e.target===this)closeModal('task-modal');});
+
+loadAll();
+</script>
+</body>
+</html>
