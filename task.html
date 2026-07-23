@@ -104,7 +104,6 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
         <option value="daily">毎日</option>
         <option value="weekly">曜日指定（週1回など）</option>
         <option value="monthly">毎月◯日</option>
-        <option value="interval_months">◯ヶ月ごと</option>
         <option value="monthly_count">月次・回数指定（面談など）</option>
         <option value="as_needed">随時対応（クレーム対応など）</option>
       </select>
@@ -124,9 +123,9 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
 
 <div class="main">
   <div class="tab-bar">
-    <div class="tab" onclick="viewingStaffId=null;switchTab('today')">📋 今日のタスク</div>
-    <div class="tab active" onclick="switchTab('members')">👥 メンバー別</div>
-    <div class="tab" onclick="switchTab('calendar')">📅 月間カレンダー</div>
+    <div class="tab active" onclick="setViewMode('daily')">📋 日別</div>
+    <div class="tab" onclick="setViewMode('weekly')">📆 週</div>
+    <div class="tab" onclick="setViewMode('monthly')">🗓 月間</div>
   </div>
 
   <div class="filter-bar">
@@ -148,23 +147,9 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
     <div id="today-list"></div>
   </div>
 
-  <div id="sec-members" style="">
+  <div id="sec-matrix" style="">
+    <div class="filter-bar" id="matrix-nav"></div>
     <div id="members-wrap"></div>
-  </div>
-
-  <div id="sec-calendar" style="display:none">
-    <div class="filter-bar">
-      <label>タスク：</label>
-      <select class="filter-sel" id="cal-task-sel" onchange="renderCalendar()" style="flex:1;min-width:160px"></select>
-      <div class="date-nav">
-        <button onclick="changeCalMonth(-1)">‹</button>
-        <div class="date-label" id="cal-month-label"></div>
-        <button onclick="changeCalMonth(1)">›</button>
-      </div>
-    </div>
-    <div class="task-card">
-      <div class="cal-grid" id="cal-grid"></div>
-    </div>
   </div>
 </div>
 
@@ -180,11 +165,10 @@ const DOW_LABELS=['日','月','火','水','木','金','土'];
 
 let students=[],tasks=[],taskLogs={},ME=null;
 let monthlyTargets={},taskEvents={};
-let currentTab='members';
+let viewMode='daily';
 let viewingStaffId=null;
 let todayDate=new Date();
 let calMonth=new Date();
-let calTaskId=null;
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
@@ -202,34 +186,34 @@ function renderPosFilter(){
   document.getElementById('btn-manage').style.display=ME?'':'none';
 }
 
-function onPosFilterChange(){viewingStaffId=null;renderToday();renderCalTaskSel();renderCalendar();if(currentTab==='members')renderMembers();}
+function onPosFilterChange(){viewingStaffId=null;renderMatrix();}
 
-function switchTab(tab){
-  currentTab=tab;
-  document.querySelectorAll('.tab').forEach(function(t,i){t.classList.toggle('active',['today','members','calendar'][i]===tab);});
-  document.getElementById('sec-today').style.display=tab==='today'?'':'none';
-  document.getElementById('sec-members').style.display=tab==='members'?'':'none';
-  document.getElementById('sec-calendar').style.display=tab==='calendar'?'':'none';
-  if(tab!=='today')viewingStaffId=null;
-  if(tab==='today')renderToday();
-  if(tab==='calendar'){renderCalTaskSel();renderCalendar();}
-  if(tab==='members'){renderMembers();}
+function setViewMode(mode){
+  viewMode=mode;
+  viewingStaffId=null;
+  document.querySelectorAll('.tab').forEach(function(t,i){t.classList.toggle('active',['daily','weekly','monthly'][i]===mode);});
+  document.getElementById('sec-today').style.display='none';
+  document.getElementById('sec-matrix').style.display='';
+  renderMatrix();
 }
 
 function goToPersonToday(staffId){
   if(!canViewPerson(staffId))return;
   viewingStaffId=staffId;
-  currentTab='today';
-  document.querySelectorAll('.tab').forEach(function(t,i){t.classList.toggle('active',i===0);});
   document.getElementById('sec-today').style.display='';
-  document.getElementById('sec-members').style.display='none';
-  document.getElementById('sec-calendar').style.display='none';
+  document.getElementById('sec-matrix').style.display='none';
   renderToday();
 }
-function clearViewingStaff(){viewingStaffId=null;switchTab('members');}
+function clearViewingStaff(){
+  viewingStaffId=null;
+  document.getElementById('sec-today').style.display='none';
+  document.getElementById('sec-matrix').style.display='';
+  renderMatrix();
+}
 
-function changeDay(d){todayDate.setDate(todayDate.getDate()+d);renderToday();if(currentTab==='members')renderMembers();}
-function goToday(){todayDate=new Date();renderToday();if(currentTab==='members')renderMembers();}
+function changeDay(d){todayDate.setDate(todayDate.getDate()+d);renderToday();}
+function goToday(){todayDate=new Date();renderToday();}
+function changeMatrixMonth(d){calMonth.setMonth(calMonth.getMonth()+d);renderMatrix();}
 
 function isDueOn(task,date){
   const dow=date.getDay(),dom=date.getDate();
@@ -239,15 +223,15 @@ function isDueOn(task,date){
     case 'monthly_count': case 'as_needed': return true;
     case 'weekly': return (fd.weekdays||[]).includes(dow);
     case 'monthly': return dom===(fd.day||1);
-    case 'interval_months': {
-      const startYm=fd.start_month||'2026-01';
-      const sp=startYm.split('-').map(Number);
-      const interval=fd.interval||1;
-      const diff=(date.getFullYear()-sp[0])*12+(date.getMonth()+1-sp[1]);
-      return diff>=0 && diff%interval===0 && dom===(fd.day||1);
-    }
   }
   return false;
+}
+function isDueForStaff(task,date,studentId){
+  if(!isDueOn(task,date))return false;
+  if(task.frequency_type==='daily'||task.frequency_type==='weekly'||task.frequency_type==='monthly'){
+    if(isOffDay(studentId,ymd(date)))return false;
+  }
+  return true;
 }
 function targetCount(task){
   if(task.frequency_type==='monthly_count')return monthlyTargets[task.id]||1;
@@ -261,7 +245,6 @@ function freqLabel(task){
     case 'as_needed':return '随時対応（発生の都度記録）';
     case 'weekly':return '毎週 '+(fd.weekdays||[]).map(function(w){return DOW_LABELS[w];}).join('・');
     case 'monthly':return '毎月'+(fd.day||1)+'日';
-    case 'interval_months':return (fd.interval||1)+'ヶ月ごと（'+(fd.day||1)+'日）';
   }
   return '';
 }
@@ -294,6 +277,24 @@ async function setLog(taskId,studentId,dateStr,doneCount){
   }
 }
 
+let offDays={};
+async function loadOffDays(startYmd,endYmd){
+  const {data}=await sb.from('staff_off_days').select('*').gte('date',startYmd).lte('date',endYmd);
+  offDays={};
+  (data||[]).forEach(function(r){offDays[r.student_id+'_'+r.date]={id:r.id};});
+}
+function isOffDay(studentId,dateStr){return !!offDays[studentId+'_'+dateStr];}
+async function toggleOffDay(studentId,dateStr){
+  const key=studentId+'_'+dateStr;
+  if(offDays[key]){
+    await sb.from('staff_off_days').delete().eq('id',offDays[key].id);
+    delete offDays[key];
+  } else {
+    const {data}=await sb.from('staff_off_days').insert({student_id:studentId,date:dateStr}).select().single();
+    if(data)offDays[key]={id:data.id};
+  }
+}
+
 async function renderToday(){
   document.getElementById('today-label').textContent=(todayDate.getMonth()+1)+'月'+todayDate.getDate()+'日('+DOW_LABELS[todayDate.getDay()]+')';
   const dateStr=ymd(todayDate);
@@ -302,12 +303,15 @@ async function renderToday(){
   const monthLast=ymd(new Date(todayDate.getFullYear(),todayDate.getMonth()+1,0));
   const posF=document.getElementById('pos-filter').value;
   const scopedStaff=viewingStaffId?students.find(function(s){return s.id===viewingStaffId;}):null;
+  await loadOffDays(dateStr,dateStr);
   const headerEl=document.getElementById('today-header');
   if(scopedStaff&&canViewPerson(scopedStaff.id)){
-    headerEl.innerHTML='<div class="filter-bar"><button class="btn btn-ghost btn-sm" onclick="clearViewingStaff()">← メンバー別に戻る</button><div class="section-title" style="margin:0">'+esc(scopedStaff.name)+'さんのタスク</div></div>';
+    const off=isOffDay(scopedStaff.id,dateStr);
+    headerEl.innerHTML='<div class="filter-bar"><button class="btn btn-ghost btn-sm" onclick="clearViewingStaff()">← 戻る</button><div class="section-title" style="margin:0;flex:1">'+esc(scopedStaff.name)+'さんのタスク</div><button class="btn '+(off?'btn-gold':'btn-ghost')+' btn-sm" onclick="toggleOffDayFor(\''+scopedStaff.id+'\',\''+dateStr+'\')">'+(off?'🌙 休み解除':'🌙 この日を休みにする')+'</button></div>';
   } else {
     headerEl.innerHTML='';
   }
+  const isOff=scopedStaff?isOffDay(scopedStaff.id,dateStr):false;
   let list;
   if(scopedStaff){
     list=tasks.filter(function(t){return t.position===scopedStaff.position&&isDueOn(t,todayDate);});
@@ -326,10 +330,17 @@ async function renderToday(){
   if(!list.length){wrap.innerHTML='<div class="empty-msg">対象のタスクはありません</div>';return;}
   wrap.innerHTML=list.map(function(t){
     const actingId=scopedStaff?(canViewPerson(scopedStaff.id)?scopedStaff.id:null):(ME&&ME.position===t.position?ME.id:null);
+    const dayOff=isOff&&(t.frequency_type==='daily'||t.frequency_type==='weekly'||t.frequency_type==='monthly');
+    if(dayOff)return '<div class="task-card" style="opacity:.5"><div class="task-title" style="text-decoration:line-through">'+esc(t.title)+'<span class="task-pos-badge">'+esc(t.position)+'</span></div><div class="task-meta">🌙 本日は休みのため対象外</div></div>';
     if(t.frequency_type==='as_needed')return renderAsNeededCard(t,actingId);
     if(t.frequency_type==='monthly_count')return renderMonthlyCountCard(t,monthStr,actingId);
     return renderScheduledCard(t,dateStr,actingId);
   }).join('');
+}
+async function toggleOffDayFor(studentId,dateStr){
+  if(!canViewPerson(studentId))return;
+  await toggleOffDay(studentId,dateStr);
+  renderToday();
 }
 
 function renderScheduledCard(t,dateStr,actingId){
@@ -472,21 +483,69 @@ async function editMemo(taskId,dateStr,studentId){
   renderToday();
 }
 
-async function renderMembers(){
+function weekRange(anchor){
+  const d=new Date(anchor);
+  const monday=new Date(d);
+  monday.setDate(d.getDate()-((d.getDay()+6)%7));
+  const sunday=new Date(monday);
+  sunday.setDate(monday.getDate()+6);
+  return {start:monday,end:sunday};
+}
+
+function renderMatrixNav(){
+  const nav=document.getElementById('matrix-nav');
+  if(viewMode==='daily'){
+    nav.innerHTML='<div class="date-nav"><button onclick="changeMatrixDay(-1)">‹</button><div class="date-label">'+(calMonth.getMonth()+1)+'月'+calMonth.getDate()+'日('+DOW_LABELS[calMonth.getDay()]+')</div><button onclick="changeMatrixDay(1)">›</button></div><button class="btn btn-ghost btn-sm" onclick="goMatrixToday()">今日</button>';
+  } else if(viewMode==='weekly'){
+    const r=weekRange(calMonth);
+    nav.innerHTML='<div class="date-nav"><button onclick="changeMatrixWeek(-1)">‹</button><div class="date-label">'+(r.start.getMonth()+1)+'/'+r.start.getDate()+' 〜 '+(r.end.getMonth()+1)+'/'+r.end.getDate()+'</div><button onclick="changeMatrixWeek(1)">›</button></div><button class="btn btn-ghost btn-sm" onclick="goMatrixToday()">今週</button>';
+  } else {
+    nav.innerHTML='<div class="date-nav"><button onclick="changeMatrixMonth(-1)">‹</button><div class="date-label">'+calMonth.getFullYear()+'年'+(calMonth.getMonth()+1)+'月</div><button onclick="changeMatrixMonth(1)">›</button></div><button class="btn btn-ghost btn-sm" onclick="goMatrixToday()">今月</button>';
+  }
+}
+function changeMatrixDay(d){calMonth.setDate(calMonth.getDate()+d);renderMatrix();}
+function changeMatrixWeek(d){calMonth.setDate(calMonth.getDate()+d*7);renderMatrix();}
+function goMatrixToday(){calMonth=new Date();renderMatrix();}
+
+function scheduledStats(task,studentId,startDate,endDate){
+  const target=targetCount(task);
+  let due=0,done=0;
+  for(let d=new Date(startDate);d<=endDate;d.setDate(d.getDate()+1)){
+    const ds=ymd(d);
+    if(isOffDay(studentId,ds))continue;
+    if(isDueOn(task,d)){
+      due++;
+      const log=getLog(task.id,studentId,ds);
+      if(log&&log.done_count>=target)done++;
+    }
+  }
+  return {due:due,done:done};
+}
+
+async function renderMatrix(){
+  renderMatrixNav();
   const wrap=document.getElementById('members-wrap');
   const posF=document.getElementById('pos-filter').value;
-  const dateStr=ymd(todayDate);
-  const monthStr=dateStr.slice(0,7);
-  const monthFirst=monthStr+'-01';
-  const monthLast=ymd(new Date(todayDate.getFullYear(),todayDate.getMonth()+1,0));
-  await loadLogsForRange(monthFirst,monthLast);
+  let rangeStart,rangeEnd;
+  if(viewMode==='daily'){rangeStart=new Date(calMonth);rangeEnd=new Date(calMonth);}
+  else if(viewMode==='weekly'){const r=weekRange(calMonth);rangeStart=r.start;rangeEnd=r.end;}
+  else{rangeStart=new Date(calMonth.getFullYear(),calMonth.getMonth(),1);rangeEnd=new Date(calMonth.getFullYear(),calMonth.getMonth()+1,0);}
+  const startYmd=ymd(rangeStart),endYmd=ymd(rangeEnd);
+  await loadLogsForRange(startYmd,endYmd);
+  await loadOffDays(startYmd,endYmd);
+  const monthStr=ymd(calMonth).slice(0,7);
   const positions=(posF==='all'?POS_ORDER:[posF]).filter(function(p){return p!=='代表';});
   const anyMonthlyCount=tasks.some(function(t){return t.frequency_type==='monthly_count'&&(posF==='all'||t.position===posF);});
   if(anyMonthlyCount)await loadMonthlyTargets(monthStr);
   let html='';
   positions.forEach(function(pos){
     const staffList=students.filter(function(s){return s.position===pos&&s.is_active!==false;});
-    const dueTasks=tasks.filter(function(t){return t.position===pos&&isDueOn(t,todayDate)&&t.frequency_type!=='as_needed';});
+    const dueTasks=tasks.filter(function(t){
+      if(t.position!==pos||t.frequency_type==='as_needed')return false;
+      if(t.frequency_type==='monthly_count')return true;
+      if(viewMode==='daily')return isDueOn(t,rangeStart);
+      return true;
+    });
     if(!staffList.length||!dueTasks.length)return;
     html+='<div class="section-title">'+esc(pos)+'</div>';
     html+='<div style="overflow-x:auto;margin-bottom:18px"><table style="border-collapse:collapse;width:100%;font-size:12px">';
@@ -495,83 +554,51 @@ async function renderMembers(){
       const clickable=canViewPerson(s.id);
       const nameCell=clickable?'<span style="text-decoration:underline;cursor:pointer;color:var(--gold)" onclick="goToPersonToday(\''+s.id+'\')">'+esc(s.name)+'</span>':esc(s.name);
       const cells=dueTasks.map(function(t){
-        const tappable=canViewPerson(s.id);
+        const tappable=canViewPerson(s.id)&&viewMode==='daily';
         if(t.frequency_type==='monthly_count'){
           const done=monthlyCumulative(t.id,s.id);
           const target=monthlyTargets[t.id]||1;
           const ok=done>=target;
-          const attr=tappable?' onclick="quickBumpMonthly(\''+t.id+'\',\''+s.id+'\')" style="cursor:pointer;':' style="';
+          const attr=(canViewPerson(s.id))?' onclick="quickBumpMonthly(\''+t.id+'\',\''+s.id+'\')" style="cursor:pointer;':' style="';
           return '<td'+attr+'text-align:center;padding:6px 8px;border-bottom:1px solid #f0e8df;background:'+(ok?'#eef7f2':'#fdf0ef')+';color:'+(ok?'var(--green)':'var(--red)')+';font-weight:700">'+done+'/'+target+'</td>';
         }
-        const l=getLog(t.id,s.id,dateStr);
-        const cnt=l?l.done_count:0;
-        const ok=cnt>=1;
-        const attr=tappable?' onclick="quickToggle(\''+t.id+'\',\''+s.id+'\',\''+dateStr+'\','+cnt+')" style="cursor:pointer;':' style="';
-        return '<td'+attr+'text-align:center;padding:6px 8px;border-bottom:1px solid #f0e8df;background:'+(ok?'#eef7f2':'#fdf0ef')+';color:'+(ok?'var(--green)':'var(--red)')+';font-weight:700">'+(ok?'✓':'未')+'</td>';
+        if(viewMode==='daily'){
+          const off=isOffDay(s.id,startYmd);
+          if(off&&(t.frequency_type==='daily'||t.frequency_type==='weekly'||t.frequency_type==='monthly')){
+            return '<td style="text-align:center;padding:6px 8px;border-bottom:1px solid #f0e8df;background:#f0ece8;color:var(--soft);text-decoration:line-through">休</td>';
+          }
+          const due=isDueOn(t,rangeStart);
+          if(!due)return '<td style="text-align:center;padding:6px 8px;border-bottom:1px solid #f0e8df;background:#f5f0eb;color:var(--soft)">－</td>';
+          const l=getLog(t.id,s.id,startYmd);
+          const cnt=l?l.done_count:0;
+          const ok=cnt>=1;
+          const attr=tappable?' onclick="quickToggle(\''+t.id+'\',\''+s.id+'\',\''+startYmd+'\','+cnt+')" style="cursor:pointer;':' style="';
+          return '<td'+attr+'text-align:center;padding:6px 8px;border-bottom:1px solid #f0e8df;background:'+(ok?'#eef7f2':'#fdf0ef')+';color:'+(ok?'var(--green)':'var(--red)')+';font-weight:700">'+(ok?'✓':'未')+'</td>';
+        }
+        const st=scheduledStats(t,s.id,rangeStart,rangeEnd);
+        if(!st.due)return '<td style="text-align:center;padding:6px 8px;border-bottom:1px solid #f0e8df;background:#f5f0eb;color:var(--soft)">－</td>';
+        const ok=st.done>=st.due;
+        return '<td style="text-align:center;padding:6px 8px;border-bottom:1px solid #f0e8df;background:'+(ok?'#eef7f2':'#fdf0ef')+';color:'+(ok?'var(--green)':'var(--red)')+';font-weight:700">'+st.done+'/'+st.due+'</td>';
       }).join('');
       return '<tr><td style="position:sticky;left:0;background:white;padding:6px 10px;border-bottom:1px solid #f0e8df;white-space:nowrap;font-weight:700">'+nameCell+'</td>'+cells+'</tr>';
     }).join('');
     html+='</tbody></table></div>';
   });
-  wrap.innerHTML=html||'<div class="empty-msg">本日該当するタスクはありません</div>';
+  wrap.innerHTML=html||'<div class="empty-msg">該当するタスクはありません</div>';
 }
 
 async function quickToggle(taskId,studentId,dateStr,current){
   if(!canViewPerson(studentId))return;
   await setLog(taskId,studentId,dateStr,current>=1?0:1);
-  renderMembers();
+  renderMatrix();
 }
 async function quickBumpMonthly(taskId,studentId){
   if(!canViewPerson(studentId))return;
-  const dateStr=ymd(todayDate);
+  const dateStr=ymd(new Date());
   const log=getLog(taskId,studentId,dateStr);
   const cur=log?log.done_count:0;
   await setLog(taskId,studentId,dateStr,cur+1);
-  renderMembers();
-}
-
-function renderCalTaskSel(){
-  const posF=document.getElementById('pos-filter').value;
-  let list=tasks;
-  if(posF!=='all')list=list.filter(function(t){return t.position===posF;});
-  else if(ME)list=list.filter(function(t){return t.position===ME.position||canEditAny();});
-  const sel=document.getElementById('cal-task-sel');
-  sel.innerHTML=list.map(function(t){return '<option value="'+t.id+'">'+esc(t.title)+'（'+esc(t.position)+'）</option>';}).join('')||'<option value="">タスクなし</option>';
-  if(!calTaskId||!list.find(function(t){return t.id===calTaskId;}))calTaskId=list.length?list[0].id:null;
-  sel.value=calTaskId||'';
-}
-
-function changeCalMonth(d){calMonth.setMonth(calMonth.getMonth()+d);renderCalendar();}
-
-async function renderCalendar(){
-  calTaskId=document.getElementById('cal-task-sel').value||calTaskId;
-  document.getElementById('cal-month-label').textContent=(calMonth.getFullYear())+'年'+(calMonth.getMonth()+1)+'月';
-  const grid=document.getElementById('cal-grid');
-  const task=tasks.find(function(t){return t.id===calTaskId;});
-  if(!task||!ME){grid.innerHTML='<div class="empty-msg" style="grid-column:1/8">タスクを選択してください</div>';return;}
-  const y=calMonth.getFullYear(),m=calMonth.getMonth();
-  const first=new Date(y,m,1),last=new Date(y,m+1,0);
-  const startYmd=ymd(first),endYmd=ymd(last);
-  await loadLogsForRange(startYmd,endYmd);
-  const target=targetCount(task);
-  let html=DOW_LABELS.map(function(d){return '<div class="cal-dow">'+d+'</div>';}).join('');
-  for(let i=0;i<first.getDay();i++)html+='<div class="cal-cell empty"></div>';
-  for(let d=1;d<=last.getDate();d++){
-    const date=new Date(y,m,d);
-    const dateStr=ymd(date);
-    const due=isDueOn(task,date);
-    const log=getLog(task.id,ME.id,dateStr);
-    const doneCount=log?log.done_count:0;
-    const isDone=doneCount>=target;
-    const cls='cal-cell'+(due?' due':'')+(isDone?' done':'');
-    const onclick=due?'onclick="toggleCalDay(\''+task.id+'\',\''+dateStr+'\','+doneCount+','+target+')"':'';
-    html+='<div class="'+cls+'" '+onclick+'><div class="cal-daynum">'+d+'</div>'+(isDone?'✓':'')+'</div>';
-  }
-  grid.innerHTML=html;
-}
-async function toggleCalDay(taskId,dateStr,current,target){
-  await setLog(taskId,ME.id,dateStr,current>=target?0:target);
-  renderCalendar();
+  renderMatrix();
 }
 
 function openTaskModal(){
@@ -593,8 +620,6 @@ function onFreqChange(){
     wrap.innerHTML='<div class="form-group"><label>曜日（複数選択可）</label><div style="display:flex;gap:6px;flex-wrap:wrap">'+DOW_LABELS.map(function(d,i){return '<label style="font-size:12px;display:flex;align-items:center;gap:3px"><input type="checkbox" class="tm-weekday" value="'+i+'">'+d+'</label>';}).join('')+'</div></div>';
   } else if(v==='monthly'){
     wrap.innerHTML='<div class="form-group"><label>毎月何日</label><input class="form-inp" id="tm-day" type="number" min="1" max="31" value="1"></div>';
-  } else if(v==='interval_months'){
-    wrap.innerHTML='<div class="form-group"><label>何ヶ月ごと</label><input class="form-inp" id="tm-interval" type="number" min="1" value="3"></div><div class="form-group"><label>実施日（毎月何日）</label><input class="form-inp" id="tm-day" type="number" min="1" max="31" value="1"></div>';
   } else if(v==='monthly_count'){
     wrap.innerHTML='<div class="form-group"><label>今月の目標回数（対象人数などに応じて後からいつでも変更できます）</label><input class="form-inp" id="tm-monthly-target" type="number" min="1" value="1"></div>';
   } else if(v==='as_needed'){
@@ -615,7 +640,6 @@ async function addTask(){
     if(!days.length){document.getElementById('tm-err').textContent='曜日を選択してください';return;}
     detail={weekdays:days};
   } else if(freq==='monthly')detail={day:Number(document.getElementById('tm-day').value)||1};
-  else if(freq==='interval_months')detail={interval:Number(document.getElementById('tm-interval').value)||1,day:Number(document.getElementById('tm-day').value)||1,start_month:ymd(new Date()).slice(0,7)};
   else if(freq==='monthly_count')detail={};
   else if(freq==='as_needed')detail={};
   const {data,error}=await sb.from('tasks').insert({position:position,title:title,frequency_type:freq,frequency_detail:detail,is_active:true}).select().single();
@@ -667,7 +691,7 @@ async function loadAll(){
   await loadTasks();
   renderPosFilter();
   document.getElementById('loading').style.display='none';
-  renderMembers();
+  renderMatrix();
 }
 
 document.getElementById('task-modal').addEventListener('click',function(e){if(e.target===this)closeModal('task-modal');});
