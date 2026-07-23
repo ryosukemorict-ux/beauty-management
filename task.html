@@ -101,6 +101,7 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
     </div>
     <div class="form-group"><label>頻度</label>
       <select class="form-sel" id="tm-freq" onchange="onFreqChange()">
+        <option value="unset">頻度未定（あとで設定）</option>
         <option value="daily">毎日</option>
         <option value="weekly">曜日指定（週1回など）</option>
         <option value="monthly">毎月◯日</option>
@@ -225,6 +226,7 @@ function isDueOn(task,date){
     case 'monthly_count': case 'as_needed': return true;
     case 'weekly': return (fd.weekdays||[]).includes(dow);
     case 'monthly': return dom===(fd.day||1);
+    case 'unset': return false;
   }
   return false;
 }
@@ -247,6 +249,7 @@ function freqLabel(task){
     case 'as_needed':return '随時対応（発生の都度記録）';
     case 'weekly':return '毎週 '+(fd.weekdays||[]).map(function(w){return DOW_LABELS[w];}).join('・');
     case 'monthly':return '毎月'+(fd.day||1)+'日';
+    case 'unset':return '⚠️ 頻度未定（要設定）';
   }
   return '';
 }
@@ -631,6 +634,8 @@ function onFreqChange(){
     wrap.innerHTML='<div class="form-group"><label>今月の目標回数（対象人数などに応じて後からいつでも変更できます）</label><input class="form-inp" id="tm-monthly-target" type="number" min="1" value="1"></div>';
   } else if(v==='as_needed'){
     wrap.innerHTML='<div style="font-size:12px;color:var(--mid)">発生したタイミングで「＋ 記録する」ボタンから記録するタスクです。頻度の設定は不要です。</div>';
+  } else if(v==='unset'){
+    wrap.innerHTML='<div style="font-size:12px;color:var(--mid)">頻度は後で決めます。一覧には表示されず、登録済みタスクにだけ並びます。</div>';
   } else {
     wrap.innerHTML='';
   }
