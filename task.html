@@ -102,7 +102,6 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
     <div class="form-group"><label>頻度</label>
       <select class="form-sel" id="tm-freq" onchange="onFreqChange()">
         <option value="daily">毎日</option>
-        <option value="multiple_daily">毎日・複数回</option>
         <option value="weekly">曜日指定（週1回など）</option>
         <option value="monthly">毎月◯日</option>
         <option value="interval_months">◯ヶ月ごと</option>
@@ -125,8 +124,8 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
 
 <div class="main">
   <div class="tab-bar">
-    <div class="tab active" onclick="switchTab('today')">📋 今日のタスク</div>
-    <div class="tab" onclick="switchTab('members')">👥 メンバー別</div>
+    <div class="tab" onclick="viewingStaffId=null;switchTab('today')">📋 今日のタスク</div>
+    <div class="tab active" onclick="switchTab('members')">👥 メンバー別</div>
     <div class="tab" onclick="switchTab('calendar')">📅 月間カレンダー</div>
   </div>
 
@@ -136,7 +135,8 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
     <button class="btn btn-outline btn-sm" id="btn-manage" style="display:none;border:1.5px solid var(--gold-light);background:white" onclick="openTaskModal()">⚙️ タスク管理</button>
   </div>
 
-  <div id="sec-today">
+  <div id="sec-today" style="display:none">
+    <div id="today-header"></div>
     <div class="filter-bar">
       <div class="date-nav">
         <button onclick="changeDay(-1)">‹</button>
@@ -148,7 +148,7 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
     <div id="today-list"></div>
   </div>
 
-  <div id="sec-members" style="display:none">
+  <div id="sec-members" style="">
     <div id="members-wrap"></div>
   </div>
 
@@ -180,7 +180,8 @@ const DOW_LABELS=['日','月','火','水','木','金','土'];
 
 let students=[],tasks=[],taskLogs={},ME=null;
 let monthlyTargets={},taskEvents={};
-let currentTab='today';
+let currentTab='members';
+let viewingStaffId=null;
 let todayDate=new Date();
 let calMonth=new Date();
 let calTaskId=null;
@@ -191,6 +192,7 @@ function closeModal(id){document.getElementById(id).classList.remove('show');}
 
 function canEditAny(){return ME&&FULL_EDIT_ROLES.includes(ME.position);}
 function canEditPosition(pos){return ME&&(FULL_EDIT_ROLES.includes(ME.position)||ME.position===pos);}
+function canViewPerson(staffId){return ME&&(ME.id===staffId||canEditAny());}
 
 function renderPosFilter(){
   const sel=document.getElementById('pos-filter');
@@ -200,7 +202,7 @@ function renderPosFilter(){
   document.getElementById('btn-manage').style.display=ME?'':'none';
 }
 
-function onPosFilterChange(){renderToday();renderCalTaskSel();renderCalendar();if(currentTab==='members')renderMembers();}
+function onPosFilterChange(){viewingStaffId=null;renderToday();renderCalTaskSel();renderCalendar();if(currentTab==='members')renderMembers();}
 
 function switchTab(tab){
   currentTab=tab;
@@ -208,9 +210,23 @@ function switchTab(tab){
   document.getElementById('sec-today').style.display=tab==='today'?'':'none';
   document.getElementById('sec-members').style.display=tab==='members'?'':'none';
   document.getElementById('sec-calendar').style.display=tab==='calendar'?'':'none';
+  if(tab!=='today')viewingStaffId=null;
+  if(tab==='today')renderToday();
   if(tab==='calendar'){renderCalTaskSel();renderCalendar();}
   if(tab==='members'){renderMembers();}
 }
+
+function goToPersonToday(staffId){
+  if(!canViewPerson(staffId))return;
+  viewingStaffId=staffId;
+  currentTab='today';
+  document.querySelectorAll('.tab').forEach(function(t,i){t.classList.toggle('active',i===0);});
+  document.getElementById('sec-today').style.display='';
+  document.getElementById('sec-members').style.display='none';
+  document.getElementById('sec-calendar').style.display='none';
+  renderToday();
+}
+function clearViewingStaff(){viewingStaffId=null;switchTab('members');}
 
 function changeDay(d){todayDate.setDate(todayDate.getDate()+d);renderToday();if(currentTab==='members')renderMembers();}
 function goToday(){todayDate=new Date();renderToday();if(currentTab==='members')renderMembers();}
@@ -219,7 +235,7 @@ function isDueOn(task,date){
   const dow=date.getDay(),dom=date.getDate();
   const fd=task.frequency_detail||{};
   switch(task.frequency_type){
-    case 'daily': case 'multiple_daily': return true;
+    case 'daily': return true;
     case 'monthly_count': case 'as_needed': return true;
     case 'weekly': return (fd.weekdays||[]).includes(dow);
     case 'monthly': return dom===(fd.day||1);
@@ -234,7 +250,6 @@ function isDueOn(task,date){
   return false;
 }
 function targetCount(task){
-  if(task.frequency_type==='multiple_daily')return (task.frequency_detail&&task.frequency_detail.times)||1;
   if(task.frequency_type==='monthly_count')return monthlyTargets[task.id]||1;
   return 1;
 }
@@ -242,7 +257,6 @@ function freqLabel(task){
   const fd=task.frequency_detail||{};
   switch(task.frequency_type){
     case 'daily':return '毎日';
-    case 'multiple_daily':return '毎日・'+(fd.times||1)+'回';
     case 'monthly_count':return '月次・回数指定（今月の目標：'+(monthlyTargets[task.id]||1)+'回）';
     case 'as_needed':return '随時対応（発生の都度記録）';
     case 'weekly':return '毎週 '+(fd.weekdays||[]).map(function(w){return DOW_LABELS[w];}).join('・');
@@ -287,8 +301,20 @@ async function renderToday(){
   const monthFirst=monthStr+'-01';
   const monthLast=ymd(new Date(todayDate.getFullYear(),todayDate.getMonth()+1,0));
   const posF=document.getElementById('pos-filter').value;
-  let list=tasks.filter(function(t){return isDueOn(t,todayDate);});
-  if(posF!=='all')list=list.filter(function(t){return t.position===posF;});
+  const scopedStaff=viewingStaffId?students.find(function(s){return s.id===viewingStaffId;}):null;
+  const headerEl=document.getElementById('today-header');
+  if(scopedStaff&&canViewPerson(scopedStaff.id)){
+    headerEl.innerHTML='<div class="filter-bar"><button class="btn btn-ghost btn-sm" onclick="clearViewingStaff()">← メンバー別に戻る</button><div class="section-title" style="margin:0">'+esc(scopedStaff.name)+'さんのタスク</div></div>';
+  } else {
+    headerEl.innerHTML='';
+  }
+  let list;
+  if(scopedStaff){
+    list=tasks.filter(function(t){return t.position===scopedStaff.position&&isDueOn(t,todayDate);});
+  } else {
+    list=tasks.filter(function(t){return isDueOn(t,todayDate);});
+    if(posF!=='all')list=list.filter(function(t){return t.position===posF;});
+  }
 
   const hasMonthlyCount=list.some(function(t){return t.frequency_type==='monthly_count';});
   const hasAsNeeded=list.some(function(t){return t.frequency_type==='as_needed';});
@@ -299,28 +325,29 @@ async function renderToday(){
   const wrap=document.getElementById('today-list');
   if(!list.length){wrap.innerHTML='<div class="empty-msg">対象のタスクはありません</div>';return;}
   wrap.innerHTML=list.map(function(t){
-    if(t.frequency_type==='as_needed')return renderAsNeededCard(t);
-    if(t.frequency_type==='monthly_count')return renderMonthlyCountCard(t,monthStr);
-    return renderScheduledCard(t,dateStr);
+    const actingId=scopedStaff?(canViewPerson(scopedStaff.id)?scopedStaff.id:null):(ME&&ME.position===t.position?ME.id:null);
+    if(t.frequency_type==='as_needed')return renderAsNeededCard(t,actingId);
+    if(t.frequency_type==='monthly_count')return renderMonthlyCountCard(t,monthStr,actingId);
+    return renderScheduledCard(t,dateStr,actingId);
   }).join('');
 }
 
-function renderScheduledCard(t,dateStr){
+function renderScheduledCard(t,dateStr,actingId){
   const target=targetCount(t);
   const staffInPos=students.filter(function(s){return s.position===t.position&&s.is_active!==false;});
   const doneStaff=staffInPos.filter(function(s){const l=getLog(t.id,s.id,dateStr);return l&&l.done_count>=target;});
   const aggBadge='<span class="progress-badge'+(doneStaff.length===staffInPos.length&&staffInPos.length>0?' full':'')+'">'+doneStaff.length+'/'+staffInPos.length+'人 完了</span>';
   let myCheck='';
-  const myLog=ME?getLog(t.id,ME.id,dateStr):null;
-  if(ME&&ME.position===t.position){
+  const myLog=actingId?getLog(t.id,actingId,dateStr):null;
+  if(actingId){
     const myCount=myLog?myLog.done_count:0;
     if(target>1){
-      myCheck='<div class="cnt-wrap"><button class="cnt-btn" onclick="bumpCount(\''+t.id+'\',\''+dateStr+'\',-1,'+target+')">−</button><div class="cnt-val">'+myCount+'/'+target+'</div><button class="cnt-btn" onclick="bumpCount(\''+t.id+'\',\''+dateStr+'\',1,'+target+')">＋</button></div>';
+      myCheck='<div class="cnt-wrap"><button class="cnt-btn" onclick="bumpCount(\''+t.id+'\',\''+dateStr+'\',-1,'+target+',\''+actingId+'\')">−</button><div class="cnt-val">'+myCount+'/'+target+'</div><button class="cnt-btn" onclick="bumpCount(\''+t.id+'\',\''+dateStr+'\',1,'+target+',\''+actingId+'\')">＋</button></div>';
     } else {
-      myCheck='<div class="chk-box'+(myCount>=1?' done':'')+'" onclick="toggleCheck(\''+t.id+'\',\''+dateStr+'\','+myCount+')">'+(myCount>=1?'✓':'')+'</div>';
+      myCheck='<div class="chk-box'+(myCount>=1?' done':'')+'" onclick="toggleCheck(\''+t.id+'\',\''+dateStr+'\','+myCount+',\''+actingId+'\')">'+(myCount>=1?'✓':'')+'</div>';
     }
   }
-  const memoBtn=(ME&&ME.position===t.position)?'<button class="mgmt-del" style="font-size:14px" onclick="editMemo(\''+t.id+'\',\''+dateStr+'\')" title="メモ">📝</button>':'';
+  const memoBtn=actingId?'<button class="mgmt-del" style="font-size:14px" onclick="editMemo(\''+t.id+'\',\''+dateStr+'\',\''+actingId+'\')" title="メモ">📝</button>':'';
   const memoText=(myLog&&myLog.memo)?'<div class="task-meta">📝 '+esc(myLog.memo)+'</div>':'';
   const delBtn=canEditPosition(t.position)?'<button class="mgmt-del" onclick="askDeleteTask(\''+t.id+'\')" title="削除">×</button>':'';
   return '<div class="task-card"><div class="task-top"><div><div class="task-title">'+esc(t.title)+'<span class="task-pos-badge">'+esc(t.position)+'</span></div><div class="task-meta">'+esc(freqLabel(t))+'</div>'+memoText+'</div><div class="task-check">'+myCheck+memoBtn+'</div></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">'+aggBadge+delBtn+'</div></div>';
@@ -334,7 +361,7 @@ function monthlyCumulative(taskId,studentId){
   return sum;
 }
 
-function renderMonthlyCountCard(t,monthStr){
+function renderMonthlyCountCard(t,monthStr,actingId){
   const target=monthlyTargets[t.id]||1;
   const staffInPos=students.filter(function(s){return s.position===t.position&&s.is_active!==false;});
   let totalDone=0;
@@ -342,44 +369,50 @@ function renderMonthlyCountCard(t,monthStr){
   const totalTargetAll=target*staffInPos.length;
   const aggBadge='<span class="progress-badge'+(totalDone>=totalTargetAll&&totalTargetAll>0?' full':'')+'">全体 '+totalDone+'/'+totalTargetAll+'件（今月）</span>';
   let myAction='';
-  if(ME&&ME.position===t.position){
-    const myDone=monthlyCumulative(t.id,ME.id);
-    myAction='<div class="cnt-wrap"><div class="cnt-val">'+myDone+'/'+target+'</div><button class="cnt-btn" onclick="bumpMonthlyCount(\''+t.id+'\')">＋</button></div>';
+  if(actingId){
+    const myDone=monthlyCumulative(t.id,actingId);
+    myAction='<div class="cnt-wrap"><div class="cnt-val">'+myDone+'/'+target+'</div><button class="cnt-btn" onclick="bumpMonthlyCount(\''+t.id+'\',\''+actingId+'\')">＋</button></div>';
   }
   const editTarget=canEditPosition(t.position)?'<button class="mgmt-del" style="font-size:12px" onclick="editMonthlyTarget(\''+t.id+'\')" title="今月の目標を編集">🎯編集</button>':'';
-  const memoBtn=(ME&&ME.position===t.position)?'<button class="mgmt-del" style="font-size:14px" onclick="editMemo(\''+t.id+'\',\''+ymd(todayDate)+'\')" title="メモ">📝</button>':'';
+  const memoBtn=actingId?'<button class="mgmt-del" style="font-size:14px" onclick="editMemo(\''+t.id+'\',\''+ymd(todayDate)+'\',\''+actingId+'\')" title="メモ">📝</button>':'';
   const delBtn=canEditPosition(t.position)?'<button class="mgmt-del" onclick="askDeleteTask(\''+t.id+'\')" title="削除">×</button>':'';
   return '<div class="task-card"><div class="task-top"><div><div class="task-title">'+esc(t.title)+'<span class="task-pos-badge">'+esc(t.position)+'</span></div><div class="task-meta">'+esc(freqLabel(t))+'</div></div><div class="task-check">'+myAction+memoBtn+'</div></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;flex-wrap:wrap;gap:6px">'+aggBadge+'<div>'+editTarget+delBtn+'</div></div></div>';
 }
 
-function renderAsNeededCard(t){
+function renderAsNeededCard(t,actingId){
   const events=taskEvents[t.id]||[];
   const aggBadge='<span class="progress-badge">今月 '+events.length+'件</span>';
   let myAction='';
-  if(ME&&ME.position===t.position){
-    myAction='<button class="btn btn-gold btn-sm" onclick="logEvent(\''+t.id+'\')">＋ 記録する</button>';
+  if(actingId){
+    myAction='<button class="btn btn-gold btn-sm" onclick="logEvent(\''+t.id+'\',\''+actingId+'\')">＋ 記録する</button>';
   }
   const delBtn=canEditPosition(t.position)?'<button class="mgmt-del" onclick="askDeleteTask(\''+t.id+'\')" title="削除">×</button>':'';
   const recentList=events.slice(0,3).map(function(e){const d=new Date(e.occurred_at);return '<div class="task-meta">・'+(d.getMonth()+1)+'/'+d.getDate()+(e.memo?'　'+esc(e.memo):'')+'</div>';}).join('');
   return '<div class="task-card"><div class="task-top"><div><div class="task-title">'+esc(t.title)+'<span class="task-pos-badge">'+esc(t.position)+'</span></div><div class="task-meta">'+esc(freqLabel(t))+'</div>'+recentList+'</div><div class="task-check">'+myAction+'</div></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">'+aggBadge+delBtn+'</div></div>';
 }
 
-async function toggleCheck(taskId,dateStr,current){
-  await setLog(taskId,ME.id,dateStr,current>=1?0:1);
+async function toggleCheck(taskId,dateStr,current,studentId){
+  studentId=studentId||(ME&&ME.id);
+  if(!studentId)return;
+  await setLog(taskId,studentId,dateStr,current>=1?0:1);
   renderToday();
 }
-async function bumpCount(taskId,dateStr,delta,target){
-  const log=getLog(taskId,ME.id,dateStr);
+async function bumpCount(taskId,dateStr,delta,target,studentId){
+  studentId=studentId||(ME&&ME.id);
+  if(!studentId)return;
+  const log=getLog(taskId,studentId,dateStr);
   let cur=log?log.done_count:0;
   cur=Math.max(0,Math.min(target,cur+delta));
-  await setLog(taskId,ME.id,dateStr,cur);
+  await setLog(taskId,studentId,dateStr,cur);
   renderToday();
 }
-async function bumpMonthlyCount(taskId){
+async function bumpMonthlyCount(taskId,studentId){
+  studentId=studentId||(ME&&ME.id);
+  if(!studentId)return;
   const dateStr=ymd(todayDate);
-  const log=getLog(taskId,ME.id,dateStr);
+  const log=getLog(taskId,studentId,dateStr);
   const cur=log?log.done_count:0;
-  await setLog(taskId,ME.id,dateStr,cur+1);
+  await setLog(taskId,studentId,dateStr,cur+1);
   renderToday();
 }
 
@@ -411,25 +444,29 @@ async function loadTaskEvents(startYmd,endYmd){
     taskEvents[r.task_id].push(r);
   });
 }
-async function logEvent(taskId){
+async function logEvent(taskId,studentId){
+  studentId=studentId||(ME&&ME.id);
+  if(!studentId)return;
   const memo=prompt('メモがあれば入力してください（空でもOK）','');
   if(memo===null)return;
-  await sb.from('task_events').insert({task_id:taskId,student_id:ME.id,memo:memo||null});
+  await sb.from('task_events').insert({task_id:taskId,student_id:studentId,memo:memo||null});
   renderToday();
 }
 
-async function editMemo(taskId,dateStr){
-  const log=getLog(taskId,ME.id,dateStr);
+async function editMemo(taskId,dateStr,studentId){
+  studentId=studentId||(ME&&ME.id);
+  if(!studentId)return;
+  const log=getLog(taskId,studentId,dateStr);
   const cur=log&&log.memo?log.memo:'';
   const memo=prompt('メモを入力してください',cur);
   if(memo===null)return;
-  const key=taskId+'_'+ME.id+'_'+dateStr;
+  const key=taskId+'_'+studentId+'_'+dateStr;
   const existing=taskLogs[key];
   if(existing){
     await sb.from('task_logs').update({memo:memo,updated_at:new Date().toISOString()}).eq('id',existing.id);
     existing.memo=memo;
   } else {
-    const {data}=await sb.from('task_logs').insert({task_id:taskId,student_id:ME.id,date:dateStr,done_count:0,memo:memo}).select().single();
+    const {data}=await sb.from('task_logs').insert({task_id:taskId,student_id:studentId,date:dateStr,done_count:0,memo:memo}).select().single();
     if(data)taskLogs[key]=data;
   }
   renderToday();
@@ -443,33 +480,54 @@ async function renderMembers(){
   const monthFirst=monthStr+'-01';
   const monthLast=ymd(new Date(todayDate.getFullYear(),todayDate.getMonth()+1,0));
   await loadLogsForRange(monthFirst,monthLast);
-  const staffList=posF==='all'?students.filter(function(s){return s.is_active!==false;}):students.filter(function(s){return s.position===posF&&s.is_active!==false;});
-  const dueTasks=tasks.filter(function(t){return (posF==='all'||t.position===posF)&&isDueOn(t,todayDate)&&t.frequency_type!=='as_needed';});
-  if(dueTasks.some(function(t){return t.frequency_type==='monthly_count';}))await loadMonthlyTargets(monthStr);
-  if(!staffList.length){wrap.innerHTML='<div class="empty-msg">対象のスタッフがいません</div>';return;}
-  if(!dueTasks.length){wrap.innerHTML='<div class="empty-msg">本日該当するタスクはありません</div>';return;}
-  let html='<div style="overflow-x:auto"><table style="border-collapse:collapse;width:100%;font-size:12px">';
-  html+='<thead><tr><th style="position:sticky;left:0;background:var(--dark);color:white;padding:8px 10px;text-align:left;white-space:nowrap">名前</th>'+dueTasks.map(function(t){return '<th style="background:var(--dark);color:white;padding:8px 8px;white-space:nowrap;font-weight:500">'+esc(t.title)+(posF==='all'?'<br><span style="font-size:9px;opacity:.7">'+esc(t.position)+'</span>':'')+'</th>';}).join('')+'</tr></thead><tbody>';
-  html+=staffList.map(function(s){
-    const cells=dueTasks.map(function(t){
-      if(t.position!==s.position){
-        return '<td style="text-align:center;padding:6px 8px;border-bottom:1px solid #f0e8df;background:#f5f0eb;color:var(--soft)">－</td>';
-      }
-      if(t.frequency_type==='monthly_count'){
-        const done=monthlyCumulative(t.id,s.id);
-        const target=monthlyTargets[t.id]||1;
-        const ok=done>=target;
-        return '<td style="text-align:center;padding:6px 8px;border-bottom:1px solid #f0e8df;background:'+(ok?'#eef7f2':'#fdf0ef')+';color:'+(ok?'var(--green)':'var(--red)')+';font-weight:700">'+done+'/'+target+'</td>';
-      }
-      const l=getLog(t.id,s.id,dateStr);
-      const cnt=l?l.done_count:0;
-      const ok=cnt>=1;
-      return '<td style="text-align:center;padding:6px 8px;border-bottom:1px solid #f0e8df;background:'+(ok?'#eef7f2':'#fdf0ef')+';color:'+(ok?'var(--green)':'var(--red)')+';font-weight:700">'+(ok?'✓':'未')+'</td>';
+  const positions=(posF==='all'?POS_ORDER:[posF]).filter(function(p){return p!=='代表';});
+  const anyMonthlyCount=tasks.some(function(t){return t.frequency_type==='monthly_count'&&(posF==='all'||t.position===posF);});
+  if(anyMonthlyCount)await loadMonthlyTargets(monthStr);
+  let html='';
+  positions.forEach(function(pos){
+    const staffList=students.filter(function(s){return s.position===pos&&s.is_active!==false;});
+    const dueTasks=tasks.filter(function(t){return t.position===pos&&isDueOn(t,todayDate)&&t.frequency_type!=='as_needed';});
+    if(!staffList.length||!dueTasks.length)return;
+    html+='<div class="section-title">'+esc(pos)+'</div>';
+    html+='<div style="overflow-x:auto;margin-bottom:18px"><table style="border-collapse:collapse;width:100%;font-size:12px">';
+    html+='<thead><tr><th style="position:sticky;left:0;background:var(--dark);color:white;padding:8px 10px;text-align:left;white-space:nowrap">名前</th>'+dueTasks.map(function(t){return '<th style="background:var(--dark);color:white;padding:8px 8px;white-space:nowrap;font-weight:500">'+esc(t.title)+'</th>';}).join('')+'</tr></thead><tbody>';
+    html+=staffList.map(function(s){
+      const clickable=canViewPerson(s.id);
+      const nameCell=clickable?'<span style="text-decoration:underline;cursor:pointer;color:var(--gold)" onclick="goToPersonToday(\''+s.id+'\')">'+esc(s.name)+'</span>':esc(s.name);
+      const cells=dueTasks.map(function(t){
+        const tappable=canViewPerson(s.id);
+        if(t.frequency_type==='monthly_count'){
+          const done=monthlyCumulative(t.id,s.id);
+          const target=monthlyTargets[t.id]||1;
+          const ok=done>=target;
+          const attr=tappable?' onclick="quickBumpMonthly(\''+t.id+'\',\''+s.id+'\')" style="cursor:pointer;':' style="';
+          return '<td'+attr+'text-align:center;padding:6px 8px;border-bottom:1px solid #f0e8df;background:'+(ok?'#eef7f2':'#fdf0ef')+';color:'+(ok?'var(--green)':'var(--red)')+';font-weight:700">'+done+'/'+target+'</td>';
+        }
+        const l=getLog(t.id,s.id,dateStr);
+        const cnt=l?l.done_count:0;
+        const ok=cnt>=1;
+        const attr=tappable?' onclick="quickToggle(\''+t.id+'\',\''+s.id+'\',\''+dateStr+'\','+cnt+')" style="cursor:pointer;':' style="';
+        return '<td'+attr+'text-align:center;padding:6px 8px;border-bottom:1px solid #f0e8df;background:'+(ok?'#eef7f2':'#fdf0ef')+';color:'+(ok?'var(--green)':'var(--red)')+';font-weight:700">'+(ok?'✓':'未')+'</td>';
+      }).join('');
+      return '<tr><td style="position:sticky;left:0;background:white;padding:6px 10px;border-bottom:1px solid #f0e8df;white-space:nowrap;font-weight:700">'+nameCell+'</td>'+cells+'</tr>';
     }).join('');
-    return '<tr><td style="position:sticky;left:0;background:white;padding:6px 10px;border-bottom:1px solid #f0e8df;white-space:nowrap;font-weight:700">'+esc(s.name)+(posF==='all'?'<span class="task-pos-badge">'+esc(s.position)+'</span>':'')+'</td>'+cells+'</tr>';
-  }).join('');
-  html+='</tbody></table></div>';
-  wrap.innerHTML=html;
+    html+='</tbody></table></div>';
+  });
+  wrap.innerHTML=html||'<div class="empty-msg">本日該当するタスクはありません</div>';
+}
+
+async function quickToggle(taskId,studentId,dateStr,current){
+  if(!canViewPerson(studentId))return;
+  await setLog(taskId,studentId,dateStr,current>=1?0:1);
+  renderMembers();
+}
+async function quickBumpMonthly(taskId,studentId){
+  if(!canViewPerson(studentId))return;
+  const dateStr=ymd(todayDate);
+  const log=getLog(taskId,studentId,dateStr);
+  const cur=log?log.done_count:0;
+  await setLog(taskId,studentId,dateStr,cur+1);
+  renderMembers();
 }
 
 function renderCalTaskSel(){
@@ -531,9 +589,7 @@ function openTaskModal(){
 function onFreqChange(){
   const v=document.getElementById('tm-freq').value;
   const wrap=document.getElementById('tm-freq-detail');
-  if(v==='multiple_daily'){
-    wrap.innerHTML='<div class="form-group"><label>1日に何回</label><input class="form-inp" id="tm-times" type="number" min="1" value="2"></div>';
-  } else if(v==='weekly'){
+  if(v==='weekly'){
     wrap.innerHTML='<div class="form-group"><label>曜日（複数選択可）</label><div style="display:flex;gap:6px;flex-wrap:wrap">'+DOW_LABELS.map(function(d,i){return '<label style="font-size:12px;display:flex;align-items:center;gap:3px"><input type="checkbox" class="tm-weekday" value="'+i+'">'+d+'</label>';}).join('')+'</div></div>';
   } else if(v==='monthly'){
     wrap.innerHTML='<div class="form-group"><label>毎月何日</label><input class="form-inp" id="tm-day" type="number" min="1" max="31" value="1"></div>';
@@ -554,8 +610,7 @@ async function addTask(){
   const freq=document.getElementById('tm-freq').value;
   if(!title){document.getElementById('tm-err').textContent='タスク名を入力してください';return;}
   let detail={};
-  if(freq==='multiple_daily')detail={times:Number(document.getElementById('tm-times').value)||1};
-  else if(freq==='weekly'){
+  if(freq==='weekly'){
     const days=Array.from(document.querySelectorAll('.tm-weekday:checked')).map(function(el){return Number(el.value);});
     if(!days.length){document.getElementById('tm-err').textContent='曜日を選択してください';return;}
     detail={weekdays:days};
@@ -571,7 +626,7 @@ async function addTask(){
     await setMonthlyTarget(data.id,ymd(new Date()).slice(0,7),t0);
   }
   document.getElementById('tm-title').value='';
-  document.getElementById('tm-err').textContent=''; 
+  document.getElementById('tm-err').textContent='';
   renderMgmtList();
   renderToday();
   renderCalTaskSel();
@@ -612,7 +667,7 @@ async function loadAll(){
   await loadTasks();
   renderPosFilter();
   document.getElementById('loading').style.display='none';
-  renderToday();
+  renderMembers();
 }
 
 document.getElementById('task-modal').addEventListener('click',function(e){if(e.target===this)closeModal('task-modal');});
