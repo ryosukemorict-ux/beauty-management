@@ -544,7 +544,7 @@ function renderMgmtList(){
 }
 
 function askDeleteTask(id){
-  const t=tasks.find(function(t){return t.id===id;});if(!t)return;
+  const t=tasks.find(function(t){return t.id===id;});if(!t)return; 
   if(!confirm('「'+t.title+'」を削除しますか？')) return;
   deleteTask(id);
 }
