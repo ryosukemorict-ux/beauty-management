@@ -111,9 +111,10 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
     <div id="tm-freq-detail"></div>
     <div class="modal-err" id="tm-err"></div>
     <div class="modal-actions">
-      <button class="btn btn-gold" onclick="addTask()">追加する</button>
+      <button class="btn btn-gold" onclick="addTask()"><span id="tm-save-label">追加する</span></button>
     </div>
     <div class="section-title">登録済みタスク</div>
+    <div class="form-group"><select class="form-sel" id="mgmt-pos-filter" onchange="renderMgmtList()"></select></div>
     <div id="mgmt-list"></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('task-modal')">閉じる</button>
@@ -167,6 +168,7 @@ let students=[],tasks=[],taskLogs={},ME=null;
 let monthlyTargets={},taskEvents={};
 let viewMode='daily';
 let viewingStaffId=null;
+let editingTaskId=null;
 let todayDate=new Date();
 let calMonth=new Date();
 
@@ -609,7 +611,11 @@ function openTaskModal(){
   document.getElementById('tm-title').value='';
   document.getElementById('tm-freq').value='daily';
   document.getElementById('tm-err').textContent='';
+  editingTaskId=null;
+  document.getElementById('tm-save-label').textContent='追加する';
   onFreqChange();
+  const mgmtSel=document.getElementById('mgmt-pos-filter');
+  mgmtSel.innerHTML=editablePositions.map(function(p){return '<option value="'+p+'">'+p+'</option>';}).join('');
   renderMgmtList();
   document.getElementById('task-modal').classList.add('show');
 }
@@ -643,27 +649,64 @@ async function addTask(){
   } else if(freq==='monthly')detail={day:Number(document.getElementById('tm-day').value)||1};
   else if(freq==='monthly_count')detail={};
   else if(freq==='as_needed')detail={};
-  const {data,error}=await sb.from('tasks').insert({position:position,title:title,frequency_type:freq,frequency_detail:detail,is_active:true}).select().single();
-  if(error){document.getElementById('tm-err').textContent='エラー: '+error.message;return;}
-  tasks.push(data);
-  if(freq==='monthly_count'){
-    const t0=Number(document.getElementById('tm-monthly-target').value)||1;
-    await setMonthlyTarget(data.id,ymd(new Date()).slice(0,7),t0);
+  if(editingTaskId){
+    const {error}=await sb.from('tasks').update({position:position,title:title,frequency_type:freq,frequency_detail:detail}).eq('id',editingTaskId);
+    if(error){document.getElementById('tm-err').textContent='エラー: '+error.message;return;}
+    const t=tasks.find(function(t){return t.id===editingTaskId;});
+    if(t)Object.assign(t,{position:position,title:title,frequency_type:freq,frequency_detail:detail});
+    if(freq==='monthly_count'){
+      const t0=Number(document.getElementById('tm-monthly-target').value)||1;
+      await setMonthlyTarget(editingTaskId,ymd(new Date()).slice(0,7),t0);
+    }
+    editingTaskId=null;
+    document.getElementById('tm-save-label').textContent='追加する';
+  } else {
+    const {data,error}=await sb.from('tasks').insert({position:position,title:title,frequency_type:freq,frequency_detail:detail,is_active:true}).select().single();
+    if(error){document.getElementById('tm-err').textContent='エラー: '+error.message;return;}
+    tasks.push(data);
+    if(freq==='monthly_count'){
+      const t0=Number(document.getElementById('tm-monthly-target').value)||1;
+      await setMonthlyTarget(data.id,ymd(new Date()).slice(0,7),t0);
+    }
   }
   document.getElementById('tm-title').value='';
   document.getElementById('tm-err').textContent='';
   renderMgmtList();
-  renderToday();
-  renderCalTaskSel();
+  if(viewingStaffId)renderToday();else renderMatrix();
 }
+
+function editTaskFromList(id){
+  const t=tasks.find(function(t){return t.id===id;});
+  if(!t||!canEditPosition(t.position))return;
+  editingTaskId=id;
+  document.getElementById('tm-position').value=t.position;
+  document.getElementById('tm-title').value=t.title;
+  document.getElementById('tm-freq').value=t.frequency_type;
+  onFreqChange();
+  const fd=t.frequency_detail||{};
+  if(t.frequency_type==='weekly'){
+    (fd.weekdays||[]).forEach(function(w){
+      const el=document.querySelector('.tm-weekday[value="'+w+'"]');
+      if(el)el.checked=true;
+    });
+  } else if(t.frequency_type==='monthly'){
+    const el=document.getElementById('tm-day');if(el)el.value=fd.day||1;
+  } else if(t.frequency_type==='monthly_count'){
+    const el=document.getElementById('tm-monthly-target');if(el)el.value=monthlyTargets[t.id]||1;
+  }
+  document.getElementById('tm-save-label').textContent='更新する';
+  document.getElementById('tm-err').textContent='';
+}
+
 
 function renderMgmtList(){
   const editablePositions=canEditAny()?POS_ORDER:[ME.position];
-  const list=tasks.filter(function(t){return editablePositions.includes(t.position);});
+  const posSel=document.getElementById('mgmt-pos-filter').value||editablePositions[0];
+  const list=tasks.filter(function(t){return editablePositions.includes(t.position)&&t.position===posSel;});
   const wrap=document.getElementById('mgmt-list');
   if(!list.length){wrap.innerHTML='<div style="font-size:12px;color:var(--soft)">タスクがありません</div>';return;}
   wrap.innerHTML=list.map(function(t){
-    return '<div class="mgmt-item"><div class="mgmt-item-name">'+esc(t.title)+'<span class="task-pos-badge">'+esc(t.position)+'</span><div class="mgmt-item-meta">'+esc(freqLabel(t))+'</div></div><button class="mgmt-del" onclick="askDeleteTask(\''+t.id+'\')">×</button></div>';
+    return '<div class="mgmt-item"><div class="mgmt-item-name" style="cursor:pointer" onclick="editTaskFromList(\''+t.id+'\')">'+esc(t.title)+'<span class="task-pos-badge">'+esc(t.position)+'</span><div class="mgmt-item-meta">'+esc(freqLabel(t))+'（タップで編集）</div></div><button class="mgmt-del" onclick="askDeleteTask(\''+t.id+'\')">×</button></div>';
   }).join('');
 }
 
@@ -676,8 +719,7 @@ async function deleteTask(id){
   await sb.from('tasks').delete().eq('id',id);
   tasks=tasks.filter(function(t){return t.id!==id;});
   renderMgmtList();
-  renderToday();
-  renderCalTaskSel();
+  if(viewingStaffId)renderToday();else renderMatrix();
 }
 
 async function loadAll(){
