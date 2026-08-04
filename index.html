@@ -476,7 +476,7 @@ const FUNC_LIST=[
   {id:'appointment',icon:'📅',name:'次回予約管理',desc:'次回予約の管理',minRole:null,url:'next-reservation.html'},
   {id:'sales',icon:'📊',name:'数値管理',desc:'月次売上・数値の管理',minRole:null,url:'sales.html'},
     {id:'task',icon:'✅',name:'タスク管理',desc:'役職ごとのタスク管理',minRole:null,url:'task.html'},
-    {id:'meeting',icon:'📝',name:'会議報告',desc:'幹部・店舗会議の記録',minRole:null,comingSoon:true},
+    {id:'meeting',icon:'📝',name:'会議報告',desc:'幹部・店舗会議の記録',minRole:'meeting_viewer',url:'meeting.html'},
   {id:'interview',icon:'💬',name:'面談報告',desc:'スタッフ面談の記録',minRole:null,comingSoon:true},
   {id:'evaluation',icon:'⭐',name:'人事評価制度',desc:'評価の記録と管理',minRole:null,comingSoon:true},
   {id:'schedule',icon:'📆',name:'年間スケジュール',desc:'年間の予定管理',minRole:null,comingSoon:true},
@@ -486,6 +486,7 @@ function canAccessFunc(func){
   if(func.comingSoon) return false;
   if(func.id==='curriculum') return true;
   if(func.minRole==='staff_editor') return canEditStaff();
+  if(func.minRole==='meeting_viewer') return !!ME && STAFF_EDITOR_ROLES.includes(ME.position);
   return !!ME;
 }
 
