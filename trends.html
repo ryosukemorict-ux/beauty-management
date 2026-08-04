@@ -142,7 +142,7 @@ async function loadYearData(){
   months.forEach(function(m){materialByMonth[m]={ailes:null,soleil:null};});
   (mdata||[]).forEach(function(row){
     if(!materialByMonth[row.month])materialByMonth[row.month]={ailes:null,soleil:null};
-    materialByMonth[row.month][row.store]=row.ratio;
+    materialByMonth[row.month][row.store]=(row.ratio===null||row.ratio===undefined)?null:Number(row.ratio);
   });
 
   document.getElementById('loading').style.display='none';
