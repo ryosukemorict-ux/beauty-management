@@ -436,7 +436,7 @@ function renderExItems(){
 }
 function updExItem(el){exItems[el.dataset.i][el.dataset.f]=el.value;}
 function addExecItem(){exItems.push({agenda:'',decision:''});renderExItems();}
-function removeExecItem(i){exItems.splice(i,1);renderExItems();}
+function removeExecItem(i){exItems.splice(i,1);renderExItems();} 
 async function loadExec(){
   const monthSel=document.getElementById('ex-month');
   if(!monthSel.options.length)monthOptions(monthSel,null);
