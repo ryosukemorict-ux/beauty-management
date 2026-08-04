@@ -60,6 +60,12 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
 .month-nav{display:flex;align-items:center;gap:4px;}
 .month-nav-btn{font-family:'Noto Sans JP',sans-serif;font-size:15px;font-weight:700;padding:6px 12px;border-radius:8px;border:1.5px solid var(--gold-light);background:white;color:var(--gold);cursor:pointer;line-height:1;}
 .month-nav-btn:active{background:var(--gold-light);}
+.prev-toggle{width:100%;text-align:left;background:#f5f0eb;border:1.5px solid var(--gold-light);border-radius:8px;padding:10px 12px;font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:600;color:var(--mid);cursor:pointer;}
+.prev-compact{margin-top:12px;}
+.prev-compact .pf{margin-bottom:10px;}
+.prev-compact .pf-label{font-size:11px;color:var(--gold);font-weight:700;margin-bottom:2px;}
+.prev-compact .pf-body{font-size:13px;line-height:1.6;color:var(--dark);white-space:pre-wrap;}
+.prev-compact .pf-body.empty{color:var(--soft);}
 .save-row{display:flex;justify-content:flex-end;gap:8px;margin-top:6px;}
 .empty-msg{text-align:center;color:var(--soft);font-size:13px;padding:24px;}
 </style>
@@ -93,26 +99,26 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
         <button class="month-nav-btn" onclick="shiftMonth('mo-month',1,loadMonthly)">▶</button>
       </div>
     </div>
-    <div class="compare-grid">
-      <div class="card">
-        <div class="compare-col-label" id="mo-prev-label">前月</div>
-        <div class="field"><label>PLAN(目標)</label><div class="readonly-box" id="mo-prev-plan"></div></div>
-        <div class="field"><label>DO(行動)</label><div class="readonly-box" id="mo-prev-do"></div></div>
-        <div class="field"><label>CHECK(反省)</label><div class="readonly-box" id="mo-prev-check"></div></div>
-        <div class="field"><label>ACTION(改善)</label><div class="readonly-box" id="mo-prev-action"></div></div>
-        <div class="field"><label>その他報告</label><div class="readonly-box" id="mo-prev-other"></div></div>
-        <div class="field"><label>その他権限要求</label><div class="readonly-box" id="mo-prev-auth"></div></div>
+    <div class="card">
+      <button class="prev-toggle" id="mo-prev-toggle" onclick="togglePrevMonth()">▼ 前月（<span id="mo-prev-month-txt"></span>）の内容を確認</button>
+      <div class="prev-compact" id="mo-prev-box" style="display:none">
+        <div class="pf"><div class="pf-label">PLAN(目標)</div><div class="pf-body" id="mo-prev-plan"></div></div>
+        <div class="pf"><div class="pf-label">DO(行動)</div><div class="pf-body" id="mo-prev-do"></div></div>
+        <div class="pf"><div class="pf-label">CHECK(反省)</div><div class="pf-body" id="mo-prev-check"></div></div>
+        <div class="pf"><div class="pf-label">ACTION(改善)</div><div class="pf-body" id="mo-prev-action"></div></div>
+        <div class="pf"><div class="pf-label">その他報告</div><div class="pf-body" id="mo-prev-other"></div></div>
+        <div class="pf"><div class="pf-label">その他権限要求</div><div class="pf-body" id="mo-prev-auth"></div></div>
       </div>
-      <div class="card">
-        <div class="compare-col-label" id="mo-cur-label">当月</div>
-        <div class="field"><label>PLAN(目標)</label><textarea class="txt" id="mo-cur-plan"></textarea></div>
-        <div class="field"><label>DO(行動)</label><textarea class="txt" id="mo-cur-do"></textarea></div>
-        <div class="field"><label>CHECK(反省)</label><textarea class="txt" id="mo-cur-check"></textarea></div>
-        <div class="field"><label>ACTION(改善)</label><textarea class="txt" id="mo-cur-action"></textarea></div>
-        <div class="field"><label>その他報告</label><textarea class="txt" id="mo-cur-other"></textarea></div>
-        <div class="field"><label>その他権限要求</label><textarea class="txt" id="mo-cur-auth"></textarea></div>
-        <div class="save-row"><button class="btn btn-dark" onclick="saveMonthly()">保存</button></div>
-      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" id="mo-cur-label">当月</div>
+      <div class="field"><label>PLAN(目標)</label><textarea class="txt" id="mo-cur-plan"></textarea></div>
+      <div class="field"><label>DO(行動)</label><textarea class="txt" id="mo-cur-do"></textarea></div>
+      <div class="field"><label>CHECK(反省)</label><textarea class="txt" id="mo-cur-check"></textarea></div>
+      <div class="field"><label>ACTION(改善)</label><textarea class="txt" id="mo-cur-action"></textarea></div>
+      <div class="field"><label>その他報告</label><textarea class="txt" id="mo-cur-other"></textarea></div>
+      <div class="field"><label>その他権限要求</label><textarea class="txt" id="mo-cur-auth"></textarea></div>
+      <div class="save-row"><button class="btn btn-dark" onclick="saveMonthly()">保存</button></div>
     </div>
   </div>
 
@@ -247,7 +253,7 @@ async function loadMonthly(){
   if(!monthSel.options.length)monthOptions(monthSel,null);
   const month=monthSel.value;
   const prev=prevMonthStr(month);
-  document.getElementById('mo-prev-label').textContent='前月（'+monthLabel(prev)+'）';
+  document.getElementById('mo-prev-month-txt').textContent=monthLabel(prev);
   document.getElementById('mo-cur-label').textContent='当月（'+monthLabel(month)+'）';
   const {data}=await sb.from('pdca_reports').select('*').eq('store',store).eq('report_type','monthly').in('month',[month,prev]);
   const curRow=(data||[]).find(function(r){return r.month===month;});
@@ -265,6 +271,13 @@ async function loadMonthly(){
   document.getElementById('mo-cur-action').value=curRow?curRow.action||'':'';
   document.getElementById('mo-cur-other').value=curRow?curRow.other_report||'':'';
   document.getElementById('mo-cur-auth').value=curRow?curRow.other_authority||'':'';
+}
+function togglePrevMonth(){
+  const box=document.getElementById('mo-prev-box');
+  const btn=document.getElementById('mo-prev-toggle');
+  const open=box.style.display!=='none';
+  box.style.display=open?'none':'block';
+  btn.innerHTML=(open?'▼':'▲')+' 前月（<span id="mo-prev-month-txt">'+monthLabel(prevMonthStr(document.getElementById('mo-month').value))+'</span>）の内容を確認';
 }
 async function saveMonthly(){
   const store=document.getElementById('mo-store').value;
