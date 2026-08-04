@@ -154,6 +154,25 @@ tbody tr:hover td:first-child{background:#fffbf7;}
   </div>
 </div>
 
+<div class="modal-overlay" id="material-modal">
+  <div class="modal">
+    <div class="modal-title">🧾 材料比率設定</div>
+    <div style="font-size:12px;color:var(--mid);margin-bottom:16px;text-align:center">店舗ごとの月間材料費比率（%）</div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label style="font-size:12px;color:var(--mid);display:block;margin-bottom:4px">エルズ（%）</label>
+      <input type="number" id="material-ailes" step="0.1" placeholder="0.0" style="font-family:'Noto Sans JP',sans-serif;font-size:14px;padding:8px 12px;border-radius:8px;border:1.5px solid var(--gold-light);width:100%;outline:none;">
+    </div>
+    <div class="form-group" style="margin-bottom:16px">
+      <label style="font-size:12px;color:var(--mid);display:block;margin-bottom:4px">soleil（%）</label>
+      <input type="number" id="material-soleil" step="0.1" placeholder="0.0" style="font-family:'Noto Sans JP',sans-serif;font-size:14px;padding:8px 12px;border-radius:8px;border:1.5px solid var(--gold-light);width:100%;outline:none;">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeMaterialModal()">キャンセル</button>
+      <button class="btn btn-dark" onclick="saveMaterialRatio()">保存</button>
+    </div>
+  </div>
+</div>
+
 <div class="main">
   <div class="month-selector">
     <label>対象月</label>
@@ -161,6 +180,7 @@ tbody tr:hover td:first-child{background:#fffbf7;}
     <button onclick="showAddModal()" style="font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:6px 14px;border-radius:7px;border:1.5px solid var(--gold-light);background:white;color:var(--mid);cursor:pointer;">＋ 月を追加</button>
     <button onclick="showAllocModal()" style="font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:6px 14px;border-radius:7px;border:1.5px solid var(--gold-light);background:white;color:var(--mid);cursor:pointer;">⚙️ 按分設定</button>
     <button id="btn-productivity" onclick="showProductivityModal()" style="display:none;font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:6px 14px;border-radius:7px;border:1.5px solid var(--gold-light);background:white;color:var(--mid);cursor:pointer;">📊 人事生産性</button>
+    <button id="btn-material" onclick="showMaterialModal()" style="display:none;font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:6px 14px;border-radius:7px;border:1.5px solid var(--gold-light);background:white;color:var(--mid);cursor:pointer;">🧾 材料比率</button>
   </div>
   <div class="store-tabs">
     <button class="store-tab active" id="tab-all" onclick="switchStore('all')">全店舗</button>
@@ -176,6 +196,7 @@ tbody tr:hover td:first-child{background:#fffbf7;}
       <div class="total-item"><div class="total-item-label">フリー売上</div><div class="total-item-val" id="tot-free">—</div><div class="total-item-sub" id="tot-free-sub"></div></div>
       <div class="total-item"><div class="total-item-label">総入客数</div><div class="total-item-val" id="tot-clients">—</div></div>
       <div class="total-item"><div class="total-item-label">店販売上</div><div class="total-item-val" id="tot-tanden">—</div><div class="total-item-sub" id="tot-tanden-sub"></div></div>
+      <div class="total-item"><div class="total-item-label">材料比率</div><div class="total-item-val" id="tot-material">—</div><div class="total-item-sub" id="tot-material-sub"></div></div>
     </div>
   </div>
   <p class="scroll-hint">← 横にスクロールできます →</p>
@@ -262,11 +283,12 @@ const TAX_RATE=0.10;
 let students=[],salesData={},currentMonth='',currentStore='all',months=[];
 let sortField=null,sortAsc=true;
 let allocation={ailes_pct:50,soleil_pct:50};
+let materialRatio={ailes:null,soleil:null};
 
 // 両店スタッフのID（亀田代表）
 const RYOTEN_STORES=['両店'];
 
-// 人事生産性(役職ごとの月間売上目標・税込)の編集権限
+// 人事生産性(役職ごとの月間売上目標・税込)・材料比率の編集権限
 const PRODUCTIVITY_EDIT_ROLES=['代表','管理者','店長','チーフ'];
 let ME=null;
 let roleProductivity={};
@@ -291,6 +313,7 @@ async function saveAlloc(){
 }
 
 function canEditProductivity(){return ME&&PRODUCTIVITY_EDIT_ROLES.includes(ME.position);}
+function canEditMaterial(){return ME&&PRODUCTIVITY_EDIT_ROLES.includes(ME.position);}
 
 async function loadProductivity(){
   const {data}=await sb.from('role_productivity').select('*').lte('month',currentMonth).order('month',{ascending:false});
@@ -325,6 +348,34 @@ async function saveProductivity(){
   await loadProductivity();
   closeProductivityModal();
   renderTable();
+}
+
+function showMaterialModal(){
+  if(!canEditMaterial())return;
+  document.getElementById('material-ailes').value=(materialRatio.ailes!==null&&materialRatio.ailes!==undefined)?materialRatio.ailes:'';
+  document.getElementById('material-soleil').value=(materialRatio.soleil!==null&&materialRatio.soleil!==undefined)?materialRatio.soleil:'';
+  document.getElementById('material-modal').classList.add('show');
+}
+function closeMaterialModal(){document.getElementById('material-modal').classList.remove('show');}
+
+async function saveMaterialRatio(){
+  const aRaw=document.getElementById('material-ailes').value;
+  const sRaw=document.getElementById('material-soleil').value;
+  const aVal=aRaw===''?null:Number(aRaw);
+  const sVal=sRaw===''?null:Number(sRaw);
+  await sb.from('material_ratio').upsert({month:currentMonth,store:'ailes',ratio:aVal,updated_at:new Date().toISOString()},{onConflict:'month,store'});
+  await sb.from('material_ratio').upsert({month:currentMonth,store:'soleil',ratio:sVal,updated_at:new Date().toISOString()},{onConflict:'month,store'});
+  materialRatio={ailes:aVal,soleil:sVal};
+  closeMaterialModal();
+  updateTotals();
+}
+
+async function loadMaterialRatio(){
+  const {data}=await sb.from('material_ratio').select('*').eq('month',currentMonth);
+  materialRatio={ailes:null,soleil:null};
+  if(data){
+    data.forEach(function(r){materialRatio[r.store]=r.ratio;});
+  }
 }
 
 function buildMonths(){
@@ -371,7 +422,7 @@ function confirmAddMonth(){
 function onMonthChange(){
   currentMonth=document.getElementById('month-sel').value;
   salesData={};
-  Promise.all([loadSalesData(),loadAllocation(),loadProductivity()]).then(function(){renderTable();});
+  Promise.all([loadSalesData(),loadAllocation(),loadProductivity(),loadMaterialRatio()]).then(function(){renderTable();});
 }
 
 function switchStore(store){
@@ -508,6 +559,25 @@ function updateTotals(){
   document.getElementById('tot-clients').textContent=clients?clients+'名':'—';
   document.getElementById('tot-tanden').textContent=tanden?'¥'+Math.round(tanden*(1+TAX_RATE)).toLocaleString():'—';
   document.getElementById('tot-tanden-sub').textContent=tanden?'(税抜 ¥'+tanden.toLocaleString()+')':'';
+
+  const totMaterialEl=document.getElementById('tot-material');
+  const totMaterialSubEl=document.getElementById('tot-material-sub');
+  if(currentStore==='ailes'){
+    totMaterialEl.textContent=(materialRatio.ailes!==null&&materialRatio.ailes!==undefined)?materialRatio.ailes+'%':'—';
+    totMaterialSubEl.textContent='';
+  } else if(currentStore==='soleil'){
+    totMaterialEl.textContent=(materialRatio.soleil!==null&&materialRatio.soleil!==undefined)?materialRatio.soleil+'%':'—';
+    totMaterialSubEl.textContent='';
+  } else {
+    const a=materialRatio.ailes,s=materialRatio.soleil;
+    if((a===null||a===undefined)&&(s===null||s===undefined)){
+      totMaterialEl.textContent='—';
+      totMaterialSubEl.textContent='';
+    } else {
+      totMaterialEl.textContent=(a!==null&&a!==undefined?a+'%':'—')+' / '+(s!==null&&s!==undefined?s+'%':'—');
+      totMaterialSubEl.textContent='エルズ / soleil';
+    }
+  }
 }
 
 async function loadAll(){
@@ -518,6 +588,7 @@ async function loadAll(){
     if(meData)ME=meData;
   }
   if(canEditProductivity())document.getElementById('btn-productivity').style.display='';
+  if(canEditMaterial())document.getElementById('btn-material').style.display='';
   const {data}=await sb.from('students').select('*').order('created_at');
   students=(data||[]).filter(function(s){return s.is_active!==false&&!EXCLUDE_ROLES.includes(s.position);});
   months=buildMonths();
@@ -529,6 +600,7 @@ async function loadAll(){
   await loadSalesData();
   await loadAllocation();
   await loadProductivity();
+  await loadMaterialRatio();
   document.getElementById('loading').style.display='none';
   renderTable();
 }
