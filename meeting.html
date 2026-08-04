@@ -160,9 +160,13 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
   <!-- 面談報告 -->
   <div class="panel" id="panel-interview">
     <div class="filter-row">
-      <select class="sel" id="iv-store" onchange="renderInterviewList()">
+      <select class="sel" id="iv-store" onchange="onIvStoreChange()">
         <option value="エルズ">エルズ</option>
         <option value="soleil">soleil</option>
+        <option value="両店">両店</option>
+      </select>
+      <select class="sel" id="iv-name-filter" onchange="renderInterviewList()">
+        <option value="">全員</option>
       </select>
     </div>
     <div class="card">
@@ -242,7 +246,7 @@ function switchTab(name){
   document.getElementById('panel-'+name).classList.add('active');
   if(name==='monthly')loadMonthly();
   if(name==='store')loadStoreMeeting();
-  if(name==='interview')renderInterviewList();
+  if(name==='interview')onIvStoreChange();
   if(name==='exec')loadExec();
 }
 
@@ -346,15 +350,22 @@ async function saveStoreMeeting(){
 
 /* ===== 面談報告 ===== */
 function studentOptsForStore(store){
-  return students.filter(function(s){return s.is_active!==false&&s.store&&s.store.includes(store);})
-    .map(function(s){return '<option value="'+esc(s.id)+'">'+esc(s.name)+'</option>';}).join('');
+  const list=store==='両店'?students.filter(function(s){return s.is_active!==false;}):students.filter(function(s){return s.is_active!==false&&s.store&&s.store.includes(store);});
+  return list.map(function(s){return '<option value="'+esc(s.id)+'">'+esc(s.name)+'</option>';}).join('');
+}
+function onIvStoreChange(){
+  const store=document.getElementById('iv-store').value;
+  document.getElementById('iv-student').innerHTML=studentOptsForStore(store)||'<option value="">対象スタッフなし</option>';
+  document.getElementById('iv-name-filter').innerHTML='<option value="">全員</option>'+studentOptsForStore(store);
+  renderInterviewList();
 }
 async function addInterview(){
   const student_id=document.getElementById('iv-student').value;
   if(!student_id){alert('対象スタッフを選択してください');return;}
   const store=document.getElementById('iv-store').value;
+  const st=students.find(function(s){return s.id===student_id;});
   const payload={
-    student_id,store,
+    student_id,store:(store==='両店'?(st?st.store:store):store),
     interviewer:document.getElementById('iv-interviewer').value,
     interview_date:document.getElementById('iv-date').value,
     content:document.getElementById('iv-content').value,
@@ -372,14 +383,17 @@ async function addInterview(){
 }
 async function renderInterviewList(){
   const store=document.getElementById('iv-store').value;
-  document.getElementById('iv-student').innerHTML=studentOptsForStore(store)||'<option value="">対象スタッフなし</option>';
-  const {data}=await sb.from('staff_interviews').select('*').eq('store',store).order('interview_date',{ascending:false});
+  const nameFilter=document.getElementById('iv-name-filter').value;
+  let q=sb.from('staff_interviews').select('*').order('interview_date',{ascending:false});
+  if(store!=='両店')q=q.eq('store',store);
+  if(nameFilter)q=q.eq('student_id',nameFilter);
+  const {data}=await q;
   const list=document.getElementById('iv-list');
   if(!data||!data.length){list.innerHTML='<div class="empty-msg">面談記録がありません</div>';return;}
   list.innerHTML=data.map(function(r){
     const st=students.find(function(s){return s.id===r.student_id;});
     const name=st?st.name:'（不明）';
-    return '<div class="iv-row"><div class="iv-row-head"><span class="iv-name">'+esc(name)+'</span><span class="iv-meta">'+esc(r.interview_date||'')+'　担当：'+esc(r.interviewer||'—')+'</span>'
+    return '<div class="iv-row"><div class="iv-row-head"><span class="iv-name">'+esc(name)+(store==='両店'?'　['+esc(r.store||'')+']':'')+'</span><span class="iv-meta">'+esc(r.interview_date||'')+'　担当：'+esc(r.interviewer||'—')+'</span>'
       +'<button class="btn btn-red btn-xs" onclick="delInterview('+r.id+')">削除</button></div>'
       +(r.content?'<div class="iv-label">面談内容</div><div class="iv-body">'+esc(r.content)+'</div>':'')
       +(r.next_action?'<div class="iv-label">今後のアクション</div><div class="iv-body">'+esc(r.next_action)+'</div>':'')
