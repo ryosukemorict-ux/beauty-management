@@ -90,6 +90,7 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
   <div class="panel active" id="panel-monthly">
     <div class="filter-row">
       <select class="sel" id="mo-store" onchange="loadMonthly()">
+        <option value="両店" selected>両店</option>
         <option value="エルズ">エルズ</option>
         <option value="soleil">soleil</option>
       </select>
@@ -99,27 +100,7 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
         <button class="month-nav-btn" onclick="shiftMonth('mo-month',1,loadMonthly)">▶</button>
       </div>
     </div>
-    <div class="card">
-      <button class="prev-toggle" id="mo-prev-toggle" onclick="togglePrevMonth()">▼ 前月（<span id="mo-prev-month-txt"></span>）の内容を確認</button>
-      <div class="prev-compact" id="mo-prev-box" style="display:none">
-        <div class="pf"><div class="pf-label">PLAN(目標)</div><div class="pf-body" id="mo-prev-plan"></div></div>
-        <div class="pf"><div class="pf-label">DO(行動)</div><div class="pf-body" id="mo-prev-do"></div></div>
-        <div class="pf"><div class="pf-label">CHECK(反省)</div><div class="pf-body" id="mo-prev-check"></div></div>
-        <div class="pf"><div class="pf-label">ACTION(改善)</div><div class="pf-body" id="mo-prev-action"></div></div>
-        <div class="pf"><div class="pf-label">その他報告</div><div class="pf-body" id="mo-prev-other"></div></div>
-        <div class="pf"><div class="pf-label">その他権限要求</div><div class="pf-body" id="mo-prev-auth"></div></div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title" id="mo-cur-label">当月</div>
-      <div class="field"><label>PLAN(目標)</label><textarea class="txt" id="mo-cur-plan"></textarea></div>
-      <div class="field"><label>DO(行動)</label><textarea class="txt" id="mo-cur-do"></textarea></div>
-      <div class="field"><label>CHECK(反省)</label><textarea class="txt" id="mo-cur-check"></textarea></div>
-      <div class="field"><label>ACTION(改善)</label><textarea class="txt" id="mo-cur-action"></textarea></div>
-      <div class="field"><label>その他報告</label><textarea class="txt" id="mo-cur-other"></textarea></div>
-      <div class="field"><label>その他権限要求</label><textarea class="txt" id="mo-cur-auth"></textarea></div>
-      <div class="save-row"><button class="btn btn-dark" onclick="saveMonthly()">保存</button></div>
-    </div>
+    <div id="mo-blocks"></div>
   </div>
 
   <!-- 店舗ミーティング報告 -->
@@ -233,54 +214,81 @@ function switchTab(name){
 }
 
 /* ===== 月末報告 ===== */
+function moBlockHtml(store){
+  return '<div class="card-title" style="margin:14px 4px 8px">'+store+'</div>'
+    +'<div class="card">'
+    +'<button class="prev-toggle" id="mo-prev-toggle-'+store+'" onclick="togglePrevMonth(\''+store+'\')">▼ 前月（<span id="mo-prev-month-txt-'+store+'"></span>）の内容を確認</button>'
+    +'<div class="prev-compact" id="mo-prev-box-'+store+'" style="display:none">'
+    +'<div class="pf"><div class="pf-label">PLAN(目標)</div><div class="pf-body" id="mo-prev-plan-'+store+'"></div></div>'
+    +'<div class="pf"><div class="pf-label">DO(行動)</div><div class="pf-body" id="mo-prev-do-'+store+'"></div></div>'
+    +'<div class="pf"><div class="pf-label">CHECK(反省)</div><div class="pf-body" id="mo-prev-check-'+store+'"></div></div>'
+    +'<div class="pf"><div class="pf-label">ACTION(改善)</div><div class="pf-body" id="mo-prev-action-'+store+'"></div></div>'
+    +'<div class="pf"><div class="pf-label">その他報告</div><div class="pf-body" id="mo-prev-other-'+store+'"></div></div>'
+    +'<div class="pf"><div class="pf-label">その他権限要求</div><div class="pf-body" id="mo-prev-auth-'+store+'"></div></div>'
+    +'</div></div>'
+    +'<div class="card">'
+    +'<div class="card-title" id="mo-cur-label-'+store+'">当月</div>'
+    +'<div class="field"><label>PLAN(目標)</label><textarea class="txt" id="mo-cur-plan-'+store+'"></textarea></div>'
+    +'<div class="field"><label>DO(行動)</label><textarea class="txt" id="mo-cur-do-'+store+'"></textarea></div>'
+    +'<div class="field"><label>CHECK(反省)</label><textarea class="txt" id="mo-cur-check-'+store+'"></textarea></div>'
+    +'<div class="field"><label>ACTION(改善)</label><textarea class="txt" id="mo-cur-action-'+store+'"></textarea></div>'
+    +'<div class="field"><label>その他報告</label><textarea class="txt" id="mo-cur-other-'+store+'"></textarea></div>'
+    +'<div class="field"><label>その他権限要求</label><textarea class="txt" id="mo-cur-auth-'+store+'"></textarea></div>'
+    +'<div class="save-row"><button class="btn btn-dark" onclick="saveMonthly(\''+store+'\')">'+store+'を保存</button></div>'
+    +'</div>';
+}
+async function fillMonthlyBlock(store,month){
+  const prev=prevMonthStr(month);
+  document.getElementById('mo-prev-month-txt-'+store).textContent=monthLabel(prev);
+  document.getElementById('mo-cur-label-'+store).textContent='当月（'+monthLabel(month)+'）';
+  const {data}=await sb.from('pdca_reports').select('*').eq('store',store).eq('report_type','monthly').in('month',[month,prev]);
+  const curRow=(data||[]).find(function(r){return r.month===month;});
+  const prevRow=(data||[]).find(function(r){return r.month===prev;});
+  const set=function(id,val){const el=document.getElementById(id);el.textContent=val||'（未記入）';el.classList.toggle('empty',!val);};
+  set('mo-prev-plan-'+store,prevRow?prevRow.plan:'');
+  set('mo-prev-do-'+store,prevRow?prevRow.do_text:'');
+  set('mo-prev-check-'+store,prevRow?prevRow.check_text:'');
+  set('mo-prev-action-'+store,prevRow?prevRow.action:'');
+  set('mo-prev-other-'+store,prevRow?prevRow.other_report:'');
+  set('mo-prev-auth-'+store,prevRow?prevRow.other_authority:'');
+  document.getElementById('mo-cur-plan-'+store).value=curRow?curRow.plan||'':'';
+  document.getElementById('mo-cur-do-'+store).value=curRow?curRow.do_text||'':'';
+  document.getElementById('mo-cur-check-'+store).value=curRow?curRow.check_text||'':'';
+  document.getElementById('mo-cur-action-'+store).value=curRow?curRow.action||'':'';
+  document.getElementById('mo-cur-other-'+store).value=curRow?curRow.other_report||'':'';
+  document.getElementById('mo-cur-auth-'+store).value=curRow?curRow.other_authority||'':'';
+}
 async function loadMonthly(){
   const store=document.getElementById('mo-store').value;
   const monthSel=document.getElementById('mo-month');
   if(!monthSel.options.length)monthOptions(monthSel,null);
   const month=monthSel.value;
-  const prev=prevMonthStr(month);
-  document.getElementById('mo-prev-month-txt').textContent=monthLabel(prev);
-  document.getElementById('mo-cur-label').textContent='当月（'+monthLabel(month)+'）';
-  const {data}=await sb.from('pdca_reports').select('*').eq('store',store).eq('report_type','monthly').in('month',[month,prev]);
-  const curRow=(data||[]).find(function(r){return r.month===month;});
-  const prevRow=(data||[]).find(function(r){return r.month===prev;});
-  const set=function(id,val){const el=document.getElementById(id);el.textContent=val||'（未記入）';el.classList.toggle('empty',!val);};
-  set('mo-prev-plan',prevRow?prevRow.plan:'');
-  set('mo-prev-do',prevRow?prevRow.do_text:'');
-  set('mo-prev-check',prevRow?prevRow.check_text:'');
-  set('mo-prev-action',prevRow?prevRow.action:'');
-  set('mo-prev-other',prevRow?prevRow.other_report:'');
-  set('mo-prev-auth',prevRow?prevRow.other_authority:'');
-  document.getElementById('mo-cur-plan').value=curRow?curRow.plan||'':'';
-  document.getElementById('mo-cur-do').value=curRow?curRow.do_text||'':'';
-  document.getElementById('mo-cur-check').value=curRow?curRow.check_text||'':'';
-  document.getElementById('mo-cur-action').value=curRow?curRow.action||'':'';
-  document.getElementById('mo-cur-other').value=curRow?curRow.other_report||'':'';
-  document.getElementById('mo-cur-auth').value=curRow?curRow.other_authority||'':'';
+  const stores=store==='両店'?['エルズ','soleil']:[store];
+  document.getElementById('mo-blocks').innerHTML=stores.map(moBlockHtml).join('');
+  for(const s of stores){await fillMonthlyBlock(s,month);}
 }
-function togglePrevMonth(){
-  const box=document.getElementById('mo-prev-box');
-  const btn=document.getElementById('mo-prev-toggle');
+function togglePrevMonth(store){
+  const box=document.getElementById('mo-prev-box-'+store);
+  const btn=document.getElementById('mo-prev-toggle-'+store);
   const open=box.style.display!=='none';
   box.style.display=open?'none':'block';
-  btn.innerHTML=(open?'▼':'▲')+' 前月（<span id="mo-prev-month-txt">'+monthLabel(prevMonthStr(document.getElementById('mo-month').value))+'</span>）の内容を確認';
+  btn.innerHTML=(open?'▼':'▲')+' 前月（<span id="mo-prev-month-txt-'+store+'">'+monthLabel(prevMonthStr(document.getElementById('mo-month').value))+'</span>）の内容を確認';
 }
-async function saveMonthly(){
-  const store=document.getElementById('mo-store').value;
+async function saveMonthly(store){
   const month=document.getElementById('mo-month').value;
   const payload={
     store,month,report_type:'monthly',
-    plan:document.getElementById('mo-cur-plan').value,
-    do_text:document.getElementById('mo-cur-do').value,
-    check_text:document.getElementById('mo-cur-check').value,
-    action:document.getElementById('mo-cur-action').value,
-    other_report:document.getElementById('mo-cur-other').value,
-    other_authority:document.getElementById('mo-cur-auth').value,
+    plan:document.getElementById('mo-cur-plan-'+store).value,
+    do_text:document.getElementById('mo-cur-do-'+store).value,
+    check_text:document.getElementById('mo-cur-check-'+store).value,
+    action:document.getElementById('mo-cur-action-'+store).value,
+    other_report:document.getElementById('mo-cur-other-'+store).value,
+    other_authority:document.getElementById('mo-cur-auth-'+store).value,
     updated_at:new Date().toISOString()
   };
   const {error}=await sb.from('pdca_reports').upsert(payload,{onConflict:'store,month,report_type'});
   if(error){alert('エラー: '+error.message);return;}
-  alert('保存しました');
+  alert(store+'を保存しました');
 }
 
 /* ===== 店舗ミーティング報告 ===== */
