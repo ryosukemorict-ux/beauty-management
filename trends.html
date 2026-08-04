@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>年間推移 | ailes group</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root{--cream:#faf6f0;--gold:#c9a96e;--gold-light:#e8d5b0;--dark:#1a1410;--mid:#7a6a58;--soft:#c4b49e;--accent:#8b5e3c;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--dark);min-height:100vh;}
+.loading-screen{position:fixed;inset:0;background:var(--cream);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;z-index:9999;}
+.loading-spinner{width:40px;height:40px;border:3px solid var(--gold-light);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-text{font-size:13px;color:var(--mid);}
+.top-bar{background:var(--dark);color:var(--gold-light);padding:12px 20px;display:flex;align-items:center;gap:12px;}
+.top-bar-title{font-family:'Playfair Display',serif;font-size:18px;letter-spacing:2px;}
+.nav-bar{background:white;border-bottom:2px solid var(--gold-light);padding:0 16px;display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.nav-btn{font-size:13px;font-weight:500;padding:12px 18px;border:none;background:none;color:var(--mid);cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;margin-bottom:-2px;}
+.nav-btn.active{color:var(--gold);border-bottom-color:var(--gold);font-weight:700;}
+.main{max-width:1000px;margin:0 auto;padding:20px 16px 80px;}
+.year-selector{background:white;border:1px solid var(--gold-light);border-radius:12px;padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.year-selector label{font-size:12px;color:var(--mid);font-weight:500;}
+.year-sel{font-family:'Noto Sans JP',sans-serif;font-size:15px;font-weight:700;padding:8px 32px 8px 14px;border-radius:9px;border:2px solid var(--gold);background:white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7'%3E%3Cpath d='M0 0l6 7 6-7z' fill='%23c9a96e'/%3E%3C/svg%3E") no-repeat right 10px center;appearance:none;-webkit-appearance:none;outline:none;cursor:pointer;color:var(--dark);}
+.store-tabs{display:flex;gap:8px;margin-bottom:14px;}
+.store-tab{font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:700;padding:8px 20px;border-radius:20px;border:2px solid var(--gold-light);background:white;color:var(--mid);cursor:pointer;transition:all 0.15s;}
+.store-tab.active{background:var(--gold);color:white;border-color:var(--gold);}
+.chart-card{background:white;border:1px solid var(--gold-light);border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,0.04);}
+.chart-title{font-size:13px;font-weight:700;color:var(--dark);margin-bottom:10px;}
+.chart-wrap{position:relative;height:220px;}
+.empty-msg{text-align:center;color:var(--soft);padding:40px;font-size:13px;}
+</style>
+</head>
+<body>
+<div class="loading-screen" id="loading">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">データを読み込み中...</div>
+</div>
+<div class="top-bar">
+  <div class="top-bar-title">✦ ailes group</div>
+</div>
+<div class="nav-bar">
+  <button class="nav-btn" onclick="window.location.href='index.html'">🏠 ホーム</button>
+  <button class="nav-btn" onclick="window.location.href='sales.html'">📊 数値管理</button>
+  <button class="nav-btn active">📈 年間推移</button>
+</div>
+
+<div class="main">
+  <div class="year-selector">
+    <label>対象年</label>
+    <select class="year-sel" id="year-sel" onchange="onYearChange()"></select>
+  </div>
+  <div class="store-tabs">
+    <button class="store-tab active" id="tab-all" onclick="switchStore('all')">全店舗</button>
+    <button class="store-tab" id="tab-ailes" onclick="switchStore('ailes')">エルズ</button>
+    <button class="store-tab" id="tab-soleil" onclick="switchStore('soleil')">soleil</button>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">総売結果（税込・円）</div>
+    <div class="chart-wrap"><canvas id="chart-result"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">材料比率（%）</div>
+    <div class="chart-wrap"><canvas id="chart-material"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">総入客数（名）</div>
+    <div class="chart-wrap"><canvas id="chart-clients"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">店販売上（税込・円）</div>
+    <div class="chart-wrap"><canvas id="chart-tanden"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">客単価（税込・円）</div>
+    <div class="chart-wrap"><canvas id="chart-unitprice"></canvas></div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL='https://nrweporylfaorlqektsk.supabase.co';
+const SUPABASE_ANON='sb_publishable_a3X1ltKqAaTv6CyxHIReug_xEPqqCSS';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
+const EXCLUDE_ROLES=['管理者'];
+const TAX_RATE=0.10;
+const RYOTEN_STORES=['両店'];
+const MONTH_LABELS=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+let currentYear=2026,currentStore='all';
+let students=[],salesDataAll={},allocationByMonth={},materialByMonth={};
+let charts={};
+
+function buildYears(){
+  const list=[];
+  for(let y=2026;y<=2028;y++)list.push(y);
+  return list;
+}
+
+function renderYearSel(){
+  const sel=document.getElementById('year-sel');
+  sel.innerHTML=buildYears().map(function(y){return '<option value="'+y+'">'+y+'年</option>';}).join('');
+  sel.value=currentYear;
+}
+
+function switchStore(store){
+  currentStore=store;
+  document.querySelectorAll('.store-tab').forEach(function(t){t.classList.remove('active');});
+  document.getElementById('tab-'+store).classList.add('active');
+  renderCharts();
+}
+
+function onYearChange(){
+  currentYear=Number(document.getElementById('year-sel').value);
+  loadYearData().then(renderCharts);
+}
+
+function calcResult(d){
+  return Number(d.meimei_sales||0)+Number(d.free_sales||0)+Number(d.tanden||0);
+}
+
+async function loadYearData(){
+  document.getElementById('loading').style.display='flex';
+  const months=[];
+  for(let m=1;m<=12;m++)months.push(currentYear+'-'+String(m).padStart(2,'0'));
+
+  const {data:sdata}=await sb.from('sales_data').select('*').gte('month',months[0]).lte('month',months[11]);
+  salesDataAll={};
+  months.forEach(function(m){salesDataAll[m]={};});
+  (sdata||[]).forEach(function(row){
+    if(salesDataAll[row.month])salesDataAll[row.month][row.student_id]=row;
+  });
+
+  const {data:adata}=await sb.from('sales_allocation').select('*').gte('month',months[0]).lte('month',months[11]);
+  allocationByMonth={};
+  (adata||[]).forEach(function(row){allocationByMonth[row.month]={ailes_pct:row.ailes_pct,soleil_pct:row.soleil_pct};});
+
+  const {data:mdata}=await sb.from('material_ratio').select('*').gte('month',months[0]).lte('month',months[11]);
+  materialByMonth={};
+  months.forEach(function(m){materialByMonth[m]={ailes:null,soleil:null};});
+  (mdata||[]).forEach(function(row){
+    if(!materialByMonth[row.month])materialByMonth[row.month]={ailes:null,soleil:null};
+    materialByMonth[row.month][row.store]=row.ratio;
+  });
+
+  document.getElementById('loading').style.display='none';
+}
+
+function getMonthTotals(month){
+  let list=students.slice();
+  if(currentStore==='ailes')list=list.filter(function(s){return s.store==='エルズ'||RYOTEN_STORES.includes(s.store);});
+  else if(currentStore==='soleil')list=list.filter(function(s){return s.store==='soleil'||RYOTEN_STORES.includes(s.store);});
+
+  const alloc=allocationByMonth[month]||{ailes_pct:50,soleil_pct:50};
+  const rows=salesDataAll[month]||{};
+
+  let result=0,clients=0,tanden=0,techFree=0;
+  list.forEach(function(s){
+    const d=rows[s.id]||{};
+    const pct=RYOTEN_STORES.includes(s.store)
+      ?(currentStore==='ailes'?(alloc.ailes_pct||50)/100
+        :currentStore==='soleil'?(alloc.soleil_pct||50)/100:1)
+      :1;
+    result+=Math.round(calcResult(d)*pct);
+    techFree+=Math.round((Number(d.meimei_sales||0)+Number(d.free_sales||0))*pct);
+    clients+=Math.round((Number(d.meimei_clients||0)+Number(d.free_clients||0))*pct);
+    tanden+=Math.round(Number(d.tanden||0)*pct);
+  });
+
+  const resultTax=result?Math.round(result*(1+TAX_RATE)):null;
+  const tandenTax=tanden?Math.round(tanden*(1+TAX_RATE)):null;
+  const unitPrice=clients?Math.round((techFree*(1+TAX_RATE))/clients):null;
+
+  let material=null;
+  const mr=materialByMonth[month]||{ailes:null,soleil:null};
+  if(currentStore==='ailes')material=(mr.ailes!==null&&mr.ailes!==undefined)?mr.ailes:null;
+  else if(currentStore==='soleil')material=(mr.soleil!==null&&mr.soleil!==undefined)?mr.soleil:null;
+  else{
+    const vals=[mr.ailes,mr.soleil].filter(function(v){return v!==null&&v!==undefined;});
+    material=vals.length?(vals.reduce(function(a,b){return a+b;},0)/vals.length):null;
+  }
+
+  return {result:resultTax,material:material,clients:clients||null,tanden:tandenTax,unitPrice:unitPrice};
+}
+
+function makeChart(id,label,values,color,isPercent){
+  const ctx=document.getElementById(id).getContext('2d');
+  if(charts[id])charts[id].destroy();
+  charts[id]=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:MONTH_LABELS,
+      datasets:[{
+        label:label,
+        data:values,
+        borderColor:color,
+        backgroundColor:color,
+        tension:0.25,
+        spanGaps:true,
+        pointRadius:3
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        y:{
+          beginAtZero:true,
+          ticks:{
+            callback:function(v){
+              if(isPercent)return v+'%';
+              return v.toLocaleString();
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderCharts(){
+  const months=[];
+  for(let m=1;m<=12;m++)months.push(currentYear+'-'+String(m).padStart(2,'0'));
+  const totals=months.map(getMonthTotals);
+
+  makeChart('chart-result','総売結果',totals.map(function(t){return t.result;}),'#c9a96e',false);
+  makeChart('chart-material','材料比率',totals.map(function(t){return t.material;}),'#c0392b',true);
+  makeChart('chart-clients','総入客数',totals.map(function(t){return t.clients;}),'#2980b9',false);
+  makeChart('chart-tanden','店販売上',totals.map(function(t){return t.tanden;}),'#4a7c59',false);
+  makeChart('chart-unitprice','客単価',totals.map(function(t){return t.unitPrice;}),'#8b5e3c',false);
+}
+
+async function loadAll(){
+  document.getElementById('loading').style.display='flex';
+  const {data}=await sb.from('students').select('*').order('created_at');
+  students=(data||[]).filter(function(s){return s.is_active!==false&&!EXCLUDE_ROLES.includes(s.position);});
+  renderYearSel();
+  await loadYearData();
+  renderCharts();
+}
+
+loadAll();
+</script>
+</body>
+</html>
