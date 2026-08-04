@@ -7,373 +7,399 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{--cream:#faf6f0;--gold:#c9a96e;--gold-light:#e8d5b0;--dark:#1a1410;--mid:#7a6a58;--soft:#c4b49e;--accent:#8b5e3c;--red:#c0392b;}
+:root{
+  --cream:#faf6f0;--gold:#c9a96e;--gold-light:#e8d5b0;--dark:#1a1410;
+  --mid:#7a6a58;--soft:#c4b49e;--accent:#8b5e3c;--green:#4a7c59;
+  --red:#c0392b;--blue:#2980b9;
+}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--dark);min-height:100vh;}
-.loading-screen{position:fixed;inset:0;background:var(--cream);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;z-index:9999;}
-.loading-spinner{width:40px;height:40px;border:3px solid var(--gold-light);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg);}}
-.loading-text{font-size:13px;color:var(--mid);}
-.top-bar{background:var(--dark);color:var(--gold-light);padding:12px 20px;display:flex;align-items:center;gap:12px;}
-.top-bar-title{font-family:'Playfair Display',serif;font-size:18px;letter-spacing:2px;}
-.nav-bar{background:white;border-bottom:2px solid var(--gold-light);padding:0 16px;display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;}
-.nav-btn{font-size:13px;font-weight:500;padding:12px 18px;border:none;background:none;color:var(--mid);cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;margin-bottom:-2px;}
-.nav-btn.active{color:var(--gold);border-bottom-color:var(--gold);font-weight:700;}
-.main{max-width:900px;margin:0 auto;padding:20px 16px 80px;}
-.month-selector{background:white;border:1px solid var(--gold-light);border-radius:12px;padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
-.month-selector label{font-size:12px;color:var(--mid);font-weight:500;}
-.month-sel{font-family:'Noto Sans JP',sans-serif;font-size:15px;font-weight:700;padding:8px 32px 8px 14px;border-radius:9px;border:2px solid var(--gold);background:white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7'%3E%3Cpath d='M0 0l6 7 6-7z' fill='%23c9a96e'/%3E%3C/svg%3E") no-repeat right 10px center;appearance:none;-webkit-appearance:none;outline:none;cursor:pointer;color:var(--dark);}
-.store-tabs,.report-tabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
-.store-tab{font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:700;padding:8px 20px;border-radius:20px;border:2px solid var(--gold-light);background:white;color:var(--mid);cursor:pointer;transition:all 0.15s;}
-.store-tab.active{background:var(--gold);color:white;border-color:var(--gold);}
-.pdca-card{background:white;border:1px solid var(--gold-light);border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,0.04);}
-.pdca-field{margin-bottom:14px;}
-.pdca-field label{font-size:12px;color:var(--mid);display:block;margin-bottom:4px;font-weight:700;}
-.pdca-field textarea{width:100%;min-height:80px;font-family:'Noto Sans JP',sans-serif;font-size:13px;padding:8px 10px;border-radius:8px;border:1.5px solid var(--gold-light);outline:none;resize:vertical;}
-.pdca-field textarea:focus{border-color:var(--gold);}
-.pdca-field input[type=date]{font-family:'Noto Sans JP',sans-serif;font-size:13px;padding:8px 10px;border-radius:8px;border:1.5px solid var(--gold-light);outline:none;}
-.btn{font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:500;padding:9px 18px;border-radius:7px;border:none;cursor:pointer;}
+.top-bar{background:var(--dark);color:var(--gold-light);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.top-bar-title{font-family:'Playfair Display',serif;font-size:17px;letter-spacing:1px;}
+.back-link{color:var(--gold-light);text-decoration:none;font-size:13px;opacity:0.85;}
+.wrap{max-width:900px;margin:0 auto;padding:16px 14px 80px;}
+.tabs{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:16px;border-bottom:2px solid var(--gold-light);}
+.tab-btn{font-family:'Noto Sans JP',sans-serif;font-size:12.5px;font-weight:600;padding:10px 14px;border:none;background:none;color:var(--mid);cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;margin-bottom:-2px;}
+.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);}
+.panel{display:none;}
+.panel.active{display:block;}
+.card{background:white;border:1px solid var(--gold-light);border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.04);}
+.card-title{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mid);margin-bottom:12px;font-weight:600;}
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
+.sel{font-family:'Noto Sans JP',sans-serif;font-size:13px;padding:7px 26px 7px 10px;border-radius:8px;border:1.5px solid var(--gold-light);outline:none;cursor:pointer;background:white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a6a58'/%3E%3C/svg%3E") no-repeat right 8px center;appearance:none;-webkit-appearance:none;color:var(--dark);}
+.sel:focus{border-color:var(--gold);}
+.inp,.txt{font-family:'Noto Sans JP',sans-serif;font-size:14px;padding:9px 12px;border-radius:8px;border:1.5px solid var(--gold-light);outline:none;background:#fdfaf6;width:100%;}
+.inp:focus,.txt:focus{border-color:var(--gold);}
+.txt{resize:vertical;min-height:64px;line-height:1.6;}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:11.5px;color:var(--mid);margin-bottom:4px;font-weight:600;}
+.btn{font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:600;padding:9px 16px;border-radius:8px;border:none;cursor:pointer;}
 .btn-dark{background:var(--dark);color:white;}
-.btn-ghost{background:#ede8e2;color:var(--mid);}
-.empty-msg{text-align:center;color:var(--soft);padding:30px;font-size:13px;}
-.interview-item{background:white;border:1px solid var(--gold-light);border-radius:10px;padding:12px;margin-bottom:10px;}
-.access-denied{text-align:center;padding:80px 20px;color:var(--mid);}
+.btn-gold{background:var(--gold);color:white;}
+.btn-outline{background:white;color:#3a3028;border:1.5px solid var(--soft);}
+.btn-red{background:#fdf0ef;color:var(--red);border:1px solid #f5c6c3;}
+.btn-sm{padding:6px 12px;font-size:12px;}
+.btn-xs{padding:4px 10px;font-size:11px;}
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:640px){.compare-grid{grid-template-columns:1fr;}}
+.compare-col-label{font-size:11px;font-weight:700;color:var(--gold);letter-spacing:1px;margin-bottom:8px;text-transform:uppercase;}
+.readonly-box{background:#f5f0eb;border-radius:8px;padding:9px 12px;font-size:13.5px;line-height:1.7;color:var(--dark);min-height:44px;white-space:pre-wrap;}
+.readonly-box.empty{color:var(--soft);}
+.item-block{background:#fdfaf6;border:1px solid var(--gold-light);border-radius:10px;padding:12px;margin-bottom:10px;position:relative;}
+.item-num{font-size:11px;color:var(--gold);font-weight:700;margin-bottom:8px;}
+.item-del{position:absolute;top:8px;right:8px;background:none;border:none;color:var(--soft);font-size:16px;cursor:pointer;line-height:1;padding:2px 6px;}
+.item-del:hover{color:var(--red);}
+.notice{text-align:center;font-size:12px;color:var(--soft);background:#f5f0eb;border-radius:8px;padding:10px;margin-top:8px;}
+.locked{text-align:center;padding:60px 20px;color:var(--mid);font-size:14px;}
+.iv-row{background:white;border:1px solid var(--gold-light);border-radius:10px;padding:12px;margin-bottom:10px;position:relative;}
+.iv-row-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:4px;}
+.iv-name{font-weight:700;font-size:14px;}
+.iv-meta{font-size:11.5px;color:var(--mid);}
+.iv-body{font-size:13px;line-height:1.7;color:var(--dark);white-space:pre-wrap;}
+.iv-label{font-size:11px;color:var(--gold);font-weight:700;margin-top:6px;}
+.save-row{display:flex;justify-content:flex-end;gap:8px;margin-top:6px;}
+.empty-msg{text-align:center;color:var(--soft);font-size:13px;padding:24px;}
 </style>
 </head>
 <body>
-<div class="loading-screen" id="loading">
-  <div class="loading-spinner"></div>
-  <div class="loading-text">データを読み込み中...</div>
-</div>
+
 <div class="top-bar">
-  <div class="top-bar-title">✦ ailes group</div>
-</div>
-<div class="nav-bar">
-  <button class="nav-btn" onclick="window.location.href='index.html'">🏠 ホーム</button>
-  <button class="nav-btn" onclick="window.location.href='sales.html'">📊 数値管理</button>
-  <button class="nav-btn" onclick="window.location.href='trends.html'">📈 年間推移</button>
-  <button class="nav-btn active">📋 会議報告</button>
+  <a class="back-link" href="index.html">← ホーム</a>
+  <div class="top-bar-title">📝 会議報告</div>
+  <div style="width:60px"></div>
 </div>
 
-<div class="main">
-  <div class="access-denied" id="access-denied" style="display:none">
-    <div style="font-size:14px">このページはチーフ以上のみ閲覧できます。</div>
+<div class="wrap" id="app-wrap" style="display:none">
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="monthly" onclick="switchTab('monthly')">📋 月末報告</button>
+    <button class="tab-btn" data-tab="store" onclick="switchTab('store')">🏪 店舗ミーティング</button>
+    <button class="tab-btn" data-tab="interview" onclick="switchTab('interview')">💬 面談報告</button>
+    <button class="tab-btn" data-tab="exec" onclick="switchTab('exec')">🏛 幹部会議</button>
   </div>
 
-  <div id="page-content" style="display:none">
-    <div class="report-tabs">
-      <button class="store-tab active" id="maintab-monthly" onclick="switchMainTab('monthly')">月末報告</button>
-      <button class="store-tab" id="maintab-meeting" onclick="switchMainTab('meeting')">店舗ミーティング報告</button>
-      <button class="store-tab" id="maintab-interview" onclick="switchMainTab('interview')">面談報告</button>
-      <button class="store-tab" id="maintab-executive" onclick="switchMainTab('executive')">幹部会議報告</button>
+  <!-- 月末報告 -->
+  <div class="panel active" id="panel-monthly">
+    <div class="filter-row">
+      <select class="sel" id="mo-store" onchange="loadMonthly()">
+        <option value="エルズ">エルズ</option>
+        <option value="soleil">soleil</option>
+      </select>
+      <select class="sel" id="mo-month" onchange="loadMonthly()"></select>
     </div>
-
-    <!-- 月末報告 -->
-    <div class="report-section" id="section-monthly">
-      <div class="month-selector">
-        <label>対象月</label>
-        <select class="month-sel" id="monthly-month-sel" onchange="onPdcaMonthChange('monthly')"></select>
+    <div class="compare-grid">
+      <div class="card">
+        <div class="compare-col-label" id="mo-prev-label">前月</div>
+        <div class="field"><label>PLAN(目標)</label><div class="readonly-box" id="mo-prev-plan"></div></div>
+        <div class="field"><label>DO(行動)</label><div class="readonly-box" id="mo-prev-do"></div></div>
+        <div class="field"><label>CHECK(反省)</label><div class="readonly-box" id="mo-prev-check"></div></div>
+        <div class="field"><label>ACTION(改善)</label><div class="readonly-box" id="mo-prev-action"></div></div>
+        <div class="field"><label>その他報告</label><div class="readonly-box" id="mo-prev-other"></div></div>
+        <div class="field"><label>その他権限要求</label><div class="readonly-box" id="mo-prev-auth"></div></div>
       </div>
-      <div class="store-tabs">
-        <button class="store-tab active" id="monthly-tab-ailes" onclick="switchPdcaStore('monthly','ailes')">エルズ</button>
-        <button class="store-tab" id="monthly-tab-soleil" onclick="switchPdcaStore('monthly','soleil')">soleil</button>
-      </div>
-      <div class="pdca-card">
-        <div class="pdca-field"><label>PLAN(目標)</label><textarea id="monthly-plan"></textarea></div>
-        <div class="pdca-field"><label>DO(行動)</label><textarea id="monthly-do"></textarea></div>
-        <div class="pdca-field"><label>CHECK(反省)</label><textarea id="monthly-check"></textarea></div>
-        <div class="pdca-field"><label>ACTION(改善)</label><textarea id="monthly-action"></textarea></div>
-        <div class="pdca-field"><label>その他・報告</label><textarea id="monthly-other-report"></textarea></div>
-        <div class="pdca-field"><label>その他・権限要求</label><textarea id="monthly-other-auth"></textarea></div>
-        <button class="btn btn-dark" onclick="savePdca('monthly')">保存</button>
-      </div>
-    </div>
-
-    <!-- 店舗ミーティング報告 -->
-    <div class="report-section" id="section-meeting" style="display:none">
-      <div class="month-selector">
-        <label>対象月</label>
-        <select class="month-sel" id="meeting-month-sel" onchange="onPdcaMonthChange('meeting')"></select>
-      </div>
-      <div class="store-tabs">
-        <button class="store-tab active" id="meeting-tab-ailes" onclick="switchPdcaStore('meeting','ailes')">エルズ</button>
-        <button class="store-tab" id="meeting-tab-soleil" onclick="switchPdcaStore('meeting','soleil')">soleil</button>
-      </div>
-      <div class="pdca-card">
-        <div class="pdca-field"><label>PLAN(目標)</label><textarea id="meeting-plan"></textarea></div>
-        <div class="pdca-field"><label>DO(行動)</label><textarea id="meeting-do"></textarea></div>
-        <div class="pdca-field"><label>CHECK(反省)</label><textarea id="meeting-check"></textarea></div>
-        <div class="pdca-field"><label>ACTION(改善)</label><textarea id="meeting-action"></textarea></div>
-        <div class="pdca-field"><label>その他・報告</label><textarea id="meeting-other-report"></textarea></div>
-        <div class="pdca-field"><label>その他・権限要求</label><textarea id="meeting-other-auth"></textarea></div>
-        <button class="btn btn-dark" onclick="savePdca('meeting')">保存</button>
-      </div>
-    </div>
-
-    <!-- 面談報告 -->
-    <div class="report-section" id="section-interview" style="display:none">
-      <div class="store-tabs">
-        <button class="store-tab active" id="interview-tab-ailes" onclick="switchInterviewStore('ailes')">エルズ</button>
-        <button class="store-tab" id="interview-tab-soleil" onclick="switchInterviewStore('soleil')">soleil</button>
-      </div>
-      <div class="month-selector">
-        <label>対象スタッフ</label>
-        <select class="month-sel" id="interview-staff-sel" onchange="onStaffChange()"></select>
-      </div>
-      <div class="pdca-card">
-        <div class="pdca-field"><label>面談日</label><input type="date" id="interview-date"></div>
-        <div class="pdca-field"><label>面談内容</label><textarea id="interview-content"></textarea></div>
-        <div class="pdca-field"><label>今後のアクション</label><textarea id="interview-next"></textarea></div>
-        <div class="pdca-field"><label>特記事項</label><textarea id="interview-notes"></textarea></div>
-        <button class="btn btn-dark" onclick="saveInterview()">記録を追加</button>
-      </div>
-      <div id="interview-history"></div>
-    </div>
-
-    <!-- 幹部会議報告 -->
-    <div class="report-section" id="section-executive" style="display:none">
-      <div class="month-selector">
-        <label>対象月</label>
-        <select class="month-sel" id="executive-month-sel" onchange="onExecMonthChange()"></select>
-      </div>
-      <div class="pdca-card">
-        <div class="pdca-field"><label>議題項目</label><textarea id="executive-agenda" placeholder="例）PDCA、年末キャンペーンについて、5月6月キャンペーン結果 など"></textarea></div>
-        <div class="pdca-field"><label>決定事項メモ</label><textarea id="executive-decisions"></textarea></div>
-        <button class="btn btn-dark" onclick="saveExecMeeting()">保存</button>
+      <div class="card">
+        <div class="compare-col-label" id="mo-cur-label">当月</div>
+        <div class="field"><label>PLAN(目標)</label><textarea class="txt" id="mo-cur-plan"></textarea></div>
+        <div class="field"><label>DO(行動)</label><textarea class="txt" id="mo-cur-do"></textarea></div>
+        <div class="field"><label>CHECK(反省)</label><textarea class="txt" id="mo-cur-check"></textarea></div>
+        <div class="field"><label>ACTION(改善)</label><textarea class="txt" id="mo-cur-action"></textarea></div>
+        <div class="field"><label>その他報告</label><textarea class="txt" id="mo-cur-other"></textarea></div>
+        <div class="field"><label>その他権限要求</label><textarea class="txt" id="mo-cur-auth"></textarea></div>
+        <div class="save-row"><button class="btn btn-dark" onclick="saveMonthly()">保存</button></div>
       </div>
     </div>
   </div>
+
+  <!-- 店舗ミーティング報告 -->
+  <div class="panel" id="panel-store">
+    <div class="filter-row">
+      <select class="sel" id="sm-store" onchange="loadStoreMeeting()">
+        <option value="エルズ">エルズ</option>
+        <option value="soleil">soleil</option>
+      </select>
+      <select class="sel" id="sm-month" onchange="loadStoreMeeting()"></select>
+    </div>
+    <div class="card">
+      <div class="card-title">1. 会議の目的</div>
+      <textarea class="txt" id="sm-purpose" placeholder="店舗の状況とスタッフの状況報告 など"></textarea>
+    </div>
+    <div class="card">
+      <div class="card-title">2. 店舗の状況報告</div>
+      <div id="sm-items"></div>
+      <button class="btn btn-outline btn-sm" onclick="addStoreItem()">＋ 項目を追加</button>
+    </div>
+    <div class="card">
+      <div class="card-title">3. 次回までのToDo／完了結果</div>
+      <textarea class="txt" id="sm-todo" placeholder="誰が・いつまでに・何を行うか"></textarea>
+    </div>
+    <div class="card">
+      <div class="card-title">4. 次回会議の予定</div>
+      <div class="field"><label>日時</label><input class="inp" type="text" id="sm-next-date" placeholder="例：2026年8月29日（土）"></div>
+      <div class="field"><label>議題案</label><input class="inp" type="text" id="sm-next-agenda"></div>
+      <div class="field"><label>進行役</label><input class="inp" type="text" id="sm-next-facilitator"></div>
+    </div>
+    <div class="save-row"><button class="btn btn-dark" onclick="saveStoreMeeting()">保存</button></div>
+  </div>
+
+  <!-- 面談報告 -->
+  <div class="panel" id="panel-interview">
+    <div class="filter-row">
+      <select class="sel" id="iv-store" onchange="renderInterviewList()">
+        <option value="エルズ">エルズ</option>
+        <option value="soleil">soleil</option>
+      </select>
+    </div>
+    <div class="card">
+      <div class="card-title">面談記録を追加</div>
+      <div class="field"><label>対象スタッフ</label><select class="sel" id="iv-student" style="width:100%"></select></div>
+      <div class="field"><label>面談担当者</label><input class="inp" type="text" id="iv-interviewer" placeholder="例：森 亮介"></div>
+      <div class="field"><label>面談日</label><input class="inp" type="date" id="iv-date"></div>
+      <div class="field"><label>面談内容</label><textarea class="txt" id="iv-content"></textarea></div>
+      <div class="field"><label>今後のアクション</label><textarea class="txt" id="iv-next"></textarea></div>
+      <div class="field"><label>特記事項</label><textarea class="txt" id="iv-notes"></textarea></div>
+      <div class="save-row"><button class="btn btn-dark" onclick="addInterview()">追加する</button></div>
+    </div>
+    <div class="card-title" style="margin:14px 4px 8px">店舗の面談履歴一覧</div>
+    <div id="iv-list"></div>
+  </div>
+
+  <!-- 幹部会議報告 -->
+  <div class="panel" id="panel-exec">
+    <div class="filter-row">
+      <select class="sel" id="ex-month" onchange="loadExec()"></select>
+    </div>
+    <div class="card">
+      <div class="card-title">議題項目 ／ 決定事項</div>
+      <div id="ex-items"></div>
+      <button class="btn btn-outline btn-sm" onclick="addExecItem()">＋ 議題を追加</button>
+    </div>
+    <div class="save-row"><button class="btn btn-dark" onclick="saveExec()">保存</button></div>
+  </div>
 </div>
+
+<div class="locked" id="locked-view" style="display:none">このページはチーフ以上のみ閲覧できます</div>
 
 <script>
 const SUPABASE_URL='https://nrweporylfaorlqektsk.supabase.co';
 const SUPABASE_ANON='sb_publishable_a3X1ltKqAaTv6CyxHIReug_xEPqqCSS';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
-const POS_ORDER=['代表','店長','チーフ','スタイリスト','Jrスタイリスト','カラーリスト','アシスタント','レセプション'];
 const ALLOWED_ROLES=['代表','管理者','店長','チーフ'];
 
-let ME=null;
-let students=[];
-let months=[];
-let pdcaState={monthly:{store:'ailes',month:''},meeting:{store:'ailes',month:''}};
-let interviewState={store:'ailes',staffId:null};
-let execMonth='';
+let students=[],ME=null;
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-
-function buildMonths(){
-  const list=[];
-  for(let y=2026;y<=2028;y++){
-    for(let m=1;m<=12;m++)list.push(y+'-'+String(m).padStart(2,'0'));
+function monthOptions(selectEl,selected){
+  const now=new Date();
+  let opts='';
+  for(let i=0;i<15;i++){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    const val=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    opts+='<option value="'+val+'"'+(val===selected?' selected':'')+'>'+d.getFullYear()+'年'+(d.getMonth()+1)+'月</option>';
   }
-  return list;
+  selectEl.innerHTML=opts;
+}
+function prevMonthStr(m){
+  const [y,mo]=m.split('-').map(Number);
+  const d=new Date(y,mo-2,1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+function monthLabel(m){const [y,mo]=m.split('-').map(Number);return y+'年'+mo+'月';}
+
+function switchTab(name){
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.toggle('active',b.dataset.tab===name);});
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
+  document.getElementById('panel-'+name).classList.add('active');
+  if(name==='monthly')loadMonthly();
+  if(name==='store')loadStoreMeeting();
+  if(name==='interview')renderInterviewList();
+  if(name==='exec')loadExec();
 }
 
-function renderMonthSelById(id){
-  const sel=document.getElementById(id);
-  sel.innerHTML=months.map(function(m){
-    const p=m.split('-');
-    return '<option value="'+m+'">'+p[0]+'年'+parseInt(p[1])+'月</option>';
-  }).join('');
+/* ===== 月末報告 ===== */
+async function loadMonthly(){
+  const store=document.getElementById('mo-store').value;
+  const monthSel=document.getElementById('mo-month');
+  if(!monthSel.options.length)monthOptions(monthSel,null);
+  const month=monthSel.value;
+  const prev=prevMonthStr(month);
+  document.getElementById('mo-prev-label').textContent='前月（'+monthLabel(prev)+'）';
+  document.getElementById('mo-cur-label').textContent='当月（'+monthLabel(month)+'）';
+  const {data}=await sb.from('pdca_reports').select('*').eq('store',store).eq('report_type','monthly').in('month',[month,prev]);
+  const curRow=(data||[]).find(function(r){return r.month===month;});
+  const prevRow=(data||[]).find(function(r){return r.month===prev;});
+  const set=function(id,val){const el=document.getElementById(id);el.textContent=val||'（未記入）';el.classList.toggle('empty',!val);};
+  set('mo-prev-plan',prevRow?prevRow.plan:'');
+  set('mo-prev-do',prevRow?prevRow.do_text:'');
+  set('mo-prev-check',prevRow?prevRow.check_text:'');
+  set('mo-prev-action',prevRow?prevRow.action:'');
+  set('mo-prev-other',prevRow?prevRow.other_report:'');
+  set('mo-prev-auth',prevRow?prevRow.other_authority:'');
+  document.getElementById('mo-cur-plan').value=curRow?curRow.plan||'':'';
+  document.getElementById('mo-cur-do').value=curRow?curRow.do_text||'':'';
+  document.getElementById('mo-cur-check').value=curRow?curRow.check_text||'':'';
+  document.getElementById('mo-cur-action').value=curRow?curRow.action||'':'';
+  document.getElementById('mo-cur-other').value=curRow?curRow.other_report||'':'';
+  document.getElementById('mo-cur-auth').value=curRow?curRow.other_authority||'':'';
 }
-
-async function checkAccess(){
-  const savedLogin=localStorage.getItem('logged_in_id');
-  if(savedLogin){
-    const {data}=await sb.from('students').select('*').eq('id',savedLogin).single();
-    if(data)ME=data;
-  }
-  if(!ME||!ALLOWED_ROLES.includes(ME.position)){
-    document.getElementById('access-denied').style.display='block';
-    document.getElementById('page-content').style.display='none';
-    document.getElementById('loading').style.display='none';
-    return false;
-  }
-  return true;
-}
-
-function switchMainTab(tab){
-  document.querySelectorAll('.report-tabs .store-tab').forEach(function(b){b.classList.remove('active');});
-  document.getElementById('maintab-'+tab).classList.add('active');
-  ['monthly','meeting','interview','executive'].forEach(function(t){
-    document.getElementById('section-'+t).style.display=(t===tab)?'':'none';
-  });
-}
-
-// ---- 月末報告 / 店舗ミーティング報告(共通) ----
-function switchPdcaStore(kind,store){
-  pdcaState[kind].store=store;
-  document.getElementById(kind+'-tab-ailes').classList.toggle('active',store==='ailes');
-  document.getElementById(kind+'-tab-soleil').classList.toggle('active',store==='soleil');
-  loadPdca(kind);
-}
-
-function onPdcaMonthChange(kind){
-  pdcaState[kind].month=document.getElementById(kind+'-month-sel').value;
-  loadPdca(kind);
-}
-
-async function loadPdca(kind){
-  const store=pdcaState[kind].store,month=pdcaState[kind].month;
-  const reportType=kind==='monthly'?'monthly':'meeting';
-  const {data}=await sb.from('pdca_reports').select('*').eq('store',store).eq('month',month).eq('report_type',reportType).maybeSingle();
-  document.getElementById(kind+'-plan').value=(data&&data.plan)||'';
-  document.getElementById(kind+'-do').value=(data&&data.do_text)||'';
-  document.getElementById(kind+'-check').value=(data&&data.check_text)||'';
-  document.getElementById(kind+'-action').value=(data&&data.action)||'';
-  document.getElementById(kind+'-other-report').value=(data&&data.other_report)||'';
-  document.getElementById(kind+'-other-auth').value=(data&&data.other_authority)||'';
-}
-
-async function savePdca(kind){
-  const store=pdcaState[kind].store,month=pdcaState[kind].month;
-  const reportType=kind==='monthly'?'monthly':'meeting';
+async function saveMonthly(){
+  const store=document.getElementById('mo-store').value;
+  const month=document.getElementById('mo-month').value;
   const payload={
-    store:store,month:month,report_type:reportType,
-    plan:document.getElementById(kind+'-plan').value,
-    do_text:document.getElementById(kind+'-do').value,
-    check_text:document.getElementById(kind+'-check').value,
-    action:document.getElementById(kind+'-action').value,
-    other_report:document.getElementById(kind+'-other-report').value,
-    other_authority:document.getElementById(kind+'-other-auth').value,
+    store,month,report_type:'monthly',
+    plan:document.getElementById('mo-cur-plan').value,
+    do_text:document.getElementById('mo-cur-do').value,
+    check_text:document.getElementById('mo-cur-check').value,
+    action:document.getElementById('mo-cur-action').value,
+    other_report:document.getElementById('mo-cur-other').value,
+    other_authority:document.getElementById('mo-cur-auth').value,
     updated_at:new Date().toISOString()
   };
-  await sb.from('pdca_reports').upsert(payload,{onConflict:'store,month,report_type'});
+  const {error}=await sb.from('pdca_reports').upsert(payload,{onConflict:'store,month,report_type'});
+  if(error){alert('エラー: '+error.message);return;}
   alert('保存しました');
 }
 
-// ---- 面談報告 ----
-function switchInterviewStore(store){
-  interviewState.store=store;
-  document.getElementById('interview-tab-ailes').classList.toggle('active',store==='ailes');
-  document.getElementById('interview-tab-soleil').classList.toggle('active',store==='soleil');
-  renderStaffSelect();
+/* ===== 店舗ミーティング報告 ===== */
+let smItems=[];
+function renderSmItems(){
+  document.getElementById('sm-items').innerHTML=smItems.map(function(it,i){
+    return '<div class="item-block"><div class="item-num">項目 '+(i+1)+'</div>'
+      +'<button class="item-del" onclick="removeStoreItem('+i+')">×</button>'
+      +'<div class="field"><label>概要</label><input class="inp" data-i="'+i+'" data-f="title" value="'+esc(it.title)+'" onchange="updSmItem(this)"></div>'
+      +'<div class="field"><label>検討内容</label><textarea class="txt" data-i="'+i+'" data-f="detail" onchange="updSmItem(this)">'+esc(it.detail)+'</textarea></div>'
+      +'<div class="field"><label>確認事項</label><textarea class="txt" data-i="'+i+'" data-f="check" onchange="updSmItem(this)">'+esc(it.check)+'</textarea></div>'
+      +'</div>';
+  }).join('')||'<div class="empty-msg">項目がありません</div>';
 }
-
-function renderStaffSelect(){
-  const sel=document.getElementById('interview-staff-sel');
-  const storeName=interviewState.store==='ailes'?'エルズ':'soleil';
-  const list=students.filter(function(s){return s.store===storeName;}).sort(function(a,b){
-    const ai=POS_ORDER.indexOf(a.position||'');
-    const bi=POS_ORDER.indexOf(b.position||'');
-    return (ai===-1?999:ai)-(bi===-1?999:bi);
-  });
-  sel.innerHTML=list.map(function(s){return '<option value="'+s.id+'">'+esc(s.name)+'</option>';}).join('');
-  if(list.length){
-    interviewState.staffId=sel.value;
-    loadInterviews();
-  } else {
-    interviewState.staffId=null;
-    document.getElementById('interview-history').innerHTML='<div class="empty-msg">対象スタッフがいません</div>';
-  }
+function updSmItem(el){smItems[el.dataset.i][el.dataset.f]=el.value;}
+function addStoreItem(){smItems.push({title:'',detail:'',check:''});renderSmItems();}
+function removeStoreItem(i){smItems.splice(i,1);renderSmItems();}
+async function loadStoreMeeting(){
+  const store=document.getElementById('sm-store').value;
+  const monthSel=document.getElementById('sm-month');
+  if(!monthSel.options.length)monthOptions(monthSel,null);
+  const month=monthSel.value;
+  const {data}=await sb.from('store_meetings').select('*').eq('store',store).eq('month',month).maybeSingle();
+  document.getElementById('sm-purpose').value=data?data.purpose||'':'';
+  document.getElementById('sm-todo').value=data?data.todo||'':'';
+  document.getElementById('sm-next-date').value=data?data.next_date||'':'';
+  document.getElementById('sm-next-agenda').value=data?data.next_agenda||'':'';
+  document.getElementById('sm-next-facilitator').value=data?data.next_facilitator||'':'';
+  smItems=(data&&data.status_items&&data.status_items.length)?data.status_items:[{title:'',detail:'',check:''}];
+  renderSmItems();
 }
-
-function onStaffChange(){
-  interviewState.staffId=document.getElementById('interview-staff-sel').value;
-  loadInterviews();
-}
-
-async function saveInterview(){
-  if(!interviewState.staffId)return;
+async function saveStoreMeeting(){
+  const store=document.getElementById('sm-store').value;
+  const month=document.getElementById('sm-month').value;
   const payload={
-    student_id:interviewState.staffId,
-    store:interviewState.store,
-    interview_date:document.getElementById('interview-date').value||null,
-    content:document.getElementById('interview-content').value,
-    next_action:document.getElementById('interview-next').value,
-    notes:document.getElementById('interview-notes').value
+    store,month,
+    purpose:document.getElementById('sm-purpose').value,
+    status_items:smItems,
+    todo:document.getElementById('sm-todo').value,
+    next_date:document.getElementById('sm-next-date').value,
+    next_agenda:document.getElementById('sm-next-agenda').value,
+    next_facilitator:document.getElementById('sm-next-facilitator').value,
+    updated_at:new Date().toISOString()
   };
-  await sb.from('staff_interviews').insert(payload);
-  document.getElementById('interview-date').value='';
-  document.getElementById('interview-content').value='';
-  document.getElementById('interview-next').value='';
-  document.getElementById('interview-notes').value='';
-  await loadInterviews();
-  alert('面談記録を追加しました');
+  const {error}=await sb.from('store_meetings').upsert(payload,{onConflict:'store,month'});
+  if(error){alert('エラー: '+error.message);return;}
+  alert('保存しました');
 }
 
-async function loadInterviews(){
-  const wrap=document.getElementById('interview-history');
-  if(!interviewState.staffId){wrap.innerHTML='';return;}
-  const {data}=await sb.from('staff_interviews').select('*').eq('student_id',interviewState.staffId).order('interview_date',{ascending:false});
-  if(!data||!data.length){wrap.innerHTML='<div class="empty-msg">面談記録がまだありません</div>';return;}
-  wrap.innerHTML=data.map(function(r){
-    return '<div class="interview-item">'
-      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
-      +'<span style="font-weight:700;font-size:13px">'+(r.interview_date||'日付未設定')+'</span>'
-      +'<button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="deleteInterview('+r.id+')">削除</button>'
-      +'</div>'
-      +(r.content?'<div style="font-size:12px;margin-bottom:4px"><b>内容:</b> '+esc(r.content)+'</div>':'')
-      +(r.next_action?'<div style="font-size:12px;margin-bottom:4px"><b>今後のアクション:</b> '+esc(r.next_action)+'</div>':'')
-      +(r.notes?'<div style="font-size:12px;color:var(--mid)"><b>特記事項:</b> '+esc(r.notes)+'</div>':'')
+/* ===== 面談報告 ===== */
+function studentOptsForStore(store){
+  return students.filter(function(s){return s.is_active!==false&&s.store&&s.store.includes(store);})
+    .map(function(s){return '<option value="'+esc(s.id)+'">'+esc(s.name)+'</option>';}).join('');
+}
+async function addInterview(){
+  const student_id=document.getElementById('iv-student').value;
+  if(!student_id){alert('対象スタッフを選択してください');return;}
+  const store=document.getElementById('iv-store').value;
+  const payload={
+    student_id,store,
+    interviewer:document.getElementById('iv-interviewer').value,
+    interview_date:document.getElementById('iv-date').value,
+    content:document.getElementById('iv-content').value,
+    next_action:document.getElementById('iv-next').value,
+    notes:document.getElementById('iv-notes').value
+  };
+  const {error}=await sb.from('staff_interviews').insert(payload);
+  if(error){alert('エラー: '+error.message);return;}
+  document.getElementById('iv-interviewer').value='';
+  document.getElementById('iv-date').value='';
+  document.getElementById('iv-content').value='';
+  document.getElementById('iv-next').value='';
+  document.getElementById('iv-notes').value='';
+  renderInterviewList();
+}
+async function renderInterviewList(){
+  const store=document.getElementById('iv-store').value;
+  document.getElementById('iv-student').innerHTML=studentOptsForStore(store)||'<option value="">対象スタッフなし</option>';
+  const {data}=await sb.from('staff_interviews').select('*').eq('store',store).order('interview_date',{ascending:false});
+  const list=document.getElementById('iv-list');
+  if(!data||!data.length){list.innerHTML='<div class="empty-msg">面談記録がありません</div>';return;}
+  list.innerHTML=data.map(function(r){
+    const st=students.find(function(s){return s.id===r.student_id;});
+    const name=st?st.name:'（不明）';
+    return '<div class="iv-row"><div class="iv-row-head"><span class="iv-name">'+esc(name)+'</span><span class="iv-meta">'+esc(r.interview_date||'')+'　担当：'+esc(r.interviewer||'—')+'</span>'
+      +'<button class="btn btn-red btn-xs" onclick="delInterview('+r.id+')">削除</button></div>'
+      +(r.content?'<div class="iv-label">面談内容</div><div class="iv-body">'+esc(r.content)+'</div>':'')
+      +(r.next_action?'<div class="iv-label">今後のアクション</div><div class="iv-body">'+esc(r.next_action)+'</div>':'')
+      +(r.notes?'<div class="iv-label">特記事項</div><div class="iv-body">'+esc(r.notes)+'</div>':'')
       +'</div>';
   }).join('');
 }
-
-async function deleteInterview(id){
-  if(!confirm('この面談記録を削除しますか?'))return;
+async function delInterview(id){
+  if(!confirm('この面談記録を削除しますか？'))return;
   await sb.from('staff_interviews').delete().eq('id',id);
-  await loadInterviews();
+  renderInterviewList();
 }
 
-// ---- 幹部会議報告 ----
-function onExecMonthChange(){
-  execMonth=document.getElementById('executive-month-sel').value;
-  loadExecMeeting();
+/* ===== 幹部会議報告 ===== */
+let exItems=[];
+function renderExItems(){
+  document.getElementById('ex-items').innerHTML=exItems.map(function(it,i){
+    return '<div class="item-block"><div class="item-num">議題 '+(i+1)+'</div>'
+      +'<button class="item-del" onclick="removeExecItem('+i+')">×</button>'
+      +'<div class="field"><label>議題項目</label><textarea class="txt" data-i="'+i+'" data-f="agenda" onchange="updExItem(this)">'+esc(it.agenda)+'</textarea></div>'
+      +'<div class="field"><label>決定事項</label><textarea class="txt" data-i="'+i+'" data-f="decision" onchange="updExItem(this)">'+esc(it.decision)+'</textarea></div>'
+      +'</div>';
+  }).join('');
 }
-
-async function loadExecMeeting(){
-  const {data}=await sb.from('executive_meetings').select('*').eq('month',execMonth).maybeSingle();
-  document.getElementById('executive-agenda').value=(data&&data.agenda)||'';
-  document.getElementById('executive-decisions').value=(data&&data.decisions)||'';
+function updExItem(el){exItems[el.dataset.i][el.dataset.f]=el.value;}
+function addExecItem(){exItems.push({agenda:'',decision:''});renderExItems();}
+function removeExecItem(i){exItems.splice(i,1);renderExItems();}
+async function loadExec(){
+  const monthSel=document.getElementById('ex-month');
+  if(!monthSel.options.length)monthOptions(monthSel,null);
+  const month=monthSel.value;
+  const {data}=await sb.from('executive_meetings').select('*').eq('month',month).maybeSingle();
+  exItems=(data&&data.agenda_items&&data.agenda_items.length)?data.agenda_items:[{agenda:'',decision:''},{agenda:'',decision:''},{agenda:'',decision:''}];
+  renderExItems();
 }
-
-async function saveExecMeeting(){
-  const payload={
-    month:execMonth,
-    agenda:document.getElementById('executive-agenda').value,
-    decisions:document.getElementById('executive-decisions').value,
-    updated_at:new Date().toISOString()
-  };
-  await sb.from('executive_meetings').upsert(payload,{onConflict:'month'});
+async function saveExec(){
+  const month=document.getElementById('ex-month').value;
+  const {error}=await sb.from('executive_meetings').upsert({month,agenda_items:exItems,updated_at:new Date().toISOString()},{onConflict:'month'});
+  if(error){alert('エラー: '+error.message);return;}
   alert('保存しました');
 }
 
-// ---- 初期化 ----
-async function loadAll(){
-  document.getElementById('loading').style.display='flex';
-  const ok=await checkAccess();
-  if(!ok)return;
-
-  document.getElementById('page-content').style.display='';
-
-  const {data}=await sb.from('students').select('*').order('created_at');
-  students=(data||[]).filter(function(s){return s.is_active!==false;});
-
-  months=buildMonths();
-  renderMonthSelById('monthly-month-sel');
-  renderMonthSelById('meeting-month-sel');
-  renderMonthSelById('executive-month-sel');
-
-  const today=new Date();
-  const thisMonth=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0');
-  const defaultMonth=months.includes(thisMonth)?thisMonth:months[0];
-
-  document.getElementById('monthly-month-sel').value=defaultMonth;
-  document.getElementById('meeting-month-sel').value=defaultMonth;
-  document.getElementById('executive-month-sel').value=defaultMonth;
-  pdcaState.monthly.month=defaultMonth;
-  pdcaState.meeting.month=defaultMonth;
-  execMonth=defaultMonth;
-
-  renderStaffSelect();
-
-  await Promise.all([loadPdca('monthly'),loadPdca('meeting'),loadExecMeeting()]);
-
-  document.getElementById('loading').style.display='none';
-}
-
-loadAll();
+/* ===== 起動 ===== */
+(async function(){
+  const loginId=localStorage.getItem('logged_in_id');
+  if(!loginId){document.getElementById('locked-view').style.display='block';document.getElementById('locked-view').textContent='ログインが必要です';return;}
+  const {data:sData}=await sb.from('students').select('*');
+  students=sData||[];
+  ME=students.find(function(s){return s.id===loginId;})||null;
+  if(!ME||!ALLOWED_ROLES.includes(ME.position)){
+    document.getElementById('locked-view').style.display='block';
+    return;
+  }
+  document.getElementById('app-wrap').style.display='block';
+  monthOptions(document.getElementById('mo-month'),null);
+  monthOptions(document.getElementById('sm-month'),null);
+  monthOptions(document.getElementById('ex-month'),null);
+  loadMonthly();
+})();
 </script>
 </body>
 </html>
