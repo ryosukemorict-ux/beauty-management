@@ -57,6 +57,9 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
 .iv-meta{font-size:11.5px;color:var(--mid);}
 .iv-body{font-size:13px;line-height:1.7;color:var(--dark);white-space:pre-wrap;}
 .iv-label{font-size:11px;color:var(--gold);font-weight:700;margin-top:6px;}
+.month-nav{display:flex;align-items:center;gap:4px;}
+.month-nav-btn{font-family:'Noto Sans JP',sans-serif;font-size:15px;font-weight:700;padding:6px 12px;border-radius:8px;border:1.5px solid var(--gold-light);background:white;color:var(--gold);cursor:pointer;line-height:1;}
+.month-nav-btn:active{background:var(--gold-light);}
 .save-row{display:flex;justify-content:flex-end;gap:8px;margin-top:6px;}
 .empty-msg{text-align:center;color:var(--soft);font-size:13px;padding:24px;}
 </style>
@@ -84,7 +87,11 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
         <option value="エルズ">エルズ</option>
         <option value="soleil">soleil</option>
       </select>
-      <select class="sel" id="mo-month" onchange="loadMonthly()"></select>
+      <div class="month-nav">
+        <button class="month-nav-btn" onclick="shiftMonth('mo-month',-1,loadMonthly)">◀</button>
+        <select class="sel" id="mo-month" onchange="loadMonthly()"></select>
+        <button class="month-nav-btn" onclick="shiftMonth('mo-month',1,loadMonthly)">▶</button>
+      </div>
     </div>
     <div class="compare-grid">
       <div class="card">
@@ -116,7 +123,11 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
         <option value="エルズ">エルズ</option>
         <option value="soleil">soleil</option>
       </select>
-      <select class="sel" id="sm-month" onchange="loadStoreMeeting()"></select>
+      <div class="month-nav">
+        <button class="month-nav-btn" onclick="shiftMonth('sm-month',-1,loadStoreMeeting)">◀</button>
+        <select class="sel" id="sm-month" onchange="loadStoreMeeting()"></select>
+        <button class="month-nav-btn" onclick="shiftMonth('sm-month',1,loadStoreMeeting)">▶</button>
+      </div>
     </div>
     <div class="card">
       <div class="card-title">1. 会議の目的</div>
@@ -165,7 +176,11 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
   <!-- 幹部会議報告 -->
   <div class="panel" id="panel-exec">
     <div class="filter-row">
-      <select class="sel" id="ex-month" onchange="loadExec()"></select>
+      <div class="month-nav">
+        <button class="month-nav-btn" onclick="shiftMonth('ex-month',-1,loadExec)">◀</button>
+        <select class="sel" id="ex-month" onchange="loadExec()"></select>
+        <button class="month-nav-btn" onclick="shiftMonth('ex-month',1,loadExec)">▶</button>
+      </div>
     </div>
     <div class="card">
       <div class="card-title">議題項目 ／ 決定事項</div>
@@ -189,13 +204,24 @@ let students=[],ME=null;
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function monthOptions(selectEl,selected){
   const now=new Date();
+  const base=selected?new Date(Number(selected.split('-')[0]),Number(selected.split('-')[1])-1,1):now;
+  const targetVal=selected||(now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'));
   let opts='';
-  for(let i=0;i<15;i++){
-    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+  for(let i=3;i>=-14;i--){
+    const d=new Date(base.getFullYear(),base.getMonth()+i,1);
     const val=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-    opts+='<option value="'+val+'"'+(val===selected?' selected':'')+'>'+d.getFullYear()+'年'+(d.getMonth()+1)+'月</option>';
+    opts+='<option value="'+val+'"'+(val===targetVal?' selected':'')+'>'+d.getFullYear()+'年'+(d.getMonth()+1)+'月</option>';
   }
   selectEl.innerHTML=opts;
+}
+function shiftMonth(selectId,delta,reloadFn){
+  const el=document.getElementById(selectId);
+  const [y,m]=el.value.split('-').map(Number);
+  const d=new Date(y,m-1+delta,1);
+  const newVal=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  monthOptions(el,newVal);
+  el.value=newVal;
+  reloadFn();
 }
 function prevMonthStr(m){
   const [y,mo]=m.split('-').map(Number);
