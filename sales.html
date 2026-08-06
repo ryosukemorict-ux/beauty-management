@@ -93,6 +93,8 @@ tbody tr:hover td:first-child{background:#fffbf7;}
 .btn{font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:500;padding:8px 16px;border-radius:7px;border:none;cursor:pointer;}
 .btn-dark{background:var(--dark);color:white;}
 .btn-ghost{background:#ede8e2;color:var(--mid);}
+.month-nav-btn{font-family:'Noto Sans JP',sans-serif;font-size:15px;font-weight:700;padding:6px 12px;border-radius:8px;border:1.5px solid var(--gold-light);background:white;color:var(--gold);cursor:pointer;line-height:1;}
+.month-nav-btn:active{background:var(--gold-light);}
 </style>
 </head>
 <body>
@@ -178,7 +180,9 @@ tbody tr:hover td:first-child{background:#fffbf7;}
 <div class="main">
   <div class="month-selector">
     <label>対象月</label>
+    <button class="month-nav-btn" onclick="shiftMonth(-1)">◀</button>
     <select class="month-sel" id="month-sel" onchange="onMonthChange()"></select>
+    <button class="month-nav-btn" onclick="shiftMonth(1)">▶</button>
     <button onclick="showAddModal()" style="font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:6px 14px;border-radius:7px;border:1.5px solid var(--gold-light);background:white;color:var(--mid);cursor:pointer;">＋ 月を追加</button>
     <button onclick="showAllocModal()" style="font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:6px 14px;border-radius:7px;border:1.5px solid var(--gold-light);background:white;color:var(--mid);cursor:pointer;">⚙️ 按分設定</button>
     <button id="btn-productivity" onclick="showProductivityModal()" style="display:none;font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:6px 14px;border-radius:7px;border:1.5px solid var(--gold-light);background:white;color:var(--mid);cursor:pointer;">📊 人事生産性</button>
@@ -420,7 +424,14 @@ function confirmAddMonth(){
   closeAddModal();
   renderTable();
 }
-
+function shiftMonth(delta){
+  const idx=months.indexOf(currentMonth);
+  const newIdx=idx+delta;
+  if(newIdx<0||newIdx>=months.length)return;
+  currentMonth=months[newIdx];
+  document.getElementById('month-sel').value=currentMonth;
+  onMonthChange();
+}
 function onMonthChange(){
   currentMonth=document.getElementById('month-sel').value;
   salesData={};
