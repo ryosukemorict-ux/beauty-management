@@ -144,8 +144,11 @@ td.wrap{white-space:normal;min-width:120px;}
 <div class="nav-tabs" id="nav-tabs" style="display:none">
   <button class="nav-tab" id="tab-dashboard" onclick="showPage('dashboard')">🏠 ホーム</button>
   <button class="nav-tab" id="tab-curriculum" onclick="showPage('curriculum')">📋 カリキュラム進捗</button>
-  <button class="nav-tab" id="tab-reservation" onclick="window.location.href='next-reservation.html'">📅 次回予約</button>
   <button class="nav-tab" id="tab-staff" onclick="showPage('staff')" style="display:none">👥 人材マスター</button>
+  <button class="nav-tab" id="tab-reservation" onclick="window.location.href='next-reservation.html'">📅 次回予約管理</button>
+  <button class="nav-tab" id="tab-sales" onclick="window.location.href='sales.html'">📊 数値管理</button>
+  <button class="nav-tab" id="tab-task" onclick="window.location.href='task.html'">✅ タスク管理</button>
+  <button class="nav-tab" id="tab-meeting" onclick="window.location.href='meeting.html'" style="display:none">📝 会議報告</button>
 </div>
 
 <div class="modal-overlay" id="login-modal">
@@ -477,7 +480,6 @@ const FUNC_LIST=[
   {id:'sales',icon:'📊',name:'数値管理',desc:'月次売上・数値の管理',minRole:null,url:'sales.html'},
     {id:'task',icon:'✅',name:'タスク管理',desc:'役職ごとのタスク管理',minRole:null,url:'task.html'},
     {id:'meeting',icon:'📝',name:'会議報告',desc:'幹部・店舗会議の記録',minRole:'meeting_viewer',url:'meeting.html'},
-  {id:'interview',icon:'💬',name:'面談報告',desc:'スタッフ面談の記録',minRole:null,comingSoon:true},
   {id:'evaluation',icon:'⭐',name:'人事評価制度',desc:'評価の記録と管理',minRole:null,comingSoon:true},
   {id:'schedule',icon:'📆',name:'年間スケジュール',desc:'年間の予定管理',minRole:null,comingSoon:true},
 ];
@@ -601,18 +603,21 @@ function applyAuth(){
   const badge=document.getElementById('user-badge');
   const btn=document.getElementById('auth-btn');
   const staffTab=document.getElementById('tab-staff');
+  const meetingTab=document.getElementById('tab-meeting');
   const navTabs=document.getElementById('nav-tabs');
   if(ME){
     badge.textContent='🔑 '+ME.name+(ME.position?' / '+ME.position:'');
     btn.textContent='ログアウト';
     btn.onclick=doLogout;
     staffTab.style.display=canEditStaff()?'':'none';
+    meetingTab.style.display=STAFF_EDITOR_ROLES.includes(ME.position)?'':'none';
     navTabs.style.display='';
   } else {
     badge.textContent='👁 閲覧モード';
     btn.textContent='ログイン';
     btn.onclick=showLoginModal;
     staffTab.style.display='none';
+    meetingTab.style.display='none';
     navTabs.style.display='none';
   }
 }
