@@ -121,7 +121,7 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
   </div>
 
   <!-- 面談報告 -->
-  <div class="panel" id="panel-interview">
+    <div class="panel" id="panel-interview">
     <div class="filter-row">
       <select class="sel" id="iv-store" onchange="onIvStoreChange()">
         <option value="両店" selected>両店</option>
@@ -131,6 +131,11 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
       <select class="sel" id="iv-name-filter" onchange="renderInterviewList()">
         <option value="">全員</option>
       </select>
+      <div class="month-nav">
+        <button class="month-nav-btn" onclick="shiftMonth('iv-month',-1,renderInterviewList)">◀</button>
+        <select class="sel" id="iv-month" onchange="renderInterviewList()"></select>
+        <button class="month-nav-btn" onclick="shiftMonth('iv-month',1,renderInterviewList)">▶</button>
+      </div>
     </div>
     <div class="card">
       <div class="card-title">面談記録を追加</div>
@@ -369,6 +374,8 @@ function onIvStoreChange(){
   const store=document.getElementById('iv-store').value;
   document.getElementById('iv-student').innerHTML=studentOptsForStore(store)||'<option value="">対象スタッフなし</option>';
   document.getElementById('iv-name-filter').innerHTML='<option value="">全員</option>'+studentOptsForStore(store);
+  const monthSel=document.getElementById('iv-month');
+  if(!monthSel.options.length)monthOptions(monthSel,null);
   renderInterviewList();
 }
 async function addInterview(){
@@ -396,7 +403,14 @@ async function addInterview(){
 async function renderInterviewList(){
   const store=document.getElementById('iv-store').value;
   const nameFilter=document.getElementById('iv-name-filter').value;
-  let q=sb.from('staff_interviews').select('*').order('interview_date',{ascending:false});
+  const monthSel=document.getElementById('iv-month');
+  if(!monthSel.options.length)monthOptions(monthSel,null);
+  const month=monthSel.value;
+  const [y,m]=month.split('-').map(Number);
+  const monthStart=month+'-01';
+  const nd=new Date(y,m,1);
+  const monthEnd=nd.getFullYear()+'-'+String(nd.getMonth()+1).padStart(2,'0')+'-01';
+  let q=sb.from('staff_interviews').select('*').gte('interview_date',monthStart).lt('interview_date',monthEnd).order('interview_date',{ascending:false});
   if(store!=='両店')q=q.eq('store',store);
   if(nameFilter)q=q.eq('student_id',nameFilter);
   const {data}=await q;
