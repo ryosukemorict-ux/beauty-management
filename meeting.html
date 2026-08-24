@@ -83,6 +83,7 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
     <button class="tab-btn active" data-tab="monthly" onclick="switchTab('monthly')">📋 月末報告</button>
     <button class="tab-btn" data-tab="store" onclick="switchTab('store')">🏪 店舗ミーティング</button>
     <button class="tab-btn" data-tab="interview" onclick="switchTab('interview')">💬 面談報告</button>
+    <button class="tab-btn" data-tab="repnote" onclick="switchTab('repnote')" id="tab-btn-repnote" style="display:none">🔒 代表管理</button>
     <button class="tab-btn" data-tab="exec" onclick="switchTab('exec')">🏛 幹部会議</button>
   </div>
 
@@ -140,7 +141,7 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
     <div class="card">
       <div class="card-title">面談記録を追加</div>
       <div class="field"><label>対象スタッフ</label><select class="sel" id="iv-student" style="width:100%"></select></div>
-      <div class="field"><label>面談担当者</label><input class="inp" type="text" id="iv-interviewer" placeholder="例：森 亮介"></div>
+      <div class="field"><label>面談担当者</label><select class="sel" id="iv-interviewer" style="width:100%"></select></div>
       <div class="field"><label>面談日</label><input class="inp" type="date" id="iv-date"></div>
       <div class="field"><label>面談内容</label><textarea class="txt" id="iv-content"></textarea></div>
       <div class="field"><label>今後のアクション</label><textarea class="txt" id="iv-next"></textarea></div>
@@ -149,6 +150,30 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
     </div>
     <div class="card-title" style="margin:14px 4px 8px">店舗の面談履歴一覧</div>
     <div id="iv-list"></div>
+  </div>
+
+   <!-- 代表管理 -->
+  <div class="panel" id="panel-repnote">
+    <div class="filter-row">
+      <select class="sel" id="rn-student" onchange="renderRepNotes()" style="min-width:180px"></select>
+    </div>
+    <div class="card">
+      <div class="card-title">記録を追加</div>
+      <div class="field"><label>日付</label><input class="inp" type="date" id="rn-date"></div>
+      <div class="field"><label>種別</label>
+        <select class="sel" id="rn-category" style="width:100%">
+          <option value="面談">面談</option>
+          <option value="雑談">雑談</option>
+          <option value="LINE">LINE</option>
+          <option value="電話">電話</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+      <div class="field"><label>内容</label><textarea class="txt" id="rn-content"></textarea></div>
+      <div class="save-row"><button class="btn btn-dark" onclick="addRepNote()">追加する</button></div>
+    </div>
+    <div class="card-title" style="margin:14px 4px 8px">記録一覧（新しい順）</div>
+    <div id="rn-list"></div>
   </div>
 
   <!-- 幹部会議報告 -->
@@ -217,7 +242,8 @@ function switchTab(name){
   document.getElementById('panel-'+name).classList.add('active');
   if(name==='monthly')loadMonthly();
   if(name==='store')loadStoreMeeting();
-  if(name==='interview')onIvStoreChange();
+    if(name==='interview')onIvStoreChange();
+  if(name==='repnote')onRepTabOpen();
   if(name==='exec')loadExec();
 }
 
@@ -367,13 +393,21 @@ async function saveStoreMeeting(store){
 
 /* ===== 面談報告 ===== */
 function studentOptsForStore(store){
-  const list=store==='両店'?students.filter(function(s){return s.is_active!==false;}):students.filter(function(s){return s.is_active!==false&&s.store&&s.store.includes(store);});
+  const list=store==='両店'?students.filter(function(s){return s.is_active!==false&&s.position!=='管理者';}):students.filter(function(s){return s.is_active!==false&&s.position!=='管理者'&&s.store&&s.store.includes(store);});
   return list.map(function(s){return '<option value="'+esc(s.id)+'">'+esc(s.name)+'</option>';}).join('');
+}
+const INTERVIEWER_ORDER=['代表','店長','チーフ'];
+function interviewerOptsForStore(store){
+  let list=store==='両店'?students.filter(function(s){return s.is_active!==false;}):students.filter(function(s){return s.is_active!==false&&s.store&&s.store.includes(store);});
+  list=list.filter(function(s){return INTERVIEWER_ORDER.includes(s.position);});
+  list.sort(function(a,b){return INTERVIEWER_ORDER.indexOf(a.position)-INTERVIEWER_ORDER.indexOf(b.position);});
+  return '<option value="">選択してください</option>'+list.map(function(s){return '<option value="'+esc(s.name)+'">'+esc(s.name)+'（'+esc(s.position)+'）</option>';}).join('');
 }
 function onIvStoreChange(){
   const store=document.getElementById('iv-store').value;
   document.getElementById('iv-student').innerHTML=studentOptsForStore(store)||'<option value="">対象スタッフなし</option>';
   document.getElementById('iv-name-filter').innerHTML='<option value="">全員</option>'+studentOptsForStore(store);
+  document.getElementById('iv-interviewer').innerHTML=interviewerOptsForStore(store);
   const monthSel=document.getElementById('iv-month');
   if(!monthSel.options.length)monthOptions(monthSel,null);
   renderInterviewList();
@@ -437,11 +471,53 @@ async function renderInterviewList(){
     list.innerHTML=data.map(rowHtml).join('');
   }
 }
-async function delInterview(id){
-  if(!confirm('この面談記録を削除しますか？'))return;
-  await sb.from('staff_interviews').delete().eq('id',id);
-  renderInterviewList();
+/* ===== 代表管理 ===== */
+const REP_NOTE_ROLES=['代表','管理者'];
+function canViewRepNotes(){return ME&&REP_NOTE_ROLES.includes(ME.position);}
+function repNoteStudentOpts(){
+  const list=students.filter(function(s){return s.is_active!==false&&s.position!=='管理者';});
+  return list.map(function(s){return '<option value="'+esc(s.id)+'">'+esc(s.name)+'（'+esc(s.store||'')+'）</option>';}).join('');
 }
+function onRepTabOpen(){
+  const sel=document.getElementById('rn-student');
+  if(!sel.options.length)sel.innerHTML=repNoteStudentOpts();
+  if(!document.getElementById('rn-date').value)document.getElementById('rn-date').value=new Date().toISOString().split('T')[0];
+  renderRepNotes();
+}
+async function addRepNote(){
+  const student_id=document.getElementById('rn-student').value;
+  if(!student_id){alert('対象スタッフを選択してください');return;}
+  const payload={
+    student_id,
+    record_date:document.getElementById('rn-date').value,
+    category:document.getElementById('rn-category').value,
+    content:document.getElementById('rn-content').value,
+    created_by:ME?ME.name:''
+  };
+  const {error}=await sb.from('rep_staff_notes').insert(payload);
+  if(error){alert('エラー: '+error.message);return;}
+  document.getElementById('rn-content').value='';
+  renderRepNotes();
+}
+async function renderRepNotes(){
+  const student_id=document.getElementById('rn-student').value;
+  const list=document.getElementById('rn-list');
+  if(!student_id){list.innerHTML='<div class="empty-msg">対象スタッフを選択してください</div>';return;}
+  const {data}=await sb.from('rep_staff_notes').select('*').eq('student_id',student_id).order('record_date',{ascending:false}).order('created_at',{ascending:false});
+  if(!data||!data.length){list.innerHTML='<div class="empty-msg">記録がありません</div>';return;}
+  list.innerHTML=data.map(function(r){
+    return '<div class="iv-row"><div class="iv-row-head"><span class="iv-name">'+esc(r.category||'')+'</span><span class="iv-meta">'+esc(r.record_date||'')+'　記録者：'+esc(r.created_by||'—')+'</span>'
+      +'<button class="btn btn-red btn-xs" onclick="delRepNote('+r.id+')">削除</button></div>'
+      +'<div class="iv-body">'+esc(r.content||'')+'</div>'
+      +'</div>';
+  }).join('');
+}
+async function delRepNote(id){
+  if(!confirm('この記録を削除しますか？'))return;
+  await sb.from('rep_staff_notes').delete().eq('id',id);
+  renderRepNotes();
+}
+
 
 /* ===== 幹部会議報告 ===== */
 let exItems=[];
@@ -487,7 +563,8 @@ async function saveExec(){
   document.getElementById('app-wrap').style.display='block';
   monthOptions(document.getElementById('mo-month'),null);
   monthOptions(document.getElementById('sm-month'),null);
-  monthOptions(document.getElementById('ex-month'),null);
+    monthOptions(document.getElementById('ex-month'),null);
+  if(canViewRepNotes())document.getElementById('tab-btn-repnote').style.display='';
   loadMonthly();
 })();
 </script>
