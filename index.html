@@ -430,6 +430,7 @@ const CAT_COLORS={シャンプー:'#e8d9a0',ドライ:'#f5c6c6',ブロー:'#f5c6
 
 function hash(s){let h=0;for(let i=0;i<s.length;i++)h=(Math.imul(31,h)+s.charCodeAt(i))|0;return String(h);}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function storeLabel(v){return v==='エルズ'?'ailes':v;}
 function isAdminStore(store){return false;}
 const CURR_TARGET_ROLES=['Jrスタイリスト','カラーリスト','アシスタント'];
 function nonAdminStudents(){return students.filter(function(s){return CURR_TARGET_ROLES.includes(s.position);});}
@@ -796,8 +797,8 @@ function renderCurriculumPage(){
   }
   const nonMgr=nonAdminStudents().filter(function(s){return s.is_active!==false;});
   const allActive=nonAdminStudents().filter(function(s){return s.is_active!==false;});
-  const viewerOpts=nonMgr.map(function(s){return '<option value="'+esc(s.id)+'"'+(s.id===CID?' selected':'')+'>'+esc(s.name)+'　['+esc(s.store)+']</option>';}).join('');
-  const adminOpts=allActive.map(function(s){return '<option value="'+esc(s.id)+'"'+(s.id===CID?' selected':'')+'>'+esc(s.name)+'　['+esc(s.store)+']</option>';}).join('');
+  const viewerOpts=nonMgr.map(function(s){return '<option value="'+esc(s.id)+'"'+(s.id===CID?' selected':'')+'>'+esc(s.name)+'　['+esc(storeLabel(s.store))+']</option>';}).join('');
+  const adminOpts=allActive.map(function(s){return '<option value="'+esc(s.id)+'"'+(s.id===CID?' selected':'')+'>'+esc(s.name)+'　['+esc(storeLabel(s.store))+']</option>';}).join('');
   document.getElementById('viewer-sel').innerHTML=viewerOpts||'<option>生徒がいません</option>';
   document.getElementById('student-sel').innerHTML=adminOpts||'<option>スタッフがいません</option>';
   const cf=document.getElementById('ind-cat-filter');
