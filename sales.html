@@ -190,7 +190,7 @@ tbody tr:hover td:first-child{background:#fffbf7;}
   </div>
   <div class="store-tabs">
     <button class="store-tab active" id="tab-all" onclick="switchStore('all')">全店舗</button>
-    <button class="store-tab" id="tab-ailes" onclick="switchStore('ailes')">エルズ</button>
+　　　<button class="store-tab" id="tab-ailes" onclick="switchStore('ailes')">ailes</button>
     <button class="store-tab" id="tab-soleil" onclick="switchStore('soleil')">soleil</button>
   </div>
   <div class="total-panel">
@@ -588,7 +588,7 @@ function updateTotals(){
       totMaterialSubEl.textContent='';
     } else {
       totMaterialEl.textContent=(a!==null&&a!==undefined?a+'%':'—')+' / '+(s!==null&&s!==undefined?s+'%':'—');
-      totMaterialSubEl.textContent='エルズ / soleil';
+totMaterialSubEl.textContent='ailes / soleil';
     }
   }
 }
