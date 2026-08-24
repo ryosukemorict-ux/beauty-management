@@ -542,7 +542,7 @@ function showConfirm(title,body,cb){
 
 function showLoginModal(){
   const active=students.filter(function(s){return s.is_active!==false;});
-  document.getElementById('login-sel').innerHTML=active.map(function(s){return '<option value="'+esc(s.id)+'">'+esc(s.name)+'　['+esc(s.store)+']</option>';}).join('');
+  document.getElementById('login-sel').innerHTML=active.map(function(s){return '<option value="'+esc(s.id)+'">'+esc(s.name)+'　['+esc(storeLabel(s.store))+']</option>';}).join('');
   document.getElementById('login-pw').value='';
   document.getElementById('login-err').textContent='';
   document.getElementById('login-modal').classList.add('show');
@@ -667,7 +667,7 @@ function renderStaffPage(){
   const grid=document.getElementById('staff-grid');
   if(!list.length){grid.innerHTML='<div style="color:var(--soft);font-size:13px">該当するスタッフがいません</div>';return;}
   grid.innerHTML=list.map(function(s){
-    return '<div class="staff-card'+(s.is_active===false?' inactive':'')+'"><div class="staff-card-actions"><button class="btn btn-outline btn-xs" onclick="openStaffModal(\''+s.id+'\')">編集</button>'+(s.is_active===false?'<button class="btn btn-green btn-xs" onclick="askReactivate(\''+s.id+'\')">復職</button>':'<button class="btn btn-red btn-xs" onclick="askDeactivate(\''+s.id+'\')">退社</button>')+'</div><div class="staff-card-name">'+esc(s.name)+'</div><div class="staff-card-sub">'+esc(s.store)+(s.is_active===false?' ・ <span style="color:var(--red)">退社</span>':'')+'</div>'+(s.position?'<div class="staff-card-pos">'+esc(s.position)+'</div>':'')+'<div style="font-size:11px;color:var(--soft);margin-top:6px">'+(s.birthdate?'生年月日：'+s.birthdate+'<br>':'')+(s.join_date?'入社日：'+s.join_date+'<br>':'')+(s.leave_date?'退社日：'+s.leave_date:'')+'</div></div>';
+    return '<div class="staff-card'+(s.is_active===false?' inactive':'')+'"><div class="staff-card-actions"><button class="btn btn-outline btn-xs" onclick="openStaffModal(\''+s.id+'\')">編集</button>'+(s.is_active===false?'<button class="btn btn-green btn-xs" onclick="askReactivate(\''+s.id+'\')">復職</button>':'<button class="btn btn-red btn-xs" onclick="askDeactivate(\''+s.id+'\')">退社</button>')+'</div><div class="staff-card-name">'+esc(s.name)+'</div><div class="staff-card-sub">'+esc(storeLabel(s.store))+(s.is_active===false?' ・ <span style="color:var(--red)">退社</span>':'')+'</div>'+(s.position?'<div class="staff-card-pos">'+esc(s.position)+'</div>':'')+'<div style="font-size:11px;color:var(--soft);margin-top:6px">'+(s.birthdate?'生年月日：'+s.birthdate+'<br>':'')+(s.join_date?'入社日：'+s.join_date+'<br>':'')+(s.leave_date?'退社日：'+s.leave_date:'')+'</div></div>';
   }).join('');
 }
 function initDateSels(prefix,val){const yS=document.getElementById(prefix+'-y'),mS=document.getElementById(prefix+'-m'),dS=document.getElementById(prefix+'-d');const isBirth=prefix==='sm-birth';const yStart=isBirth?1975:2010;const yEnd=isBirth?2020:2040;let yOpts='<option value="">年</option>',mOpts='<option value="">月</option>',dOpts='<option value="">日</option>';for(let y=yStart;y<=yEnd;y++)yOpts+=`<option value="${y}">${y}年</option>`;for(let m=1;m<=12;m++)mOpts+=`<option value="${m}">${m}月</option>`;for(let d=1;d<=31;d++)dOpts+=`<option value="${d}">${d}日</option>`;yS.innerHTML=yOpts;mS.innerHTML=mOpts;dS.innerHTML=dOpts;if(val){const p=val.split('-');yS.value=parseInt(p[0]);mS.value=parseInt(p[1]);dS.value=parseInt(p[2]);}}
@@ -971,13 +971,13 @@ function renderOverview(){
   if(!allRows.length){tb.innerHTML='<tr><td colspan="15" class="empty-td">該当データなし</td></tr>';return;}
   tb.innerHTML=allRows.map(function(row){
     const s=row.s,r=row.r,catName=row.catName,curName=row.curName,total=row.total,pass=row.pass,pct=row.pct;
-    if(!r)return '<tr><td><strong>'+esc(s.name)+'</strong></td><td>'+esc(s.store)+'</td><td>'+esc(s.position||'—')+'</td><td colspan="12" style="text-align:center;color:var(--soft)">データなし</td></tr>';
+    if(!r)return '<tr><td><strong>'+esc(s.name)+'</strong></td><td>'+esc(storeLabel(s.store))+'</td><td>'+esc(s.position||'—')+'</td><td colspan="12" style="text-align:center;color:var(--soft)">データなし</td></tr>';
     const cc=CAT_COLORS[catName]||'#f0ece8';
     const catBadge='<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:500;background:'+cc+'">'+esc(catName)+'</span>';
     const rid=r.id;
     return '<tr>'
       +'<td><strong>'+esc(s.name)+'</strong></td>'
-      +'<td>'+esc(s.store)+'</td>'
+      +'<td>'+esc(storeLabel(s.store))+'</td>'
       +'<td>'+esc(s.position||'—')+'</td>'
       +'<td>'+catBadge+'</td>'
       +'<td>'+esc(curName)+'</td>'
