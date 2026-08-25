@@ -205,6 +205,7 @@ const ALLOWED_ROLES=['代表','管理者','店長','チーフ'];
 let students=[],ME=null;
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function storeLabel(v){return v==='エルズ'?'ailes':v;}
 function autoGrow(el){el.style.height='auto';el.style.height=(el.scrollHeight+2)+'px';}
 function autoGrowAll(root){(root||document).querySelectorAll('.txt').forEach(autoGrow);}
 document.addEventListener('input',function(e){if(e.target.classList&&e.target.classList.contains('txt'))autoGrow(e.target);});
@@ -249,7 +250,7 @@ function switchTab(name){
 
 /* ===== 月末報告 ===== */
 function moBlockHtml(store){
-  return '<div class="card-title" style="margin:14px 4px 8px">'+store+'</div>'
+  return '<div class="card-title" style="margin:14px 4px 8px">'+storeLabel(store)+'</div>'
     +'<div class="card">'
     +'<button class="prev-toggle" id="mo-prev-toggle-'+store+'" onclick="togglePrevMonth(\''+store+'\')">▼ 前月（<span id="mo-prev-month-txt-'+store+'"></span>）の内容を確認</button>'
     +'<div class="prev-compact" id="mo-prev-box-'+store+'" style="display:none">'
@@ -323,13 +324,13 @@ async function saveMonthly(store){
   };
   const {error}=await sb.from('pdca_reports').upsert(payload,{onConflict:'store,month,report_type'});
   if(error){alert('エラー: '+error.message);return;}
-  alert(store+'を保存しました');
+  alert(storeLabel(store)+'を保存しました');
 }
 
 /* ===== 店舗ミーティング報告 ===== */
 let smItemsByStore={'エルズ':[{title:'',detail:'',check:''}],'soleil':[{title:'',detail:'',check:''}]};
 function smBlockHtml(store){
-  return '<div class="card-title" style="margin:14px 4px 8px">'+store+'</div>'
+  return '<div class="card-title" style="margin:14px 4px 8px">'+storeLabel(store)+'</div>'
     +'<div class="card"><div class="card-title">1. 会議の目的</div><textarea class="txt" id="sm-purpose-'+store+'" placeholder="店舗の状況とスタッフの状況報告 など"></textarea></div>'
     +'<div class="card"><div class="card-title">2. 店舗の状況報告</div><div id="sm-items-'+store+'"></div>'
     +'<button class="btn btn-outline btn-sm" onclick="addStoreItem(\''+store+'\')">＋ 項目を追加</button></div>'
@@ -388,7 +389,7 @@ async function saveStoreMeeting(store){
   };
   const {error}=await sb.from('store_meetings').upsert(payload,{onConflict:'store,month'});
   if(error){alert('エラー: '+error.message);return;}
-  alert(store+'を保存しました');
+  alert(storeLabel(store)+'を保存しました');
 }
 
 /* ===== 面談報告 ===== */
@@ -465,7 +466,7 @@ async function renderInterviewList(){
     list.innerHTML=order.map(function(s){
       const rows=data.filter(function(r){return r.store===s;});
       if(!rows.length)return '';
-      return '<div class="card-title" style="margin:14px 4px 8px">'+s+'</div>'+rows.map(rowHtml).join('');
+      return '<div class="card-title" style="margin:14px 4px 8px">'+storeLabel(s)+'</div>'+rows.map(rowHtml).join('');
     }).join('')||'<div class="empty-msg">面談記録がありません</div>';
   } else {
     list.innerHTML=data.map(rowHtml).join('');
