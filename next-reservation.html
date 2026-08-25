@@ -262,7 +262,6 @@ function renderTable(){
     body.appendChild(tr);
           if((d===10||d===20)||d===days){
         const sd=d===days?1:d<=10?1:11;
-        const sd=d===days?1:d<=10?1:d<=20?11:21;
         const lbl=d===days?'月末合計':`〜${d}日 小計`;
         const sub=document.createElement('tr');
         sub.className='sub';
