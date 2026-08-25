@@ -185,7 +185,8 @@ async function init(){
 
 async function loadReservations(){
   const s=`${currentYear}-${String(currentMonth).padStart(2,'0')}-01`;
-  const e=new Date(currentYear,currentMonth,0).toISOString().split('T')[0];
+  const eDay=new Date(currentYear,currentMonth,0).getDate();
+  const e=`${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(eDay).padStart(2,'0')}`;
   const{data,error}=await sb.from('next_reservations').select('*').gte('date',s).lte('date',e);
   if(!error&&data)allReservations=data;
 }
@@ -259,7 +260,8 @@ function renderTable(){
     if(isWe)tr.style.background='rgba(200,200,200,.06)';
     tr.innerHTML=`<td style="font-weight:500;white-space:nowrap">${currentMonth}/${d}(${dow})</td>${cells}${sf==='both'?`<td>${rv||'-'}</td><td>${rn||'-'}</td><td>${badge(rrate,rv>0)}</td>`:''}`;
     body.appendChild(tr);
-          if(d%10===0||d===days){
+          if((d===10||d===20)||d===days){
+        const sd=d===days?1:d<=10?1:11;
         const sd=d===days?1:d<=10?1:d<=20?11:21;
         const lbl=d===days?'月末合計':`〜${d}日 小計`;
         const sub=document.createElement('tr');
@@ -363,7 +365,8 @@ function autoSave(sid,date){
 async function renderRanking(){
   const sf=document.getElementById('store-filter-rank').value;
   const s=`${rankYear}-${String(rankMonth).padStart(2,'0')}-01`;
-  const e=new Date(rankYear,rankMonth,0).toISOString().split('T')[0];
+  const eDay=new Date(rankYear,rankMonth,0).getDate();
+  const e=`${rankYear}-${String(rankMonth).padStart(2,'0')}-${String(eDay).padStart(2,'0')}`;
   const{data,error}=await sb.from('next_reservations').select('staff_id,visitor_count,next_reservation_count').gte('date',s).lte('date',e);
   const list=document.getElementById('ranking-list');
   if(error||!data){list.innerHTML='<div class="loading">エラー</div>';return;}
@@ -400,7 +403,8 @@ async function renderGraph(){
   }
   const s=`${ml[0].y}-${String(ml[0].m).padStart(2,'0')}-01`;
   const lm=ml[ml.length-1];
-  const e=new Date(lm.y,lm.m,0).toISOString().split('T')[0];
+  const eDay=new Date(lm.y,lm.m,0).getDate();
+  const e=`${lm.y}-${String(lm.m).padStart(2,'0')}-${String(eDay).padStart(2,'0')}`;
   const{data}=await sb.from('next_reservations').select('staff_id,date,visitor_count,next_reservation_count').gte('date',s).lte('date',e);
 
   const els=allStaff.filter(s=>s.store==='els'||s.store==='エルズ');
