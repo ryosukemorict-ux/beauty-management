@@ -417,7 +417,7 @@ async function renderGraph(){
   storeChartObj=new Chart(document.getElementById('store-chart').getContext('2d'),{
     type:'line',
     data:{labels,datasets:[
-      {label:'エルズ',data:ml.map(m=>cr(els,m)),borderColor:'#c9a96e',backgroundColor:'#c9a96e22',borderWidth:3,tension:0.4,spanGaps:true,pointRadius:5},
+      {label:'ailes',data:ml.map(m=>cr(els,m)),borderColor:'#c9a96e',backgroundColor:'#c9a96e22',borderWidth:3,tension:0.4,spanGaps:true,pointRadius:5},
       {label:'soleil',data:ml.map(m=>cr(sol,m)),borderColor:'#4a7c59',backgroundColor:'#4a7c5922',borderWidth:3,tension:0.4,spanGaps:true,pointRadius:5},
       {label:'両店合計',data:ml.map(m=>cr(allStaff,m)),borderColor:'#2980b9',backgroundColor:'#2980b922',borderWidth:3,tension:0.4,spanGaps:true,pointRadius:5},
     ]},
