@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>年間スケジュール | ailes group</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--cream:#faf6f0;--gold:#c9a96e;--gold-light:#e8d5b0;--dark:#1a1410;--mid:#7a6a58;--soft:#c4b49e;--accent:#8b5e3c;--green:#4a7c59;--red:#c0392b;--blue:#2980b9;--purple:#7d3c98;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--dark);min-height:100vh;}
+.top-bar{background:var(--dark);color:var(--gold-light);padding:12px 20px;display:flex;align-items:center;gap:12px;}
+.top-bar-title{font-family:'Playfair Display',serif;font-size:18px;letter-spacing:2px;}
+.nav-bar{background:white;border-bottom:2px solid var(--gold-light);padding:0 16px;display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.nav-btn{font-size:13px;font-weight:500;padding:12px 18px;border:none;background:none;color:var(--mid);cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;margin-bottom:-2px;}
+.nav-btn.active{color:var(--gold);border-bottom-color:var(--gold);font-weight:700;}
+.main{max-width:1100px;margin:0 auto;padding:20px 16px 80px;}
+.panel{background:white;border:1px solid var(--gold-light);border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.04);}
+.month-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+.month-nav-btn{font-family:'Noto Sans JP',sans-serif;font-size:15px;font-weight:700;padding:6px 12px;border-radius:8px;border:1.5px solid var(--gold-light);background:white;color:var(--gold);cursor:pointer;line-height:1;}
+.month-label{font-size:16px;font-weight:700;min-width:110px;text-align:center;}
+.filter-sel{font-family:'Noto Sans JP',sans-serif;font-size:13px;padding:7px 26px 7px 10px;border-radius:8px;border:1.5px solid var(--gold-light);outline:none;cursor:pointer;background:white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a6a58'/%3E%3C/svg%3E") no-repeat right 8px center;appearance:none;-webkit-appearance:none;color:var(--dark);}
+.btn{font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:600;padding:9px 16px;border-radius:8px;border:none;cursor:pointer;}
+.btn-dark{background:var(--dark);color:white;}
+.btn-gold{background:var(--gold);color:white;}
+.btn-ghost{background:#ede8e2;color:var(--mid);}
+.btn-red{background:#fdf0ef;color:var(--red);border:1px solid #f5c6c3;}
+.btn-sm{padding:6px 12px;font-size:12px;}
+.legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;font-size:11px;color:var(--mid);}
+.legend-item{display:flex;align-items:center;gap:4px;}
+.legend-dot{width:10px;height:10px;border-radius:3px;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-dow{text-align:center;font-size:11px;color:var(--mid);padding:4px 0;font-weight:700;}
+.cal-cell{min-height:64px;border-radius:8px;background:var(--cream);padding:3px;font-size:11px;position:relative;}
+.cal-cell.empty{background:transparent;}
+.cal-daynum{font-size:11px;color:var(--mid);margin-bottom:2px;}
+.cal-daynum.today{color:var(--gold);font-weight:700;}
+.cal-bar{display:block;font-size:9.5px;color:white;border-radius:4px;padding:1px 4px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;}
+.list-wrap{margin-top:16px;}
+.evt-card{background:white;border:1px solid var(--gold-light);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:10px;}
+.evt-badge{display:inline-block;font-size:10px;padding:3px 9px;border-radius:10px;color:white;font-weight:600;white-space:nowrap;}
+.evt-title{font-size:13px;font-weight:700;flex:1;}
+.evt-date{font-size:11px;color:var(--mid);white-space:nowrap;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;align-items:center;justify-content:center;}
+.modal-overlay.show{display:flex;}
+.modal{background:white;border-radius:16px;padding:22px;max-width:420px;width:92%;box-shadow:0 8px 40px rgba(0,0,0,0.2);max-height:88vh;overflow-y:auto;}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:14px;text-align:center;}
+.form-group{margin-bottom:12px;}
+.form-group label{display:block;font-size:12px;color:var(--mid);margin-bottom:4px;font-weight:600;}
+.form-inp,.form-sel,.form-txt{font-family:'Noto Sans JP',sans-serif;font-size:14px;padding:9px 12px;border-radius:8px;border:1.5px solid var(--gold-light);outline:none;background:#fdfaf6;width:100%;}
+.form-sel{background:white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a6a58'/%3E%3C/svg%3E") no-repeat right 12px center;appearance:none;-webkit-appearance:none;}
+.form-txt{resize:vertical;min-height:60px;}
+.form-inp:focus,.form-sel:focus,.form-txt:focus{border-color:var(--gold);}
+.form-row{display:flex;gap:8px;}
+.form-row>div{flex:1;}
+.modal-actions{display:flex;gap:10px;justify-content:center;margin-top:16px;}
+.modal-err{font-size:12px;color:var(--red);text-align:center;min-height:16px;}
+.empty-msg{text-align:center;color:var(--soft);padding:30px;font-size:13px;}
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <div class="top-bar-title">✦ ailes group</div>
+</div>
+<div class="nav-bar">
+  <button class="nav-btn" onclick="window.location.href='index.html'">🏠 ホーム</button>
+  <button class="nav-btn active">📆 年間スケジュール</button>
+</div>
+
+<div class="main">
+  <div class="panel">
+    <div class="month-bar">
+      <button class="month-nav-btn" onclick="shiftMonth(-1)">◀</button>
+      <div class="month-label" id="month-label"></div>
+      <button class="month-nav-btn" onclick="shiftMonth(1)">▶</button>
+      <select class="filter-sel" id="store-filter" onchange="renderAll()">
+        <option value="all">両店</option>
+        <option value="ailes">ailes</option>
+        <option value="soleil">soleil</option>
+      </select>
+      <select class="filter-sel" id="cat-filter" onchange="renderAll()">
+        <option value="all">すべての種別</option>
+        <option value="campaign">キャンペーン</option>
+        <option value="seminar">研修・セミナー</option>
+        <option value="event">季節イベント</option>
+        <option value="holiday">店舗休業・長期休暇</option>
+        <option value="other">その他</option>
+      </select>
+      <button class="btn btn-gold btn-sm" onclick="openModal(null)">＋ 予定を追加</button>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#c9a96e"></div>キャンペーン</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#2980b9"></div>研修・セミナー</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#4a7c59"></div>季節イベント</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#7d3c98"></div>店舗休業・長期休暇</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#8b5e3c"></div>その他</div>
+    </div>
+    <div class="cal-grid" id="cal-dow-row"></div>
+    <div class="cal-grid" id="cal-grid" style="margin-top:4px"></div>
+  </div>
+
+  <div class="list-wrap">
+    <div class="panel">
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px">📋 今月の予定一覧</div>
+      <div id="evt-list"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="event-modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">予定を追加</div>
+    <div class="form-group"><label>種別</label>
+      <select class="form-sel" id="ev-category" onchange="onCategoryChange()">
+        <option value="campaign">キャンペーン</option>
+        <option value="seminar">研修・セミナー</option>
+        <option value="event">季節イベント</option>
+        <option value="holiday">店舗休業・長期休暇</option>
+        <option value="other">その他</option>
+      </select>
+    </div>
+    <div class="form-group" id="ev-custom-label-row" style="display:none">
+      <label>種別名（自由入力）</label>
+      <input class="form-inp" id="ev-custom-label" type="text" placeholder="例：店舗改装">
+    </div>
+    <div class="form-group"><label>タイトル</label>
+      <input class="form-inp" id="ev-title" type="text" placeholder="例：夏季キャンペーン">
+    </div>
+    <div class="form-group"><label>対象店舗</label>
+      <select class="form-sel" id="ev-store">
+        <option value="両店">両店</option>
+        <option value="ailes">ailes</option>
+        <option value="soleil">soleil</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>開始日</label><input class="form-inp" id="ev-start" type="date"></div>
+      <div class="form-group"><label>終了日</label><input class="form-inp" id="ev-end" type="date"></div>
+    </div>
+    <div id="ev-campaign-fields" style="display:none">
+      <div class="form-row">
+        <div class="form-group"><label>売上目標（円）</label><input class="form-inp" id="ev-sales-target" type="number" placeholder="0"></div>
+        <div class="form-group"><label>売上結果（円）</label><input class="form-inp" id="ev-sales-result" type="number" placeholder="0"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>人数目標</label><input class="form-inp" id="ev-count-target" type="number" placeholder="0"></div>
+        <div class="form-group"><label>人数結果</label><input class="form-inp" id="ev-count-result" type="number" placeholder="0"></div>
+      </div>
+    </div>
+    <div class="form-group"><label>やるべきこと・メモ</label>
+      <textarea class="form-txt" id="ev-memo"></textarea>
+    </div>
+    <div class="modal-err" id="ev-err"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-red" id="ev-del-btn" style="display:none" onclick="deleteEvent()">削除</button>
+      <button class="btn btn-dark" onclick="saveEvent()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL='https://nrweporylfaorlqektsk.supabase.co';
+const SUPABASE_ANON='sb_publishable_a3X1ltKqAaTv6CyxHIReug_xEPqqCSS';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
+
+const CAT_COLORS={campaign:'#c9a96e',seminar:'#2980b9',event:'#4a7c59',holiday:'#7d3c98',other:'#8b5e3c'};
+const CAT_LABELS={campaign:'キャンペーン',seminar:'研修・セミナー',event:'季節イベント',holiday:'店舗休業・長期休暇',other:'その他'};
+const DOW_LABELS=['日','月','火','水','木','金','土'];
+
+let calMonth=new Date();
+let events=[];
+let editingId=null;
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function catLabel(ev){return ev.category==='other'?(ev.custom_category_label||'その他'):CAT_LABELS[ev.category];}
+
+function shiftMonth(d){calMonth.setMonth(calMonth.getMonth()+d);loadEvents();}
+
+async function loadEvents(){
+  const monthStart=ymd(new Date(calMonth.getFullYear(),calMonth.getMonth(),1));
+  const monthEnd=ymd(new Date(calMonth.getFullYear(),calMonth.getMonth()+1,0));
+  const {data}=await sb.from('annual_events').select('*').lte('start_date',monthEnd).gte('end_date',monthStart).order('start_date');
+  events=data||[];
+  renderAll();
+}
+
+function filteredEvents(){
+  const storeF=document.getElementById('store-filter').value;
+  const catF=document.getElementById('cat-filter').value;
+  return events.filter(function(e){
+    if(storeF!=='all'&&e.store!=='両店'&&e.store!==storeF)return false;
+    if(catF!=='all'&&e.category!==catF)return false;
+    return true;
+  });
+}
+
+function renderAll(){
+  document.getElementById('month-label').textContent=calMonth.getFullYear()+'年'+(calMonth.getMonth()+1)+'月';
+  renderCalendar();
+  renderList();
+}
+
+function renderCalendar(){
+  const dowRow=document.getElementById('cal-dow-row');
+  dowRow.innerHTML=DOW_LABELS.map(function(d){return '<div class="cal-dow">'+d+'</div>';}).join('');
+
+  const year=calMonth.getFullYear(),month=calMonth.getMonth();
+  const firstDow=new Date(year,month,1).getDay();
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const todayStr=ymd(new Date());
+  const list=filteredEvents();
+
+  let html='';
+  for(let i=0;i<firstDow;i++)html+='<div class="cal-cell empty"></div>';
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const dayEvents=list.filter(function(e){return ds>=e.start_date&&ds<=e.end_date;});
+    const bars=dayEvents.slice(0,3).map(function(e){
+      return '<span class="cal-bar" style="background:'+CAT_COLORS[e.category]+'" onclick="openModal(\''+e.id+'\')">'+esc(e.title)+'</span>';
+    }).join('');
+    const more=dayEvents.length>3?'<div style="font-size:9px;color:var(--soft)">+'+(dayEvents.length-3)+'件</div>':'';
+    html+='<div class="cal-cell"><div class="cal-daynum'+(ds===todayStr?' today':'')+'">'+d+'</div>'+bars+more+'</div>';
+  }
+  document.getElementById('cal-grid').innerHTML=html;
+}
+
+function renderList(){
+  const list=filteredEvents();
+  const wrap=document.getElementById('evt-list');
+  if(!list.length){wrap.innerHTML='<div class="empty-msg">今月の予定はありません</div>';return;}
+  wrap.innerHTML=list.map(function(e){
+    const dateStr=e.start_date===e.end_date?e.start_date:e.start_date+' 〜 '+e.end_date;
+    return '<div class="evt-card" onclick="openModal(\''+e.id+'\')">'
+      +'<span class="evt-badge" style="background:'+CAT_COLORS[e.category]+'">'+esc(catLabel(e))+'</span>'
+      +'<div class="evt-title">'+esc(e.title)+'</div>'
+      +'<div class="evt-date">'+dateStr+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function onCategoryChange(){
+  const cat=document.getElementById('ev-category').value;
+  document.getElementById('ev-custom-label-row').style.display=cat==='other'?'':'none';
+  document.getElementById('ev-campaign-fields').style.display=cat==='campaign'?'':'none';
+}
+
+function openModal(id){
+  editingId=id;
+  document.getElementById('ev-err').textContent='';
+  if(!id){
+    document.getElementById('modal-title').textContent='予定を追加';
+    document.getElementById('ev-category').value='campaign';
+    document.getElementById('ev-custom-label').value='';
+    document.getElementById('ev-title').value='';
+    document.getElementById('ev-store').value='両店';
+    document.getElementById('ev-start').value='';
+    document.getElementById('ev-end').value='';
+    document.getElementById('ev-sales-target').value='';
+    document.getElementById('ev-sales-result').value='';
+    document.getElementById('ev-count-target').value='';
+    document.getElementById('ev-count-result').value='';
+    document.getElementById('ev-memo').value='';
+    document.getElementById('ev-del-btn').style.display='none';
+  } else {
+    const e=events.find(function(x){return x.id===id;});
+    if(!e)return;
+    document.getElementById('modal-title').textContent='予定を編集';
+    document.getElementById('ev-category').value=e.category;
+    document.getElementById('ev-custom-label').value=e.custom_category_label||'';
+    document.getElementById('ev-title').value=e.title||'';
+    document.getElementById('ev-store').value=e.store||'両店';
+    document.getElementById('ev-start').value=e.start_date||'';
+    document.getElementById('ev-end').value=e.end_date||'';
+    document.getElementById('ev-sales-target').value=e.sales_target||'';
+    document.getElementById('ev-sales-result').value=e.sales_result||'';
+    document.getElementById('ev-count-target').value=e.count_target||'';
+    document.getElementById('ev-count-result').value=e.count_result||'';
+    document.getElementById('ev-memo').value=e.memo||'';
+    document.getElementById('ev-del-btn').style.display='';
+  }
+  onCategoryChange();
+  document.getElementById('event-modal').classList.add('show');
+}
+function closeModal(){document.getElementById('event-modal').classList.remove('show');}
+
+async function saveEvent(){
+  const category=document.getElementById('ev-category').value;
+  const title=document.getElementById('ev-title').value.trim();
+  const start=document.getElementById('ev-start').value;
+  const end=document.getElementById('ev-end').value;
+  if(!title){document.getElementById('ev-err').textContent='タイトルを入力してください';return;}
+  if(!start||!end){document.getElementById('ev-err').textContent='開始日・終了日を入力してください';return;}
+  if(end<start){document.getElementById('ev-err').textContent='終了日は開始日以降にしてください';return;}
+  const payload={
+    category,
+    custom_category_label:category==='other'?document.getElementById('ev-custom-label').value.trim():null,
+    title,
+    store:document.getElementById('ev-store').value,
+    start_date:start,
+    end_date:end,
+    memo:document.getElementById('ev-memo').value,
+    sales_target:category==='campaign'?(Number(document.getElementById('ev-sales-target').value)||null):null,
+    sales_result:category==='campaign'?(Number(document.getElementById('ev-sales-result').value)||null):null,
+    count_target:category==='campaign'?(Number(document.getElementById('ev-count-target').value)||null):null,
+    count_result:category==='campaign'?(Number(document.getElementById('ev-count-result').value)||null):null,
+    updated_at:new Date().toISOString()
+  };
+  let error;
+  if(editingId){
+    ({error}=await sb.from('annual_events').update(payload).eq('id',editingId));
+  } else {
+    ({error}=await sb.from('annual_events').insert(payload));
+  }
+  if(error){document.getElementById('ev-err').textContent='エラー: '+error.message;return;}
+  closeModal();
+  loadEvents();
+}
+
+async function deleteEvent(){
+  if(!editingId)return;
+  if(!confirm('この予定を削除しますか？'))return;
+  await sb.from('annual_events').delete().eq('id',editingId);
+  closeModal();
+  loadEvents();
+}
+
+document.getElementById('event-modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+loadEvents();
+</script>
+</body>
+</html>
