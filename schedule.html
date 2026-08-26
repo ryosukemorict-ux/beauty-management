@@ -439,7 +439,7 @@ function openModal(id){
     renderPeopleBox('mgr-box','mgr-chk',[]);
     renderPeopleBox('mem-box','mem-chk',[]);
   } else {
-    const e=events.find(function(x){return x.id===id;});
+    const e=events.find(function(x){return String(x.id)===String(id);});
     if(!e)return;
     document.getElementById('modal-title').textContent='予定を編集';
     document.getElementById('ev-category').value=e.category;
