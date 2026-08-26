@@ -420,4 +420,99 @@ function quickSelect(kind){
 }
 
 function openModal(id){
-  edit
+  editingId=id;
+  document.getElementById('ev-err').textContent='';
+  if(!id){
+    document.getElementById('modal-title').textContent='予定を追加';
+    document.getElementById('ev-category').value='campaign';
+    document.getElementById('ev-custom-label').value='';
+    document.getElementById('ev-title').value='';
+    document.getElementById('ev-store').value='両店';
+    document.getElementById('ev-start').value='';
+    document.getElementById('ev-end').value='';
+    document.getElementById('ev-sales-target').value='';
+    document.getElementById('ev-sales-result').value='';
+    document.getElementById('ev-count-target').value='';
+    document.getElementById('ev-count-result').value='';
+    document.getElementById('ev-memo').value='';
+    document.getElementById('ev-del-btn').style.display='none';
+    renderPeopleBox('mgr-box','mgr-chk',[]);
+    renderPeopleBox('mem-box','mem-chk',[]);
+  } else {
+    const e=events.find(function(x){return x.id===id;});
+    if(!e)return;
+    document.getElementById('modal-title').textContent='予定を編集';
+    document.getElementById('ev-category').value=e.category;
+    document.getElementById('ev-custom-label').value=e.custom_category_label||'';
+    document.getElementById('ev-title').value=e.title||'';
+    document.getElementById('ev-store').value=e.store||'両店';
+    document.getElementById('ev-start').value=e.start_date||'';
+    document.getElementById('ev-end').value=e.end_date||'';
+    document.getElementById('ev-sales-target').value=e.sales_target||'';
+    document.getElementById('ev-sales-result').value=e.sales_result||'';
+    document.getElementById('ev-count-target').value=e.count_target||'';
+    document.getElementById('ev-count-result').value=e.count_result||'';
+    document.getElementById('ev-memo').value=e.memo||'';
+    document.getElementById('ev-del-btn').style.display='';
+    renderPeopleBox('mgr-box','mgr-chk',e.manager_ids||[]);
+    renderPeopleBox('mem-box','mem-chk',e.member_ids||[]);
+  }
+  onCategoryChange();
+  document.getElementById('event-modal').classList.add('show');
+}
+function closeModal(){document.getElementById('event-modal').classList.remove('show');}
+
+async function saveEvent(){
+  const category=document.getElementById('ev-category').value;
+  const title=document.getElementById('ev-title').value.trim();
+  const start=document.getElementById('ev-start').value;
+  const end=document.getElementById('ev-end').value;
+  if(!title){document.getElementById('ev-err').textContent='タイトルを入力してください';return;}
+  if(!start||!end){document.getElementById('ev-err').textContent='開始日・終了日を入力してください';return;}
+  if(end<start){document.getElementById('ev-err').textContent='終了日は開始日以降にしてください';return;}
+  const managerIds=Array.from(document.querySelectorAll('.mgr-chk:checked')).map(function(el){return el.value;});
+  const memberIds=Array.from(document.querySelectorAll('.mem-chk:checked')).map(function(el){return el.value;});
+  const payload={
+    category,
+    custom_category_label:category==='other'?document.getElementById('ev-custom-label').value.trim():null,
+    title,
+    store:document.getElementById('ev-store').value,
+    start_date:start,
+    end_date:end,
+    memo:document.getElementById('ev-memo').value,
+    sales_target:category==='campaign'?(Number(document.getElementById('ev-sales-target').value)||null):null,
+    sales_result:category==='campaign'?(Number(document.getElementById('ev-sales-result').value)||null):null,
+    count_target:category==='campaign'?(Number(document.getElementById('ev-count-target').value)||null):null,
+    count_result:category==='campaign'?(Number(document.getElementById('ev-count-result').value)||null):null,
+    manager_ids:managerIds,
+    member_ids:memberIds,
+    updated_at:new Date().toISOString()
+  };
+  let error;
+  if(editingId){
+    ({error}=await sb.from('annual_events').update(payload).eq('id',editingId));
+  } else {
+    ({error}=await sb.from('annual_events').insert(payload));
+  }
+  if(error){document.getElementById('ev-err').textContent='エラー: '+error.message;return;}
+  closeModal();
+  if(currentView==='month')loadEvents();else loadYearEvents();
+}
+
+async function deleteEvent(){
+  if(!editingId)return;
+  if(!confirm('この予定を削除しますか？'))return;
+  await sb.from('annual_events').delete().eq('id',editingId);
+  closeModal();
+  if(currentView==='month')loadEvents();else loadYearEvents();
+}
+
+document.getElementById('event-modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+(async function(){
+  await loadStudents();
+  loadEvents();
+})();
+</script>
+</body>
+</html>
