@@ -406,7 +406,8 @@ function interviewerOptsForStore(store){
 }
 function onIvStoreChange(){
   const store=document.getElementById('iv-store').value;
-<div class="save-row"><button class="btn btn-dark" id="iv-add-btn" onclick="addInterview()">追加する</button></div>
+  const stuOpts=studentOptsForStore(store);
+  document.getElementById('iv-student').innerHTML=stuOpts?('<option value="">選択してください</option>'+stuOpts):'<option value="">対象スタッフなし</option>';
   document.getElementById('iv-name-filter').innerHTML='<option value="">全員</option>'+studentOptsForStore(store);
   document.getElementById('iv-interviewer').innerHTML=interviewerOptsForStore(store);
   const monthSel=document.getElementById('iv-month');
