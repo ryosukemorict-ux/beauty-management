@@ -526,11 +526,14 @@ async function addRepNote(){
 async function renderRepNotes(){
   const student_id=document.getElementById('rn-student').value;
   const list=document.getElementById('rn-list');
-  if(!student_id){list.innerHTML='<div class="empty-msg">対象スタッフを選択してください</div>';return;}
-  const {data}=await sb.from('rep_staff_notes').select('*').eq('student_id',student_id).order('record_date',{ascending:false}).order('created_at',{ascending:false});
+  let q=sb.from('rep_staff_notes').select('*').order('record_date',{ascending:false}).order('created_at',{ascending:false});
+  if(student_id)q=q.eq('student_id',student_id);
+  const {data}=await q;
   if(!data||!data.length){list.innerHTML='<div class="empty-msg">記録がありません</div>';return;}
   list.innerHTML=data.map(function(r){
-    return '<div class="iv-row"><div class="iv-row-head"><span class="iv-name">'+esc(r.category||'')+'</span><span class="iv-meta">'+esc(r.record_date||'')+'　記録者：'+esc(r.created_by||'—')+'</span>'
+    const st=students.find(function(s){return s.id===r.student_id;});
+    const name=st?st.name:'（不明）';
+    return '<div class="iv-row"><div class="iv-row-head"><span class="iv-name">'+esc(name)+'／'+esc(r.category||'')+'</span><span class="iv-meta">'+esc(r.record_date||'')+'　記録者：'+esc(r.created_by||'—')+'</span>'
       +'<button class="btn btn-red btn-xs" onclick="delRepNote('+r.id+')">削除</button></div>'
       +'<div class="iv-body">'+esc(r.content||'')+'</div>'
       +'</div>';
