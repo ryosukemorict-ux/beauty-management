@@ -146,7 +146,7 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
       <div class="field"><label>面談内容</label><textarea class="txt" id="iv-content"></textarea></div>
       <div class="field"><label>今後のアクション</label><textarea class="txt" id="iv-next"></textarea></div>
       <div class="field"><label>特記事項</label><textarea class="txt" id="iv-notes"></textarea></div>
-      <div class="save-row"><button class="btn btn-dark" onclick="addInterview()">追加する</button></div>
+<div class="save-row"><button class="btn btn-dark" id="iv-add-btn" onclick="addInterview()">追加する</button></div>
     </div>
     <div class="card-title" style="margin:14px 4px 8px">店舗の面談履歴一覧</div>
     <div id="iv-list"></div>
@@ -406,7 +406,7 @@ function interviewerOptsForStore(store){
 }
 function onIvStoreChange(){
   const store=document.getElementById('iv-store').value;
-  document.getElementById('iv-student').innerHTML=studentOptsForStore(store)||'<option value="">対象スタッフなし</option>';
+<div class="save-row"><button class="btn btn-dark" id="iv-add-btn" onclick="addInterview()">追加する</button></div>
   document.getElementById('iv-name-filter').innerHTML='<option value="">全員</option>'+studentOptsForStore(store);
   document.getElementById('iv-interviewer').innerHTML=interviewerOptsForStore(store);
   const monthSel=document.getElementById('iv-month');
@@ -416,24 +416,32 @@ function onIvStoreChange(){
 async function addInterview(){
   const student_id=document.getElementById('iv-student').value;
   if(!student_id){alert('対象スタッフを選択してください');return;}
-  const store=document.getElementById('iv-store').value;
-  const st=students.find(function(s){return s.id===student_id;});
-  const payload={
-    student_id,store:(store==='両店'?(st?st.store:store):store),
-    interviewer:document.getElementById('iv-interviewer').value,
-    interview_date:document.getElementById('iv-date').value,
-    content:document.getElementById('iv-content').value,
-    next_action:document.getElementById('iv-next').value,
-    notes:document.getElementById('iv-notes').value
-  };
-  const {error}=await sb.from('staff_interviews').insert(payload);
-  if(error){alert('エラー: '+error.message);return;}
-  document.getElementById('iv-interviewer').value='';
-  document.getElementById('iv-date').value='';
-  document.getElementById('iv-content').value='';
-  document.getElementById('iv-next').value='';
-  document.getElementById('iv-notes').value='';
-  renderInterviewList();
+  const btn=document.getElementById('iv-add-btn');
+  if(btn.disabled)return;
+  btn.disabled=true;
+  try{
+    const store=document.getElementById('iv-store').value;
+    const st=students.find(function(s){return s.id===student_id;});
+    const payload={
+      student_id,store:(store==='両店'?(st?st.store:store):store),
+      interviewer:document.getElementById('iv-interviewer').value,
+      interview_date:document.getElementById('iv-date').value,
+      content:document.getElementById('iv-content').value,
+      next_action:document.getElementById('iv-next').value,
+      notes:document.getElementById('iv-notes').value
+    };
+    const {error}=await sb.from('staff_interviews').insert(payload);
+    if(error){alert('エラー: '+error.message);return;}
+    document.getElementById('iv-student').value='';
+    document.getElementById('iv-interviewer').value='';
+    document.getElementById('iv-date').value='';
+    document.getElementById('iv-content').value='';
+    document.getElementById('iv-next').value='';
+    document.getElementById('iv-notes').value='';
+    renderInterviewList();
+  }finally{
+    btn.disabled=false;
+  }
 }
 async function renderInterviewList(){
   const store=document.getElementById('iv-store').value;
