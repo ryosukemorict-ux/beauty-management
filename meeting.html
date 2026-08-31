@@ -518,10 +518,11 @@ async function renderRepNotes(){
       +'</div>';
   }).join('');
 }
-async function delRepNote(id){
+async function delInterview(id){
   if(!confirm('この記録を削除しますか？'))return;
-  await sb.from('rep_staff_notes').delete().eq('id',id);
-  renderRepNotes();
+  const {error}=await sb.from('staff_interviews').delete().eq('id',id);
+  if(error){alert('エラー: '+error.message);return;}
+  renderInterviewList();
 }
 
 
