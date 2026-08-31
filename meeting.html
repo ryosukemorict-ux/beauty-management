@@ -190,7 +190,8 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
       <div id="ex-items"></div>
       <button class="btn btn-outline btn-sm" onclick="addExecItem()">＋ 議題を追加</button>
     </div>
-    <div class="save-row"><button class="btn btn-dark" onclick="saveExec()">保存</button></div>
+<div class="save-row"><button class="btn btn-dark" id="rn-add-btn" onclick="addRepNote()">追加する</button></div>
+
   </div>
 </div>
 
@@ -495,24 +496,32 @@ function repNoteStudentOpts(){
 }
 function onRepTabOpen(){
   const sel=document.getElementById('rn-student');
-  if(!sel.options.length)sel.innerHTML=repNoteStudentOpts();
+  if(!sel.options.length)sel.innerHTML='<option value="">選択してください</option>'+repNoteStudentOpts();
   if(!document.getElementById('rn-date').value)document.getElementById('rn-date').value=new Date().toISOString().split('T')[0];
   renderRepNotes();
 }
 async function addRepNote(){
   const student_id=document.getElementById('rn-student').value;
   if(!student_id){alert('対象スタッフを選択してください');return;}
-  const payload={
-    student_id,
-    record_date:document.getElementById('rn-date').value,
-    category:document.getElementById('rn-category').value,
-    content:document.getElementById('rn-content').value,
-    created_by:ME?ME.name:''
-  };
-  const {error}=await sb.from('rep_staff_notes').insert(payload);
-  if(error){alert('エラー: '+error.message);return;}
-  document.getElementById('rn-content').value='';
-  renderRepNotes();
+  const btn=document.getElementById('rn-add-btn');
+  if(btn.disabled)return;
+  btn.disabled=true;
+  try{
+    const payload={
+      student_id,
+      record_date:document.getElementById('rn-date').value,
+      category:document.getElementById('rn-category').value,
+      content:document.getElementById('rn-content').value,
+      created_by:ME?ME.name:''
+    };
+    const {error}=await sb.from('rep_staff_notes').insert(payload);
+    if(error){alert('エラー: '+error.message);return;}
+    document.getElementById('rn-student').value='';
+    document.getElementById('rn-content').value='';
+    renderRepNotes();
+  }finally{
+    btn.disabled=false;
+  }
 }
 async function renderRepNotes(){
   const student_id=document.getElementById('rn-student').value;
