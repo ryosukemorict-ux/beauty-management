@@ -517,7 +517,14 @@ function renderTable(){
         :calcResult(d);
     return '<tr>'
       +'<td>'+esc(s.name)+'<span class="pos-badge">'+esc(s.position||'')+'</span></td>'
-      +(function(){var rt=roleProductivity[s.position]||0;return '<td><span class="auto-val">'+(rt?rt.toLocaleString():'—')+'</span><span class="auto-val-sub">'+(rt?'(税抜 '+Math.round(rt/(1+TAX_RATE)).toLocaleString()+')':'')+'</span></td>';})()
+      +(function(){
+        const targetPct=RYOTEN_STORES.includes(s.store)
+          ?(currentStore==='ailes'?(allocation.ailes_pct||50)/100
+            :currentStore==='soleil'?(allocation.soleil_pct||50)/100:1)
+          :1;
+        var rt=Math.round((roleProductivity[s.position]||0)*targetPct);
+        return '<td><span class="auto-val">'+(rt?rt.toLocaleString():'—')+'</span><span class="auto-val-sub">'+(rt?'(税抜 '+Math.round(rt/(1+TAX_RATE)).toLocaleString()+')':'')+'</span></td>';
+      })()
       +'<td><span class="auto-val" id="result-'+s.id+'">'+(result?Math.round(result*(1+TAX_RATE)).toLocaleString():'—')+'</span>'
       +'<span class="auto-val-sub" id="result-sub-'+s.id+'">'+(result?'(税抜 '+result.toLocaleString()+')':'')+'</span></td>'
         +'<td><input type="number" class="num-inp" data-sid="'+s.id+'" data-f="meimei_sales" placeholder="0"'+(isRyotenAll?' disabled':'')+' value="'+esc(d.meimei_sales||'')+'"></td>'
