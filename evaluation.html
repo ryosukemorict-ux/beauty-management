@@ -205,15 +205,15 @@ async function loadListView(){
   wrap.innerHTML=list.map(function(s){
     const crit=allCriteria.filter(function(c){return c.position===s.position;});
     let total=0;
-    crit.forEach(function(c){
-      let targetSum=0,resultSum=0;
+        crit.forEach(function(c){
+      let targetSum=0,resultSum=0,hasTarget=false;
       months.forEach(function(m){
         const e=entryMap[s.id+'_'+c.id+'_'+m];
-        targetSum+=Number(e&&e.target||0);
+        if(e&&e.target!=null){hasTarget=true;targetSum+=Number(e.target||0);}
         resultSum+=Number(e&&e.result||0);
       });
       let rate=0;
-      if(c.calc_type==='inverse_count'){rate=targetSum>0?Math.max(0,1-(resultSum/targetSum)):(resultSum===0?1:0);}
+      if(c.calc_type==='inverse_count'){rate=hasTarget?Math.max(0,1-(resultSum/(targetSum||1))):0;}
       else{rate=targetSum>0?(resultSum/targetSum):0;}
       total+=scoreForRate(rate,c.scale_json)*Number(c.weight||0);
     });
@@ -234,22 +234,22 @@ function scoreForRate(rate,scaleJson){
 }
 
 function calcCriteria(c,months){
-  let targetSum=0,resultSum=0;
+  let targetSum=0,resultSum=0,hasTarget=false;
   months.forEach(function(m){
     const e=entries[c.id+'_'+m];
-    targetSum+=Number(e&&e.target||0);
+    if(e&&e.target!=null){hasTarget=true;targetSum+=Number(e.target||0);}
     resultSum+=Number(e&&e.result||0);
   });
   let rate=0;
   if(c.calc_type==='inverse_count'){
-    rate=targetSum>0?Math.max(0,1-(resultSum/targetSum)):(resultSum===0?1:0);
+    rate=hasTarget?Math.max(0,1-(resultSum/(targetSum||1))):0;
   } else {
     rate=targetSum>0?(resultSum/targetSum):0;
   }
   const score=scoreForRate(rate,c.scale_json);
   const weighted=score*Number(c.weight||0);
   return {targetSum,resultSum,rate,score,weighted};
-}
+}  
 
 async function openDetail(sid){
   currentSid=sid;
