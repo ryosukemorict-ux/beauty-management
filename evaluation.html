@@ -264,7 +264,7 @@ async function loadListView(){
           const monthData=await getStoreSalesMonth(s.store,year,m);
           targetSum+=monthData.target;
           resultSum+=monthData.result;
-          monthDetails.push(MONTH_LABELS[months.indexOf(m)]+' '+monthData.result.toLocaleString()+'円');
+          monthDetails.push(m+'月 目標'+monthData.target.toLocaleString()+'円／結果'+monthData.result.toLocaleString()+'円');
         }
         const rate=targetSum>0?(resultSum/targetSum):0;
         const score=scoreForRate(rate,c.scale_json);
@@ -286,11 +286,11 @@ async function loadListView(){
         else{rate=targetSum>0?(resultSum/targetSum):0;}
         const score=scoreForRate(rate,c.scale_json);
         total+=score*Number(c.weight||0);
-        critLinesArr.push('<div class="crit-line">'
+                critLinesArr.push('<div class="crit-line" style="flex-wrap:wrap">'
           +'<div class="crit-line-name">'+esc(c.name)+'</div>'
-          +'<div class="crit-line-nums">目標 '+targetSum.toLocaleString()+' ／ 結果 '+resultSum.toLocaleString()+'</div>'
+          +'<div class="crit-line-nums">'+monthDetails.join('　')+'<br>3か月合計：目標'+targetSum.toLocaleString()+'円／結果'+resultSum.toLocaleString()+'円（達成率'+Math.round(rate*100)+'%）</div>'
           +'<div class="crit-line-score">'+score+'点</div>'
-          +'</div>');
+          +'</div>');  
       }
     }
     return '<div class="staff-row-wrap" onclick="openDetail(\''+s.id+'\')">'
@@ -381,7 +381,8 @@ async function renderCritList(months){
       total+=weighted;
       cardsHtml.push('<div class="crit-card">'
         +'<div class="crit-head"><div class="crit-name">'+esc(c.name)+'（数値管理と連動・自動取得）</div><div class="crit-weight">重み '+c.weight+'</div></div>'
-        +monthRows.map(function(r,i){return '<div class="crit-result-row"><span>'+MONTH_LABELS[i]+'</span><span>目標 '+r.target.toLocaleString()+'円 ／ 結果 '+r.result.toLocaleString()+'円</span></div>';}).join('')
+        +monthRows.map(function(r){return '<div class="crit-result-row"><span>'+r.m+'月</span><span>目標 '+r.target.toLocaleString()+'円 ／ 結果 '+r.result.toLocaleString()+'円</span></div>';}).join('')
+        +'<div class="crit-result-row" style="border-top:1px solid var(--gold-light);padding-top:8px;margin-top:8px"><span>3か月合計</span><span>目標 '+targetSum.toLocaleString()+'円 ／ 結果 '+resultSum.toLocaleString()+'円</span></div>'
         +'<div class="crit-result-row"><span>達成率 '+Math.round(rate*100)+'%</span><span class="crit-score">'+score+'点 × '+c.weight+' = '+weighted.toFixed(1)+'</span></div>'
         +'</div>');
     } else {
