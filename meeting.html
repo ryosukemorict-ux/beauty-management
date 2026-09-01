@@ -509,13 +509,16 @@ function onRepTabOpen(){
 }
 async function addRepNote(){
   const student_id=document.getElementById('rn-student').value;
-  if(!student_id){alert('対象スタッフを選択してください');return;}
+  if(!student_id){alert('対象を選択してください');return;}
   const btn=document.getElementById('rn-add-btn');
   if(btn.disabled)return;
   btn.disabled=true;
   try{
+    const SPECIAL={STORE_ERUZU:'ailes全体',STORE_SOLEIL:'soleil全体',STORE_BOTH:'両店共通',OTHER:'その他'};
+    const isSpecial=Object.prototype.hasOwnProperty.call(SPECIAL,student_id);
     const payload={
-      student_id,
+      student_id:isSpecial?null:student_id,
+      target_label:isSpecial?SPECIAL[student_id]:null,
       record_date:document.getElementById('rn-date').value,
       category:document.getElementById('rn-category').value,
       content:document.getElementById('rn-content').value,
@@ -539,7 +542,7 @@ async function renderRepNotes(){
   if(!data||!data.length){list.innerHTML='<div class="empty-msg">記録がありません</div>';return;}
   list.innerHTML=data.map(function(r){
     const st=students.find(function(s){return s.id===r.student_id;});
-    const name=st?st.name:'（不明）';
+    const name=st?st.name:(r.target_label||'（不明）');
     return '<div class="iv-row"><div class="iv-row-head"><span class="iv-name">'+esc(name)+'／'+esc(r.category||'')+'</span><span class="iv-meta">'+esc(r.record_date||'')+'　記録者：'+esc(r.created_by||'—')+'</span>'
       +'<button class="btn btn-red btn-xs" onclick="delRepNote('+r.id+')">削除</button></div>'
       +'<div class="iv-body">'+esc(r.content||'')+'</div>'
