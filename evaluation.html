@@ -172,6 +172,8 @@ function switchStore(store){
 function sortedTargetStudents(){
   let list=students.filter(function(s){return EVAL_TARGET_ROLES.includes(s.position);});
   if(currentStore!=='all')list=list.filter(function(s){return s.store===currentStore||s.store==='両店';});
+  const posF=document.getElementById('ev-pos-filter').value;
+  if(posF)list=list.filter(function(s){return s.position===posF;});
   list.sort(function(a,b){
     const ai=POS_ORDER.indexOf(a.position||'');
     const bi=POS_ORDER.indexOf(b.position||'');
@@ -419,9 +421,11 @@ async function saveAdminItems(){
   document.getElementById('app-wrap').style.display='block';
   yearOptions();
   document.getElementById('ev-quarter').value=String(currentQuarterGuess());
+  document.getElementById('ev-pos-filter').innerHTML='<option value="">すべての役職</option>'+POS_ORDER.map(function(p){return '<option value="'+esc(p)+'">'+esc(p)+'</option>';}).join('');
   if(canEditAdmin())document.getElementById('admin-row').style.display='';
   loadListView();
 })();
+
 </script>
 </body>
 </html>
