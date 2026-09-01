@@ -160,10 +160,45 @@ const QUARTER_MONTHS={1:[1,2,3],2:[4,5,6],3:[7,8,9],4:[10,11,12]};
 const EVAL_TARGET_ROLES=['店長','チーフ','スタイリスト','Jrスタイリスト','カラーリスト','アシスタント','レセプション'];
 const POS_ORDER=['店長','チーフ','スタイリスト','Jrスタイリスト','カラーリスト','アシスタント','レセプション'];
 
-let students=[],ME=null,allCriteria=[],currentCriteria=[],entries={},currentStore='all',currentSid=null;
+let students=[],ME=null,allCriteria=[],currentCriteria=[],entries={},currentStore='all',currentSid=null,currentDetailStore=null,currentDetailYear=null;
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function storeLabel(v){return v==='エルズ'?'ailes':v;}
+function storeLabel(v){return v==='エルズ'?'ailes':v;}
+function storeShortCode(storeJP){return storeJP==='エルズ'?'ailes':'soleil';}
+let storeSalesCache={};
+async function getStoreSalesMonth(storeJP,year,month){
+  const monthStr=year+'-'+String(month).padStart(2,'0');
+  const cacheKey=storeJP+'_'+monthStr;
+  if(storeSalesCache[cacheKey])return storeSalesCache[cacheKey];
+  const {data:allStudents}=await sb.from('students').select('id,position,store').eq('is_active',true);
+  const staffList=(allStudents||[]).filter(function(s){return (s.store===storeJP||s.store==='両店')&&s.position!=='管理者'&&s.position!=='代表';});
+  const staffIds=staffList.map(function(s){return s.id;});
+  const {data:allocData}=await sb.from('sales_allocation').select('*').eq('month',monthStr).maybeSingle();
+  const alloc=allocData||{ailes_pct:50,soleil_pct:50};
+  const {data:prodData}=await sb.from('role_productivity').select('*').lte('month',monthStr).order('month',{ascending:false});
+  const roleMap={};
+  (prodData||[]).forEach(function(r){if(!(r.position in roleMap))roleMap[r.position]=Number(r.monthly_target)||0;});
+  let salesRows=[];
+  if(staffIds.length){
+    const {data}=await sb.from('sales_data').select('*').in('student_id',staffIds).eq('month',monthStr);
+    salesRows=data||[];
+  }
+  const shortCode=storeShortCode(storeJP);
+  let target=0,result=0;
+  staffList.forEach(function(s){
+    const isRyoten=s.store==='両店';
+    const pct=isRyoten?((storeJP==='エルズ'?(alloc.ailes_pct||50):(alloc.soleil_pct||50))/100):1;
+    target+=Math.round((roleMap[s.position]||0)*pct);
+    let row;
+    if(isRyoten)row=salesRows.find(function(r){return r.student_id===s.id&&r.store===shortCode;});
+    else row=salesRows.find(function(r){return r.student_id===s.id&&!r.store;});
+    if(row)result+=Number(row.meimei_sales||0)+Number(row.free_sales||0)+Number(row.tanden||0);
+  });
+  const out={target:Math.floor(target),result:Math.floor(result)};
+  storeSalesCache[cacheKey]=out;
+  return out;
+}
 
 function yearOptions(){
   const sel=document.getElementById('ev-year');
@@ -215,39 +250,61 @@ async function loadListView(){
   const entryMap={};
   entryData.forEach(function(r){entryMap[r.student_id+'_'+r.criteria_id+'_'+r.month]=r;});
 
-  const wrap=document.getElementById('row-list');
+    const wrap=document.getElementById('row-list');
   if(!list.length){wrap.innerHTML='<div class="empty-msg">対象スタッフがいません</div>';return;}
-  wrap.innerHTML=list.map(function(s){
+  const rowsHtml=await Promise.all(list.map(async function(s){
     const crit=allCriteria.filter(function(c){return c.position===s.position;});
     let total=0;
-    const critLines=crit.map(function(c){
-      let targetSum=0,resultSum=0,hasTarget=false;
-      months.forEach(function(m){
-        const e=entryMap[s.id+'_'+c.id+'_'+m];
-        if(e&&e.target!=null){hasTarget=true;targetSum+=Number(e.target||0);}
-        resultSum+=Number(e&&e.result||0);
-      });
-      let rate=0;
-      if(c.calc_type==='inverse_count'){rate=hasTarget?Math.max(0,1-(resultSum/(targetSum||1))):0;}
-      else{rate=targetSum>0?(resultSum/targetSum):0;}
-      const score=scoreForRate(rate,c.scale_json);
-      total+=score*Number(c.weight||0);
-      return '<div class="crit-line">'
-        +'<div class="crit-line-name">'+esc(c.name)+'</div>'
-        +'<div class="crit-line-nums">目標 '+targetSum.toLocaleString()+' ／ 結果 '+resultSum.toLocaleString()+'</div>'
-        +'<div class="crit-line-score">'+score+'点</div>'
-        +'</div>';
-    }).join('');
+    const critLinesArr=[];
+    for(const c of crit){
+      if(c.data_source==='store_sales'){
+        let targetSum=0,resultSum=0;
+        const monthDetails=[];
+        for(const m of months){
+          const monthData=await getStoreSalesMonth(s.store,year,m);
+          targetSum+=monthData.target;
+          resultSum+=monthData.result;
+          monthDetails.push(MONTH_LABELS[months.indexOf(m)]+' '+monthData.result.toLocaleString()+'円');
+        }
+        const rate=targetSum>0?(resultSum/targetSum):0;
+        const score=scoreForRate(rate,c.scale_json);
+        total+=score*Number(c.weight||0);
+        critLinesArr.push('<div class="crit-line">'
+          +'<div class="crit-line-name">'+esc(c.name)+'</div>'
+          +'<div class="crit-line-nums">'+monthDetails.join('　')+'</div>'
+          +'<div class="crit-line-score">'+score+'点</div>'
+          +'</div>');
+      } else {
+        let targetSum=0,resultSum=0,hasTarget=false;
+        months.forEach(function(m){
+          const e=entryMap[s.id+'_'+c.id+'_'+m];
+          if(e&&e.target!=null){hasTarget=true;targetSum+=Number(e.target||0);}
+          resultSum+=Number(e&&e.result||0);
+        });
+        let rate=0;
+        if(c.calc_type==='inverse_count'){rate=hasTarget?Math.max(0,1-(resultSum/(targetSum||1))):0;}
+        else{rate=targetSum>0?(resultSum/targetSum):0;}
+        const score=scoreForRate(rate,c.scale_json);
+        total+=score*Number(c.weight||0);
+        critLinesArr.push('<div class="crit-line">'
+          +'<div class="crit-line-name">'+esc(c.name)+'</div>'
+          +'<div class="crit-line-nums">目標 '+targetSum.toLocaleString()+' ／ 結果 '+resultSum.toLocaleString()+'</div>'
+          +'<div class="crit-line-score">'+score+'点</div>'
+          +'</div>');
+      }
+    }
     return '<div class="staff-row-wrap" onclick="openDetail(\''+s.id+'\')">'
       +'<div class="staff-row-body">'
       +'<div class="staff-row-left">'
       +'<div class="staff-row-head"><div class="name">'+esc(s.name)+'</div><div class="pos">'+esc(s.position||'')+'</div><div class="store">'+esc(storeLabel(s.store))+'</div></div>'
-      +critLines
+      +critLinesArr.join('')
       +'</div>'
       +'<div class="score-cell">'+total.toFixed(1)+'</div>'
       +'</div>'
       +'</div>';
-  }).join('');
+  }));
+  wrap.innerHTML=rowsHtml.join('');
+
 }
 
 function scoreForRate(rate,scaleJson){
@@ -275,16 +332,18 @@ function calcCriteria(c,months){
   return {targetSum,resultSum,rate,score,weighted};
 }  
 
-async function openDetail(sid){
+  async function openDetail(sid){
   currentSid=sid;
   const st=students.find(function(s){return s.id===sid;});
   if(!st)return;
   document.getElementById('detail-name').textContent=st.name;
   document.getElementById('detail-sub').textContent=(st.position||'')+'　'+storeLabel(st.store);
+  currentDetailStore=st.store;
 
   const year=Number(document.getElementById('ev-year').value);
   const quarter=Number(document.getElementById('ev-quarter').value);
   const months=QUARTER_MONTHS[quarter];
+  currentDetailYear=year;
 
   currentCriteria=allCriteria.filter(function(c){return c.position===st.position;});
 
@@ -292,12 +351,12 @@ async function openDetail(sid){
   entries={};
   (entryData||[]).forEach(function(r){entries[r.criteria_id+'_'+r.month]=r;});
 
-  renderCritList(months);
+  await renderCritList(months);
   document.getElementById('detail-modal').classList.add('show');
 }
 function closeDetailModal(){document.getElementById('detail-modal').classList.remove('show');loadListView();}
 
-function renderCritList(months){
+async function renderCritList(months){
   const wrap=document.getElementById('crit-list');
   if(!currentCriteria.length){
     wrap.innerHTML='<div class="empty-msg">この役職の評価項目がまだ設定されていません</div>';
@@ -305,24 +364,47 @@ function renderCritList(months){
     return;
   }
   let total=0;
-  wrap.innerHTML=currentCriteria.map(function(c){
-    const calc=calcCriteria(c,months);
-    total+=calc.weighted;
-    return '<div class="crit-card">'
-      +'<div class="crit-head"><div class="crit-name">'+esc(c.name)+'</div><div class="crit-weight">重み '+c.weight+'</div></div>'
-      +'<div class="crit-grid">'+months.map(function(m,i){
-        const e=entries[c.id+'_'+m]||{};
-        return '<div><label>'+MONTH_LABELS[i]+' 目標</label><input type="number" class="num-inp" data-cid="'+c.id+'" data-m="'+m+'" data-f="target" value="'+(e.target!=null?e.target:'')+'" onchange="onEntryChange(this)"></div>';
-      }).join('')+'</div>'
-      +'<div class="crit-grid">'+months.map(function(m,i){
-        const e=entries[c.id+'_'+m]||{};
-        return '<div><label>'+MONTH_LABELS[i]+' 結果</label><input type="number" class="num-inp" data-cid="'+c.id+'" data-m="'+m+'" data-f="result" value="'+(e.result!=null?e.result:'')+'" onchange="onEntryChange(this)"></div>';
-      }).join('')+'</div>'
-      +'<div class="crit-result-row"><span>達成率 '+Math.round(calc.rate*100)+'%</span><span class="crit-score">'+calc.score+'点 × '+c.weight+' = '+calc.weighted.toFixed(1)+'</span></div>'
-      +'</div>';
-  }).join('');
+  const cardsHtml=[];
+  for(const c of currentCriteria){
+    if(c.data_source==='store_sales'){
+      let targetSum=0,resultSum=0;
+      const monthRows=[];
+      for(const m of months){
+        const monthData=await getStoreSalesMonth(currentDetailStore,currentDetailYear,m);
+        targetSum+=monthData.target;
+        resultSum+=monthData.result;
+        monthRows.push({m:m,target:monthData.target,result:monthData.result});
+      }
+      const rate=targetSum>0?(resultSum/targetSum):0;
+      const score=scoreForRate(rate,c.scale_json);
+      const weighted=score*Number(c.weight||0);
+      total+=weighted;
+      cardsHtml.push('<div class="crit-card">'
+        +'<div class="crit-head"><div class="crit-name">'+esc(c.name)+'（数値管理と連動・自動取得）</div><div class="crit-weight">重み '+c.weight+'</div></div>'
+        +monthRows.map(function(r,i){return '<div class="crit-result-row"><span>'+MONTH_LABELS[i]+'</span><span>目標 '+r.target.toLocaleString()+'円 ／ 結果 '+r.result.toLocaleString()+'円</span></div>';}).join('')
+        +'<div class="crit-result-row"><span>達成率 '+Math.round(rate*100)+'%</span><span class="crit-score">'+score+'点 × '+c.weight+' = '+weighted.toFixed(1)+'</span></div>'
+        +'</div>');
+    } else {
+      const calc=calcCriteria(c,months);
+      total+=calc.weighted;
+      cardsHtml.push('<div class="crit-card">'
+        +'<div class="crit-head"><div class="crit-name">'+esc(c.name)+'</div><div class="crit-weight">重み '+c.weight+'</div></div>'
+        +'<div class="crit-grid">'+months.map(function(m,i){
+          const e=entries[c.id+'_'+m]||{};
+          return '<div><label>'+MONTH_LABELS[i]+' 目標</label><input type="number" class="num-inp" data-cid="'+c.id+'" data-m="'+m+'" data-f="target" value="'+(e.target!=null?e.target:'')+'" onchange="onEntryChange(this)"></div>';
+        }).join('')+'</div>'
+        +'<div class="crit-grid">'+months.map(function(m,i){
+          const e=entries[c.id+'_'+m]||{};
+          return '<div><label>'+MONTH_LABELS[i]+' 結果</label><input type="number" class="num-inp" data-cid="'+c.id+'" data-m="'+m+'" data-f="result" value="'+(e.result!=null?e.result:'')+'" onchange="onEntryChange(this)"></div>';
+        }).join('')+'</div>'
+        +'<div class="crit-result-row"><span>達成率 '+Math.round(calc.rate*100)+'%</span><span class="crit-score">'+calc.score+'点 × '+c.weight+' = '+calc.weighted.toFixed(1)+'</span></div>'
+        +'</div>');
+    }
+  }
+  wrap.innerHTML=cardsHtml.join('');
   document.getElementById('hero-score').textContent=total.toFixed(1)+'点';
 }
+  
 
 function onEntryChange(el){
   const cid=Number(el.dataset.cid),m=Number(el.dataset.m),f=el.dataset.f,v=el.value===''?null:Number(el.value);
