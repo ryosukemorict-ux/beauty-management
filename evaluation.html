@@ -269,11 +269,11 @@ async function loadListView(){
         const rate=targetSum>0?(resultSum/targetSum):0;
         const score=scoreForRate(rate,c.scale_json);
         total+=score*Number(c.weight||0);
-        critLinesArr.push('<div class="crit-line">'
-          +'<div class="crit-line-name">'+esc(c.name)+'</div>'
-          +'<div class="crit-line-nums">'+monthDetails.join('　')+'</div>'
-          +'<div class="crit-line-score">'+score+'点</div>'
-          +'</div>');
+                    critLinesArr.push('<div class="crit-line" style="flex-wrap:wrap">'
+              +'<div class="crit-line-name">'+esc(c.name)+'</div>'
+              +'<div class="crit-line-nums">'+monthDetails.join('　')+'<br>3か月合計：目標'+targetSum.toLocaleString()+'円／結果'+resultSum.toLocaleString()+'円（達成率'+Math.round(rate*100)+'%）</div>'
+              +'<div class="crit-line-score">'+score+'点</div>'
+              +'</div>');
       } else {
         let targetSum=0,resultSum=0,hasTarget=false;
         months.forEach(function(m){
@@ -286,11 +286,11 @@ async function loadListView(){
         else{rate=targetSum>0?(resultSum/targetSum):0;}
         const score=scoreForRate(rate,c.scale_json);
         total+=score*Number(c.weight||0);
-                critLinesArr.push('<div class="crit-line" style="flex-wrap:wrap">'
-          +'<div class="crit-line-name">'+esc(c.name)+'</div>'
-          +'<div class="crit-line-nums">'+monthDetails.join('　')+'<br>3か月合計：目標'+targetSum.toLocaleString()+'円／結果'+resultSum.toLocaleString()+'円（達成率'+Math.round(rate*100)+'%）</div>'
-          +'<div class="crit-line-score">'+score+'点</div>'
-          +'</div>');  
+                            critLinesArr.push('<div class="crit-line">'
+              +'<div class="crit-line-name">'+esc(c.name)+'</div>'
+              +'<div class="crit-line-nums">目標 '+targetSum.toLocaleString()+' ／ 結果 '+resultSum.toLocaleString()+'</div>'
+              +'<div class="crit-line-score">'+score+'点</div>'
+              +'</div>');
       }
     }
     return '<div class="staff-row-wrap" onclick="openDetail(\''+s.id+'\')">'
