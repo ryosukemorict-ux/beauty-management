@@ -280,7 +280,9 @@ async function renderAdminList(){
 function renderAdminItemsHtml(){
   const wrap=document.getElementById('admin-list');
   wrap.innerHTML=adminItems.map(function(it,i){
+    const checked=it.is_active!==false?'checked':'';
     return '<div class="admin-item">'
+      +'<label style="position:absolute;top:8px;right:36px;font-size:11px;color:var(--mid);display:flex;align-items:center;gap:4px"><input type="checkbox" data-i="'+i+'" data-f="is_active" '+checked+' onchange="updAdminItem(this)">今期使う</label>'
       +'<button class="del" onclick="removeAdminItem('+i+')">×</button>'
       +'<div class="field"><label>項目名</label><input class="inp" data-i="'+i+'" data-f="name" value="'+esc(it.name)+'" onchange="updAdminItem(this)"></div>'
       +'<div class="field"><label>重み</label><input class="inp" type="number" step="0.1" data-i="'+i+'" data-f="weight" value="'+esc(it.weight)+'" onchange="updAdminItem(this)"></div>'
