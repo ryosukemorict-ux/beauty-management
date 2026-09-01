@@ -509,23 +509,26 @@ function renderTable(){
   const list=getSortedList();
   const tb=document.getElementById('sales-tbody');
   if(!list.length){tb.innerHTML='<tr><td colspan="12" class="empty-msg">対象スタッフがいません</td></tr>';return;}
-  tb.innerHTML=list.map(function(s){
-    const d=salesData[getKey(s.id,currentStore)]||{};
-    const result=calcResult(d);
+    tb.innerHTML=list.map(function(s){
+      const isRyotenAll=RYOTEN_STORES.includes(s.store)&&currentStore==='all';
+      const d=isRyotenAll?{}:(salesData[getKey(s.id,currentStore)]||{});
+      const result=isRyotenAll
+        ?Math.round(Number(calcResult(salesData[getKey(s.id,'ailes')]||{}))+Number(calcResult(salesData[getKey(s.id,'soleil')]||{})))
+        :calcResult(d);
     return '<tr>'
       +'<td>'+esc(s.name)+'<span class="pos-badge">'+esc(s.position||'')+'</span></td>'
       +(function(){var rt=roleProductivity[s.position]||0;return '<td><span class="auto-val">'+(rt?rt.toLocaleString():'—')+'</span><span class="auto-val-sub">'+(rt?'(税抜 '+Math.round(rt/(1+TAX_RATE)).toLocaleString()+')':'')+'</span></td>';})()
       +'<td><span class="auto-val" id="result-'+s.id+'">'+(result?Math.round(result*(1+TAX_RATE)).toLocaleString():'—')+'</span>'
       +'<span class="auto-val-sub" id="result-sub-'+s.id+'">'+(result?'(税抜 '+result.toLocaleString()+')':'')+'</span></td>'
-      +'<td><input type="number" class="num-inp" data-sid="'+s.id+'" data-f="meimei_sales" placeholder="0" value="'+esc(d.meimei_sales||'')+'"></td>'
-　　　　+'<td><input type="number" class="num-inp" data-sid="'+s.id+'" data-f="meimei_clients" placeholder="0" value="'+esc(d.meimei_clients||'')+'"></td>'
-　　　　+'<td><input type="number" class="num-inp" data-sid="'+s.id+'" data-f="free_clients" placeholder="0" value="'+esc(d.free_clients||'')+'"></td>'
-      +'<td><input type="number" class="num-inp" data-sid="'+s.id+'" data-f="free_sales" placeholder="0" value="'+(d.free_sales?Math.round(d.free_sales):'')+'"></td>'
-      +'<td><input type="number" class="num-inp" data-sid="'+s.id+'" data-f="unit_price" placeholder="0" value="'+(d.unit_price?Math.round(d.unit_price):'')+'"></td>'
-      +'<td><input type="number" class="num-inp pct" data-sid="'+s.id+'" data-f="return_new" placeholder="0.0" step="0.1" value="'+esc(d.return_new||'')+'"></td>'
-      +'<td><input type="number" class="num-inp pct" data-sid="'+s.id+'" data-f="return_reg" placeholder="0.0" step="0.1" value="'+esc(d.return_reg||'')+'"></td>'
-      +'<td><input type="number" class="num-inp" data-sid="'+s.id+'" data-f="tanden" placeholder="0" value="'+esc(d.tanden||'')+'"></td>'
-      +'<td><select class="tbl-sel" data-sid="'+s.id+'" data-f="late">'+numOpts(20,d.late)+'</select></td>'
+        +'<td><input type="number" class="num-inp" data-sid="'+s.id+'" data-f="meimei_sales" placeholder="0"'+(isRyotenAll?' disabled':'')+' value="'+esc(d.meimei_sales||'')+'"></td>'
+        +'<td><input type="number" class="num-inp" data-sid="'+s.id+'" data-f="meimei_clients" placeholder="0"'+(isRyotenAll?' disabled':'')+' value="'+esc(d.meimei_clients||'')+'"></td>'
+        +'<td><input type="number" class="num-inp" data-sid="'+s.id+'" data-f="free_clients" placeholder="0"'+(isRyotenAll?' disabled':'')+' value="'+esc(d.free_clients||'')+'"></td>'
+        +'<td><input type="number" class="num-inp" data-sid="'+s.id+'" data-f="free_sales" placeholder="0"'+(isRyotenAll?' disabled':'')+' value="'+(d.free_sales?Math.round(d.free_sales):'')+'"></td>'
+        +'<td><input type="number" class="num-inp" data-sid="'+s.id+'" data-f="unit_price" placeholder="0"'+(isRyotenAll?' disabled':'')+' value="'+(d.unit_price?Math.round(d.unit_price):'')+'"></td>'
+        +'<td><input type="number" class="num-inp pct" data-sid="'+s.id+'" data-f="return_new" placeholder="0.0" step="0.1"'+(isRyotenAll?' disabled':'')+' value="'+esc(d.return_new||'')+'"></td>'
+        +'<td><input type="number" class="num-inp pct" data-sid="'+s.id+'" data-f="return_reg" placeholder="0.0" step="0.1"'+(isRyotenAll?' disabled':'')+' value="'+esc(d.return_reg||'')+'"></td>'
+        +'<td><input type="number" class="num-inp" data-sid="'+s.id+'" data-f="tanden" placeholder="0"'+(isRyotenAll?' disabled':'')+' value="'+esc(d.tanden||'')+'"></td>'
+        +'<td><select class="tbl-sel" data-sid="'+s.id+'" data-f="late"'+(isRyotenAll?' disabled':'')+'>'+numOpts(20,d.late)+'</select></td>'
       +'</tr>';
   }).join('');
 
