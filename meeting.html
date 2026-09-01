@@ -578,7 +578,8 @@ function renderExItems(){
   }).join('');
   autoGrowAll(document.getElementById('ex-items'));
 }
-function updExItem(el){exItems[el.dataset.i][el.dataset.f]=el.value;}
+function updExItem(el){exItems[el.dataset.i][el.dataset.f]=el.value;saveExec(true);}
+
 function addExecItem(){exItems.push({agenda:'',decision:''});renderExItems();}
 function removeExecItem(i){exItems.splice(i,1);renderExItems();}
 async function loadExec(){
@@ -589,11 +590,11 @@ async function loadExec(){
   exItems=(data&&data.agenda_items&&data.agenda_items.length)?data.agenda_items:[{agenda:'',decision:''},{agenda:'',decision:''},{agenda:'',decision:''}];
   renderExItems();
 }
-async function saveExec(){
+async function saveExec(silent){
   const month=document.getElementById('ex-month').value;
   const {error}=await sb.from('executive_meetings').upsert({month,agenda_items:exItems,updated_at:new Date().toISOString()},{onConflict:'month'});
-  if(error){alert('エラー: '+error.message);return;}
-  alert('保存しました');
+  if(error){if(!silent)alert('エラー: '+error.message);return;}
+  if(!silent)alert('保存しました');
 }
 
 /* ===== 起動 ===== */
