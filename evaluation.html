@@ -355,10 +355,25 @@ async function renderAdminList(){
   renderAdminItemsHtml();
 }
 
+const SCORE_STEPS=[10,20,30,40,50,60,70,80,90,100];
+function scaleToPctMap(scaleJson){
+  const map={};
+  (scaleJson||[]).forEach(function(pair){map[pair[1]]=Math.round(pair[0]*1000)/10;});
+  return map;
+}
 function renderAdminItemsHtml(){
   const wrap=document.getElementById('admin-list');
   wrap.innerHTML=adminItems.map(function(it,i){
     const checked=it.is_active!==false?'checked':'';
+    const pctMap=scaleToPctMap(it.scale_json);
+    const scaleRowsHtml=SCORE_STEPS.map(function(score){
+      const pct=pctMap[score]!=null?pctMap[score]:'';
+      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'
+        +'<div style="width:52px;font-size:12px;color:var(--mid);text-align:right">'+score+'点</div>'
+        +'<input class="inp" type="number" step="0.1" style="width:90px" data-i="'+i+'" data-score="'+score+'" data-f="scale_pct" value="'+pct+'" placeholder="%" onchange="updScalePct(this)">'
+        +'<span style="font-size:12px;color:var(--soft)">％達成で</span>'
+        +'</div>';
+    }).join('');
     return '<div class="admin-item">'
       +'<label style="position:absolute;top:8px;right:36px;font-size:11px;color:var(--mid);display:flex;align-items:center;gap:4px"><input type="checkbox" data-i="'+i+'" data-f="is_active" '+checked+' onchange="updAdminItem(this)">今期使う</label>'
       +'<button class="del" onclick="removeAdminItem('+i+')">×</button>'
@@ -369,10 +384,16 @@ function renderAdminItemsHtml(){
       +'<option value="ratio"'+(it.calc_type==='ratio'?' selected':'')+'>ratio</option>'
       +'<option value="inverse_count"'+(it.calc_type==='inverse_count'?' selected':'')+'>inverse_count</option>'
       +'</select></div>'
-      +'<div class="field"><label>尺度（達成率と点数のペアをJSON配列で。例: [[0.75,10],[1.0,60],[1.4,100]]）</label>'
-      +'<textarea class="txt" data-i="'+i+'" data-f="scale_json" onchange="updAdminItem(this)">'+esc(JSON.stringify(it.scale_json))+'</textarea></div>'
+      +'<div class="field"><label>尺度（各点数に対応する達成率％。60点＝100％がベースの目安ですが自由に変更できます）</label>'+scaleRowsHtml+'</div>'
       +'</div>';
   }).join('')||'<div class="empty-msg">項目がありません。「＋項目を追加」から作成してください</div>';
+}
+function updScalePct(el){
+  const i=Number(el.dataset.i),score=Number(el.dataset.score),val=el.value===''?null:Number(el.value);
+  const scale=(adminItems[i].scale_json||[]).filter(function(pair){return pair[1]!==score;});
+  if(val!=null)scale.push([val/100,score]);
+  scale.sort(function(a,b){return a[1]-b[1];});
+  adminItems[i].scale_json=scale;
 }
 
 function updAdminItem(el){
