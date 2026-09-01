@@ -496,7 +496,14 @@ function repNoteStudentOpts(){
 }
 function onRepTabOpen(){
   const sel=document.getElementById('rn-student');
-  if(!sel.options.length)sel.innerHTML='<option value="">選択してください</option>'+repNoteStudentOpts();
+  if(!sel.options.length){
+    sel.innerHTML='<option value="">選択してください</option>'
+      +'<option value="STORE_ERUZU">ailes全体</option>'
+      +'<option value="STORE_SOLEIL">soleil全体</option>'
+      +'<option value="STORE_BOTH">両店共通</option>'
+      +'<option value="OTHER">その他（個人に紐づかないメモ）</option>'
+      +repNoteStudentOpts();
+  }
   if(!document.getElementById('rn-date').value)document.getElementById('rn-date').value=new Date().toISOString().split('T')[0];
   renderRepNotes();
 }
