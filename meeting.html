@@ -170,7 +170,7 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
         </select>
       </div>
       <div class="field"><label>内容</label><textarea class="txt" id="rn-content"></textarea></div>
-      <div class="save-row"><button class="btn btn-dark" onclick="addRepNote()">追加する</button></div>
+<div class="save-row"><button class="btn btn-dark" id="rn-add-btn" onclick="addRepNote()">追加する</button></div>
     </div>
     <div class="card-title" style="margin:14px 4px 8px">記録一覧（新しい順）</div>
     <div id="rn-list"></div>
@@ -190,7 +190,7 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
       <div id="ex-items"></div>
       <button class="btn btn-outline btn-sm" onclick="addExecItem()">＋ 議題を追加</button>
     </div>
-<div class="save-row"><button class="btn btn-dark" id="rn-add-btn" onclick="addRepNote()">追加する</button></div>
+<div class="save-row"><button class="btn btn-dark" onclick="saveExec()">保存</button></div>
 
   </div>
 </div>
