@@ -44,11 +44,11 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
 .staff-row-head .store{font-size:10px;color:var(--soft);}
 .crit-line{display:flex;align-items:center;gap:8px;font-size:11.5px;padding:3px 0;border-top:1px dashed #f0e5d5;}
 .crit-line:first-of-type{border-top:none;}
-.crit-line-name{width:150px;flex-shrink:0;color:var(--dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.crit-line-name{width:240px;flex-shrink:0;color:var(--dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .crit-line-nums{flex:1;color:var(--mid);}
 .crit-line-score{width:44px;text-align:right;font-weight:700;color:var(--dark);}
-.score-cell{width:64px;flex-shrink:0;background:var(--dark);color:var(--gold-light);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;font-weight:700;line-height:1.6;text-align:center;}
-.score-cell br+*{font-size:16px;color:var(--gold-light);}
+.score-cell{width:90px;flex-shrink:0;background:var(--dark);color:var(--gold-light);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:28px;font-weight:700;line-height:1.5;text-align:center;gap:2px;}
+.score-cell::before{content:"合計";font-size:11px;font-weight:400;color:var(--soft);}
 .empty-msg{text-align:center;color:var(--soft);padding:30px;font-size:13px;}
 .locked{text-align:center;padding:60px 20px;color:var(--mid);font-size:14px;}
 .admin-row{display:flex;justify-content:flex-end;margin-bottom:10px;gap:8px;}
@@ -244,7 +244,7 @@ async function loadListView(){
       +'<div class="staff-row-head"><div class="name">'+esc(s.name)+'</div><div class="pos">'+esc(s.position||'')+'</div><div class="store">'+esc(storeLabel(s.store))+'</div></div>'
       +critLines
       +'</div>'
-      +'<div class="score-cell">合計<br>'+total.toFixed(1)+'</div>'
+      +'<div class="score-cell">'+total.toFixed(1)+'</div>'
       +'</div>'
       +'</div>';
   }).join('');
