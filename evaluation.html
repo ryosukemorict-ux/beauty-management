@@ -303,6 +303,8 @@ function updAdminItem(el){
     try{adminItems[i][f]=JSON.parse(el.value);}catch(e){alert('尺度のJSON形式が正しくありません');}
   } else if(f==='weight'){
     adminItems[i][f]=Number(el.value);
+  } else if(f==='is_active'){
+    adminItems[i][f]=el.checked;
   } else {
     adminItems[i][f]=el.value;
   }
@@ -319,7 +321,7 @@ async function saveAdminItems(){
   for(let i=0;i<adminItems.length;i++){
     const it=adminItems[i];
     it.sort_order=i+1;
-    const payload={position:pos,name:it.name,weight:it.weight,calc_type:it.calc_type,scale_json:it.scale_json,sort_order:it.sort_order,is_active:true};
+    const payload={position:pos,name:it.name,weight:it.weight,calc_type:it.calc_type,scale_json:it.scale_json,sort_order:it.sort_order,is_active:it.is_active!==false};
     if(it.id){
       await sb.from('eval_criteria').update(payload).eq('id',it.id);
     } else {
