@@ -205,7 +205,7 @@ async function loadListView(){
   wrap.innerHTML=list.map(function(s){
     const crit=allCriteria.filter(function(c){return c.position===s.position;});
     let total=0;
-        crit.forEach(function(c){
+    const critLines=crit.map(function(c){
       let targetSum=0,resultSum=0,hasTarget=false;
       months.forEach(function(m){
         const e=entryMap[s.id+'_'+c.id+'_'+m];
@@ -215,13 +215,22 @@ async function loadListView(){
       let rate=0;
       if(c.calc_type==='inverse_count'){rate=hasTarget?Math.max(0,1-(resultSum/(targetSum||1))):0;}
       else{rate=targetSum>0?(resultSum/targetSum):0;}
-      total+=scoreForRate(rate,c.scale_json)*Number(c.weight||0);
-    });
-    return '<div class="staff-row" onclick="openDetail(\''+s.id+'\')">'
-      +'<div class="name">'+esc(s.name)+'</div>'
-      +'<div class="pos">'+esc(s.position||'')+'</div>'
-      +'<div class="store">'+esc(storeLabel(s.store))+'</div>'
-      +'<div class="score">'+total.toFixed(1)+'</div>'
+      const score=scoreForRate(rate,c.scale_json);
+      total+=score*Number(c.weight||0);
+      return '<div class="crit-line">'
+        +'<div class="crit-line-name">'+esc(c.name)+'</div>'
+        +'<div class="crit-line-nums">目標 '+targetSum.toLocaleString()+' ／ 結果 '+resultSum.toLocaleString()+'</div>'
+        +'<div class="crit-line-score">'+score+'点</div>'
+        +'</div>';
+    }).join('');
+    return '<div class="staff-row-wrap" onclick="openDetail(\''+s.id+'\')">'
+      +'<div class="staff-row-body">'
+      +'<div class="staff-row-left">'
+      +'<div class="staff-row-head"><div class="name">'+esc(s.name)+'</div><div class="pos">'+esc(s.position||'')+'</div><div class="store">'+esc(storeLabel(s.store))+'</div></div>'
+      +critLines
+      +'</div>'
+      +'<div class="score-cell">合計<br>'+total.toFixed(1)+'</div>'
+      +'</div>'
       +'</div>';
   }).join('');
 }
