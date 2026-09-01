@@ -47,6 +47,8 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
 .crit-line-name{width:240px;flex-shrink:0;color:var(--dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .crit-line-nums{flex:1;color:var(--mid);}
 .crit-line-score{width:44px;text-align:right;font-weight:700;color:var(--dark);}
+.month-badge{display:inline-block;font-size:10px;color:var(--mid);background:#f0ece5;padding:2px 7px;border-radius:8px;margin-right:4px;}
+.month-badge.hit{color:var(--accent);background:var(--gold-light);font-weight:700;}
 .score-cell{width:90px;flex-shrink:0;background:var(--dark);color:var(--gold-light);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:28px;font-weight:700;line-height:1.5;text-align:center;gap:2px;}
 .score-cell::before{content:"合計";font-size:11px;font-weight:400;color:var(--soft);}
 .empty-msg{text-align:center;color:var(--soft);padding:30px;font-size:13px;}
@@ -257,21 +259,22 @@ async function loadListView(){
     let total=0;
     const critLinesArr=[];
     for(const c of crit){
-      if(c.data_source==='store_sales'){
-        let targetSum=0,resultSum=0;
-        const monthDetails=[];
-        for(const m of months){
-          const monthData=await getStoreSalesMonth(s.store,year,m);
-          targetSum+=monthData.target;
-          resultSum+=monthData.result;
-          monthDetails.push(m+'月 目標'+monthData.target.toLocaleString()+'円／結果'+monthData.result.toLocaleString()+'円');
-        }
-        const rate=targetSum>0?(resultSum/targetSum):0;
-        const score=scoreForRate(rate,c.scale_json);
-        total+=score*Number(c.weight||0);
-                    critLinesArr.push('<div class="crit-line" style="flex-wrap:wrap">'
+                if(c.data_source==='store_sales'){
+            let targetSum=0,resultSum=0;
+            const monthBadges=[];
+            for(const m of months){
+              const monthData=await getStoreSalesMonth(s.store,year,m);
+              targetSum+=monthData.target;
+              resultSum+=monthData.result;
+              const hit=monthData.target>0&&monthData.result>=monthData.target;
+              monthBadges.push('<span class="month-badge'+(hit?' hit':'')+'">'+m+'月 '+monthData.result.toLocaleString()+'円</span>');
+            }
+            const rate=targetSum>0?(resultSum/targetSum):0;
+            const score=scoreForRate(rate,c.scale_json);
+            total+=score*Number(c.weight||0);
+            critLinesArr.push('<div class="crit-line" style="flex-wrap:wrap">'
               +'<div class="crit-line-name">'+esc(c.name)+'</div>'
-              +'<div class="crit-line-nums">'+monthDetails.join('　')+'<br>3か月合計：目標'+targetSum.toLocaleString()+'円／結果'+resultSum.toLocaleString()+'円（達成率'+Math.round(rate*100)+'%）</div>'
+              +'<div class="crit-line-nums">'+monthBadges.join('')+'<br>目標 '+targetSum.toLocaleString()+' ／ 結果 '+resultSum.toLocaleString()+'（達成率'+Math.round(rate*100)+'%）</div>'
               +'<div class="crit-line-score">'+score+'点</div>'
               +'</div>');
       } else {
@@ -366,14 +369,15 @@ async function renderCritList(months){
   let total=0;
   const cardsHtml=[];
   for(const c of currentCriteria){
-    if(c.data_source==='store_sales'){
+        if(c.data_source==='store_sales'){
       let targetSum=0,resultSum=0;
-      const monthRows=[];
+      const monthBadges=[];
       for(const m of months){
         const monthData=await getStoreSalesMonth(currentDetailStore,currentDetailYear,m);
         targetSum+=monthData.target;
         resultSum+=monthData.result;
-        monthRows.push({m:m,target:monthData.target,result:monthData.result});
+        const hit=monthData.target>0&&monthData.result>=monthData.target;
+        monthBadges.push('<span class="month-badge'+(hit?' hit':'')+'">'+m+'月 '+monthData.result.toLocaleString()+'円</span>');
       }
       const rate=targetSum>0?(resultSum/targetSum):0;
       const score=scoreForRate(rate,c.scale_json);
@@ -381,8 +385,8 @@ async function renderCritList(months){
       total+=weighted;
       cardsHtml.push('<div class="crit-card">'
         +'<div class="crit-head"><div class="crit-name">'+esc(c.name)+'（数値管理と連動・自動取得）</div><div class="crit-weight">重み '+c.weight+'</div></div>'
-        +monthRows.map(function(r){return '<div class="crit-result-row"><span>'+r.m+'月</span><span>目標 '+r.target.toLocaleString()+'円 ／ 結果 '+r.result.toLocaleString()+'円</span></div>';}).join('')
-        +'<div class="crit-result-row" style="border-top:1px solid var(--gold-light);padding-top:8px;margin-top:8px"><span>3か月合計</span><span>目標 '+targetSum.toLocaleString()+'円 ／ 結果 '+resultSum.toLocaleString()+'円</span></div>'
+        +'<div style="margin-bottom:8px">'+monthBadges.join('')+'</div>'
+        +'<div class="crit-result-row"><span>3か月合計</span><span>目標 '+targetSum.toLocaleString()+'円 ／ 結果 '+resultSum.toLocaleString()+'円</span></div>'
         +'<div class="crit-result-row"><span>達成率 '+Math.round(rate*100)+'%</span><span class="crit-score">'+score+'点 × '+c.weight+' = '+weighted.toFixed(1)+'</span></div>'
         +'</div>');
     } else {
