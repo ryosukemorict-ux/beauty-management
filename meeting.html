@@ -191,8 +191,7 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
       <div id="ex-items"></div>
       <button class="btn btn-outline btn-sm" onclick="addExecItem()">＋ 議題を追加</button>
     </div>
-    +'<div class="save-row"><button class="btn btn-dark" onclick="saveStoreMeeting(\''+store+'\')">'+storeLabel(store)+'を保存</button></div>';
-
+    <div class="save-row"><button class="btn btn-dark" onclick="saveExec()">保存</button></div>
   </div>
 </div>
 
@@ -271,7 +270,7 @@ function moBlockHtml(store){
     +'<div class="field"><label>ACTION(改善)</label><textarea class="txt" id="mo-cur-action-'+store+'"></textarea></div>'
     +'<div class="field"><label>その他報告</label><textarea class="txt" id="mo-cur-other-'+store+'"></textarea></div>'
     +'<div class="field"><label>その他権限要求</label><textarea class="txt" id="mo-cur-auth-'+store+'"></textarea></div>'
-    +'<div class="save-row"><button class="btn btn-dark" onclick="saveMonthly(\''+store+'\')">'+store+'を保存</button></div>'
+      +'<div class="save-row"><button class="btn btn-dark" onclick="saveMonthly(\''+store+'\')">'+storeLabel(store)+'を保存</button></div>'
     +'</div>';
 }
 async function fillMonthlyBlock(store,month){
@@ -341,7 +340,7 @@ function smBlockHtml(store){
     +'<div class="field"><label>日時</label><input class="inp" type="text" id="sm-next-date-'+store+'" placeholder="例：2026年8月29日（土）"></div>'
     +'<div class="field"><label>議題案</label><input class="inp" type="text" id="sm-next-agenda-'+store+'"></div>'
     +'<div class="field"><label>進行役</label><input class="inp" type="text" id="sm-next-facilitator-'+store+'"></div></div>'
-    +'<div class="save-row"><button class="btn btn-dark" onclick="saveStoreMeeting(\''+store+'\')">'+store+'を保存</button></div>';
+      +'<div class="save-row"><button class="btn btn-dark" onclick="saveStoreMeeting(\''+store+'\')">'+storeLabel(store)+'を保存</button></div>';
 }
 function renderSmItems(store){
   document.getElementById('sm-items-'+store).innerHTML=smItemsByStore[store].map(function(it,i){
