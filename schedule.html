@@ -248,7 +248,7 @@ function shiftYear(d){calYear+=d;loadYearEvents();}
 
 async function loadStudents(){
   const {data}=await sb.from('students').select('id,name,store,is_active').order('created_at');
-  students=(data||[]).filter(function(s){return s.is_active!==false;});
+  students=(data||[]).filter(function(s){return s.is_active!==false&&s.name!=='森亮輔';});
 }
 
 async function loadEvents(){
