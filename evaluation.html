@@ -356,6 +356,7 @@ async function renderAdminList(){
 }
 
 const SCORE_STEPS=[10,20,30,40,50,60,70,80,90,100];
+const WEIGHT_OPTIONS=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0];
 function scaleToPctMap(scaleJson){
   const map={};
   (scaleJson||[]).forEach(function(pair){map[pair[1]]=Math.round(pair[0]*1000)/10;});
@@ -368,21 +369,25 @@ function renderAdminItemsHtml(){
     const pctMap=scaleToPctMap(it.scale_json);
     const scaleRowsHtml=SCORE_STEPS.map(function(score){
       const pct=pctMap[score]!=null?pctMap[score]:'';
-      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'
-        +'<div style="width:52px;font-size:12px;color:var(--mid);text-align:right">'+score+'点</div>'
+      const isBase=score===60;
+      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;'+(isBase?'background:#fdf3df;border-radius:6px;padding:3px 4px':'')+'">'
+        +'<div style="width:56px;font-size:12px;color:'+(isBase?'var(--accent)':'var(--mid)')+';text-align:right;font-weight:'+(isBase?'700':'400')+'">'+score+'点'+(isBase?'（基準）':'')+'</div>'
         +'<input class="inp" type="number" step="0.1" style="width:90px" data-i="'+i+'" data-score="'+score+'" data-f="scale_pct" value="'+pct+'" placeholder="%" onchange="updScalePct(this)">'
         +'<span style="font-size:12px;color:var(--soft)">％達成で</span>'
         +'</div>';
+    }).join('');
+    const weightOptsHtml=WEIGHT_OPTIONS.map(function(w){
+      return '<option value="'+w+'"'+(Number(it.weight)===w?' selected':'')+'>'+Math.round(w*100)+'%</option>';
     }).join('');
     return '<div class="admin-item">'
       +'<label style="position:absolute;top:8px;right:36px;font-size:11px;color:var(--mid);display:flex;align-items:center;gap:4px"><input type="checkbox" data-i="'+i+'" data-f="is_active" '+checked+' onchange="updAdminItem(this)">今期使う</label>'
       +'<button class="del" onclick="removeAdminItem('+i+')">×</button>'
       +'<div class="field"><label>項目名</label><input class="inp" data-i="'+i+'" data-f="name" value="'+esc(it.name)+'" onchange="updAdminItem(this)"></div>'
-      +'<div class="field"><label>重み</label><input class="inp" type="number" step="0.1" data-i="'+i+'" data-f="weight" value="'+esc(it.weight)+'" onchange="updAdminItem(this)"></div>'
-      +'<div class="field"><label>計算方式（ratio＝目標に対する結果の割合／inverse_count＝少ないほど高評価）</label>'
+      +'<div class="field"><label>重み（この項目が合計点に占める割合）</label><select class="inp" data-i="'+i+'" data-f="weight" onchange="updAdminItem(this)">'+weightOptsHtml+'</select></div>'
+      +'<div class="field"><label>評価の向き</label>'
       +'<select class="inp" data-i="'+i+'" data-f="calc_type" onchange="updAdminItem(this)">'
-      +'<option value="ratio"'+(it.calc_type==='ratio'?' selected':'')+'>ratio</option>'
-      +'<option value="inverse_count"'+(it.calc_type==='inverse_count'?' selected':'')+'>inverse_count</option>'
+      +'<option value="ratio"'+(it.calc_type==='ratio'?' selected':'')+'>数値が多いほど高評価（売上・件数など）</option>'
+      +'<option value="inverse_count"'+(it.calc_type==='inverse_count'?' selected':'')+'>数値が少ないほど高評価（遅刻・欠勤など）</option>'
       +'</select></div>'
       +'<div class="field"><label>尺度（各点数に対応する達成率％。60点＝100％がベースの目安ですが自由に変更できます）</label>'+scaleRowsHtml+'</div>'
       +'</div>';
