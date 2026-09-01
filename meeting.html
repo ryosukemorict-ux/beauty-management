@@ -156,6 +156,7 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
   <div class="panel" id="panel-repnote">
     <div class="filter-row">
       <select class="sel" id="rn-student" onchange="renderRepNotes()" style="min-width:180px"></select>
+      <input class="inp" id="rn-search" placeholder="内容・記録者で検索" oninput="renderRepNotes()" style="max-width:220px">
     </div>
     <div class="card">
       <div class="card-title">記録を追加</div>
@@ -535,10 +536,19 @@ async function addRepNote(){
 }
 async function renderRepNotes(){
   const student_id=document.getElementById('rn-student').value;
+  const keyword=(document.getElementById('rn-search').value||'').trim().toLowerCase();
   const list=document.getElementById('rn-list');
   let q=sb.from('rep_staff_notes').select('*').order('record_date',{ascending:false}).order('created_at',{ascending:false});
   if(student_id)q=q.eq('student_id',student_id);
-  const {data}=await q;
+  let {data}=await q;
+  if(keyword){
+    data=(data||[]).filter(function(r){
+      const st=students.find(function(s){return s.id===r.student_id;});
+      const name=st?st.name:(r.target_label||'');
+      const hay=[r.content,r.created_by,r.category,name].join(' ').toLowerCase();
+      return hay.indexOf(keyword)!==-1;
+    });
+  }
   if(!data||!data.length){list.innerHTML='<div class="empty-msg">記録がありません</div>';return;}
   list.innerHTML=data.map(function(r){
     const st=students.find(function(s){return s.id===r.student_id;});
