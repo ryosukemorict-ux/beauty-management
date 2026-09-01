@@ -293,7 +293,7 @@ async function loadListView(){
             const score=scoreForRate(rate,c.scale_json);
             total+=score*Number(c.weight||0);
                   critLinesArr.push('<div class="store-sales-line">'
-              +'<div class="store-sales-name">'+esc(c.name.replace(/（/,'<br>（'))+'</div>'
+          +'<div class="store-sales-name">'+esc(c.name).replace(/（/,'<br>（')+'</div>'
               +'<div class="month-cols">'+monthCols.join('')
               +'<div class="total-col"><div class="total-col-label">3か月合計</div><div class="total-col-nums">'+targetSum.toLocaleString()+'→'+resultSum.toLocaleString()+'</div><div class="total-col-rate">'+Math.round(rate*100)+'%</div></div>'
               +'</div>'
