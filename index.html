@@ -27,7 +27,7 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
 .nav-tab{font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:500;padding:12px 18px;border:none;background:none;color:var(--mid);cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all 0.15s;}
 .nav-tab:hover{color:var(--dark);}
 .nav-tab.active{color:var(--gold);border-bottom-color:var(--gold);font-weight:700;}
-.page{display:none;padding:20px 16px 80px;max-width:1400px;margin:0 auto;}
+.page{display:none;padding:20px 16px 80px;max-width:1400px;margin:0 auto;}  
 .page.active{display:block;}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;align-items:center;justify-content:center;}
 .modal-overlay.show{display:flex;}
@@ -481,7 +481,7 @@ const FUNC_LIST=[
   {id:'sales',icon:'📊',name:'数値管理',desc:'月次売上・数値の管理',minRole:null,url:'sales.html'},
     {id:'task',icon:'✅',name:'タスク管理',desc:'役職ごとのタスク管理',minRole:null,url:'task.html'},
     {id:'meeting',icon:'📝',name:'会議報告',desc:'幹部・店舗会議の記録',minRole:'meeting_viewer',url:'meeting.html'},
-  {id:'evaluation',icon:'⭐',name:'人事評価制度',desc:'評価の記録と管理',minRole:null,comingSoon:true},
+      {id:'evaluation',icon:'⭐',name:'人事評価制度',desc:'評価の記録と管理',minRole:null,url:'evaluation.html'},
   {id:'schedule',icon:'📆',name:'年間スケジュール',desc:'年間の予定管理',minRole:null,url:'schedule.html'},
 ];
 
