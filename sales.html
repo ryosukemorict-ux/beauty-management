@@ -12,7 +12,7 @@
 body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--dark);min-height:100vh;}
 .loading-screen{position:fixed;inset:0;background:var(--cream);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;z-index:9999;}
 .loading-spinner{width:40px;height:40px;border:3px solid var(--gold-light);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes spin{to{transform:rotate(360deg);}}  
 .loading-text{font-size:13px;color:var(--mid);}
 .top-bar{background:var(--dark);color:var(--gold-light);padding:12px 20px;display:flex;align-items:center;gap:12px;}
 .top-bar-title{font-family:'Playfair Display',serif;font-size:18px;letter-spacing:2px;}
@@ -447,8 +447,8 @@ function switchStore(store){
 
 function getStaffList(){
   let list=students.slice();
-  if(currentStore==='ailes')list=list.filter(function(s){return s.store==='エルズ';});
-  else if(currentStore==='soleil')list=list.filter(function(s){return s.store==='soleil';});
+  if(currentStore==='ailes')list=list.filter(function(s){return s.store==='エルズ'||RYOTEN_STORES.includes(s.store);});
+  else if(currentStore==='soleil')list=list.filter(function(s){return s.store==='soleil'||RYOTEN_STORES.includes(s.store);});
   list.sort(function(a,b){
     const ai=POS_ORDER.indexOf(a.position||'');
     const bi=POS_ORDER.indexOf(b.position||'');
@@ -457,7 +457,11 @@ function getStaffList(){
   return list;
 }
 
-function getKey(sid){return currentMonth+'_'+sid;}
+function getKey(sid,store){
+  const s=students.find(function(x){return x.id===sid;});
+  if(s&&RYOTEN_STORES.includes(s.store)&&store)return currentMonth+'_'+sid+'_'+store;
+  return currentMonth+'_'+sid;
+}
 
 function sortBy(field,asc){
   sortField=field;
@@ -506,7 +510,7 @@ function renderTable(){
   const tb=document.getElementById('sales-tbody');
   if(!list.length){tb.innerHTML='<tr><td colspan="12" class="empty-msg">対象スタッフがいません</td></tr>';return;}
   tb.innerHTML=list.map(function(s){
-    const d=salesData[getKey(s.id)]||{};
+    const d=salesData[getKey(s.id,currentStore)]||{};
     const result=calcResult(d);
     return '<tr>'
       +'<td>'+esc(s.name)+'<span class="pos-badge">'+esc(s.position||'')+'</span></td>'
@@ -527,7 +531,7 @@ function renderTable(){
 
   tb.querySelectorAll('input,select').forEach(function(el){
     el.addEventListener('change',function(){
-      const sid=el.dataset.sid,field=el.dataset.f,val=el.value===''?null:Number(el.value),key=getKey(sid);
+      const sid=el.dataset.sid,field=el.dataset.f,val=el.value===''?null:Number(el.value),key=getKey(sid,currentStore);
       if(!salesData[key])salesData[key]={};
       salesData[key][field]=val;
       const result=calcResult(salesData[key]);
@@ -536,30 +540,35 @@ function renderTable(){
       const el3=document.getElementById('result-sub-'+sid);
       if(el3)el3.textContent=result?'(税抜 '+result.toLocaleString()+')':'';
       updateTotals();
-      saveSalesData(sid,field,val);
+          saveSalesData(sid,field,val,currentStore);
     });
   });
   updateTotals();
 }
-
+  
 function updateTotals(){
   let list=students.slice();
   if(currentStore==='ailes')list=list.filter(function(s){return s.store==='エルズ'||RYOTEN_STORES.includes(s.store);});
   else if(currentStore==='soleil')list=list.filter(function(s){return s.store==='soleil'||RYOTEN_STORES.includes(s.store);});
   let target=0,result=0,meimei=0,free=0,clients=0,tanden=0;
   list.forEach(function(s){
-    const d=salesData[getKey(s.id)]||{};
-    // 両店スタッフは按分して計上
-    const pct=RYOTEN_STORES.includes(s.store)
+    const isRyoten=RYOTEN_STORES.includes(s.store);
+    const targetPct=isRyoten
       ?(currentStore==='ailes'?(allocation.ailes_pct||50)/100
         :currentStore==='soleil'?(allocation.soleil_pct||50)/100:1)
       :1;
-    target+=Math.round(Number(roleProductivity[s.position]||0)*pct);
-    result+=Math.round(calcResult(d)*pct);
-    meimei+=Math.round(Number(d.meimei_sales||0)*pct);
-    free+=Math.round(Number(d.free_sales||0)*pct);
-    clients+=Math.round((Number(d.meimei_clients||0)+Number(d.free_clients||0))*pct);
-    tanden+=Math.round(Number(d.tanden||0)*pct);
+    target+=Math.round(Number(roleProductivity[s.position]||0)*targetPct);
+    let dList;
+    if(isRyoten&&currentStore==='all')dList=[salesData[getKey(s.id,'ailes')]||{},salesData[getKey(s.id,'soleil')]||{}];
+    else if(isRyoten)dList=[salesData[getKey(s.id,currentStore)]||{}];
+    else dList=[salesData[getKey(s.id)]||{}];
+    dList.forEach(function(d){
+      result+=Math.round(calcResult(d));
+      meimei+=Math.round(Number(d.meimei_sales||0));
+      free+=Math.round(Number(d.free_sales||0));
+      clients+=Math.round(Number(d.meimei_clients||0)+Number(d.free_clients||0));
+      tanden+=Math.round(Number(d.tanden||0));
+    });
   });
   document.getElementById('tot-target').textContent=target?'¥'+target.toLocaleString():'—';
   document.getElementById('tot-target-sub').textContent=target?'(税抜 ¥'+Math.round(target/(1+TAX_RATE)).toLocaleString()+')':'';
@@ -646,14 +655,16 @@ async function loadSalesData(){
   }
 }
 
-async function saveSalesData(sid,field,val){
-  const key=currentMonth+'_'+sid;
+async function saveSalesData(sid,field,val,store){
+  const key=getKey(sid,store);
   const existing=salesData[key];
   if(existing&&existing.db_id){
     await sb.from('sales_data').update({[field]:val,updated_at:new Date().toISOString()}).eq('id',existing.db_id);
   } else {
+    const s=students.find(function(x){return x.id===sid;});
+    const storeVal=(s&&RYOTEN_STORES.includes(s.store)&&store)?store:null;
     const {data}=await sb.from('sales_data').insert({
-      month:currentMonth,student_id:sid,[field]:val
+      month:currentMonth,student_id:sid,store:storeVal,[field]:val
     }).select().single();
     if(data){
       if(!salesData[key])salesData[key]={};
@@ -661,7 +672,6 @@ async function saveSalesData(sid,field,val){
     }
   }
 }
-
 document.getElementById('add-month-modal').addEventListener('click',function(e){
   if(e.target===this)closeAddModal();
 });
