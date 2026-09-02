@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="assignment-history.js"></script>
 <style>
 :root{--cream:#faf6f0;--gold:#c9a96e;--gold-light:#e8d5b0;--dark:#1a1410;--mid:#7a6a58;--soft:#c4b49e;--accent:#8b5e3c;--green:#4a7c59;--red:#c0392b;--blue:#2980b9;}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -164,6 +165,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const __today=new Date();
 let currentYear=__today.getFullYear(),currentMonth=__today.getMonth()+1,rankYear=__today.getFullYear(),rankMonth=__today.getMonth()+1;
 let allStaff=[],allReservations=[];
+let assignHistory=[];
 let growthChart=null,storeChartObj=null;
 let saveTimers={};
 
@@ -179,6 +181,7 @@ async function init(){
       return (ai===-1?99:ai)-(bi===-1?99:bi);
     });
   }
+  assignHistory=await loadAssignmentHistory(sb);
   await loadReservations();
   renderTable();
 }
@@ -215,10 +218,17 @@ function changeMonthRank(d){
   renderRanking();
 }
 
+function getStoreForDate(s,monthStr){
+  const v=valueAsOf(assignHistory,s.id,'store',monthStr+'-01');
+  return v||s.store;
+}
 function getStaff(filterId){
-  const f=document.getElementById(filterId).value;return allStaff.filter(s=>{
-    if(f==='els')return s.store==='els'||s.store==='エルズ';
-    if(f==='soleil')return s.store==='soleil'||s.store==='soleil by ailes';
+  const f=document.getElementById(filterId).value;
+  const monthStr=currentYear+'-'+String(currentMonth).padStart(2,'0');
+  return allStaff.filter(s=>{
+    const st=getStoreForDate(s,monthStr);
+    if(f==='els')return st==='els'||st==='エルズ';
+    if(f==='soleil')return st==='soleil'||st==='soleil by ailes';
     return true;
   }).filter(s=>posOrder.includes(s.position));
 }
