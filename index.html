@@ -6,6 +6,7 @@
 <title>ailes group</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assignment-history.js"></script>
 <style>
 :root{
   --cream:#faf6f0;--gold:#c9a96e;--gold-light:#e8d5b0;--dark:#1a1410;
@@ -181,13 +182,25 @@ td.wrap{white-space:normal;min-width:120px;}
     <div class="modal-title" id="staff-modal-title">スタッフ追加</div>
     <div style="margin-top:12px">
       <div class="form-group"><label>名前 *</label><input class="form-inp" id="sm-name" type="text" maxlength="20" autocomplete="off" placeholder="例：田中 花子"></div>
-      <div class="form-group"><label>店舗 *</label>
+        <div class="form-group"><label>店舗 *</label>
         <select class="form-sel" id="sm-store" onchange="toggleSmPw()">
               <option value="エルズ">ailes</option>
           <option value="soleil">soleil</option>
           <option value="両店">両店</option>
         </select>
       </div>
+      <div class="form-group" id="sm-history-section" style="display:none">
+  <label>店舗異動予約</label>
+  <div id="sm-history-list" style="margin-bottom:8px"></div>
+  <div style="display:flex;gap:6px">
+    <input class="form-inp" type="date" id="sm-history-date" style="flex:1">
+    <select class="form-sel" id="sm-history-store" style="flex:1">
+      <option value="エルズ">ailes</option>
+      <option value="soleil">soleil</option>
+    </select>
+    <button class="btn btn-gold btn-xs" onclick="addStoreReservation()">予約追加</button>
+  </div>
+</div>
       <div class="form-group"><label>役職</label>
         <select class="form-sel" id="sm-position">
           <option value="">未設定</option>
@@ -698,12 +711,47 @@ function openStaffModal(id){
     document.getElementById('sm-pw-row').style.display='';
   }
   document.getElementById('sm-save-btn').dataset.id=id||'';
-  toggleSmPw();
-  document.getElementById('staff-modal').classList.add('show');
+toggleSmPw();
+document.getElementById('sm-history-section').style.display=isNew?'none':'';
+if(!isNew)loadStoreHistory(id);
+document.getElementById('staff-modal').classList.add('show');
+
   setTimeout(function(){document.getElementById('sm-name').focus();},100);
 }
 
 function toggleSmPw(){}
+let smHistory=[];
+async function loadStoreHistory(studentId){
+  const all=await loadAssignmentHistory(sb);
+  smHistory=all.filter(function(h){return h.student_id===studentId&&h.attribute==='store';});
+  renderStoreHistory();
+}
+function renderStoreHistory(){
+  const wrap=document.getElementById('sm-history-list');
+  const future=smHistory.filter(function(h){return h.effective_from>new Date().toISOString().slice(0,10);})
+    .sort(function(a,b){return a.effective_from<b.effective_from?-1:1;});
+  if(!future.length){wrap.innerHTML='<div style="font-size:12px;color:var(--soft)">予約なし</div>';return;}
+  wrap.innerHTML=future.map(function(h){
+    return '<div class="master-item"><span>'+esc(h.effective_from)+' から '+esc(storeLabel(h.value))+'</span><button class="master-item-del" onclick="deleteStoreReservation(\''+h.id+'\')">×</button></div>';
+  }).join('');
+}
+async function addStoreReservation(){
+  const id=document.getElementById('sm-save-btn').dataset.id;
+  const date=document.getElementById('sm-history-date').value;
+  const store=document.getElementById('sm-history-store').value;
+  if(!id||!date){alert('日付を入力してください');return;}
+  await saveAssignmentChange(sb,id,'store',store,date,null);
+  await loadStoreHistory(id);
+  const s=students.find(function(s){return s.id===id;});
+  const today=new Date().toISOString().slice(0,10);
+  if(s&&date<=today){s.store=store;document.getElementById('sm-store').value=store;renderStaffPage();}
+}
+async function deleteStoreReservation(historyId){
+  await sb.from('assignment_history').delete().eq('id',historyId);
+  const id=document.getElementById('sm-save-btn').dataset.id;
+  await loadStoreHistory(id);
+}
+
 
 async function saveStaff(){
   const id=document.getElementById('sm-save-btn').dataset.id;
@@ -732,6 +780,10 @@ async function saveStaff(){
     if(error){document.getElementById('sm-err').textContent='エラー: '+error.message;return;}
     const s=students.find(function(s){return s.id===id;});
     if(s)Object.assign(s,{name,store,position,birthdate,join_date,leave_date,is_active:!leave_date});
+    if(s&&s.store!==store){
+  const today=new Date().toISOString().slice(0,10);
+  await saveAssignmentChange(sb,id,'store',store,today,null);
+}
   }
   closeModal('staff-modal');
   renderStaffPage();
