@@ -6,6 +6,7 @@
 <title>年間推移 | ailes group</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assignment-history.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
 :root{--cream:#faf6f0;--gold:#c9a96e;--gold-light:#e8d5b0;--dark:#1a1410;--mid:#7a6a58;--soft:#c4b49e;--accent:#8b5e3c;}
@@ -91,6 +92,7 @@ const MONTH_LABELS=['1月','2月','3月','4月','5月','6月','7月','8月','9�
 
 let currentYear=2026,currentStore='all';
 let students=[],salesDataAll={},allocationByMonth={},materialByMonth={};
+let assignHistory=[];
 let charts={};
 
 function buildYears(){
@@ -120,7 +122,10 @@ function onYearChange(){
 function calcResult(d){
   return Number(d.meimei_sales||0)+Number(d.free_sales||0)+Number(d.tanden||0);
 }
-
+function getStoreForMonth(s,month){
+  const v=valueAsOf(assignHistory,s.id,'store',month+'-01');
+  return v||s.store;
+}
 async function loadYearData(){
   document.getElementById('loading').style.display='flex';
   const months=[];
@@ -150,8 +155,8 @@ async function loadYearData(){
 
 function getMonthTotals(month){
   let list=students.slice();
-  if(currentStore==='ailes')list=list.filter(function(s){return s.store==='エルズ'||RYOTEN_STORES.includes(s.store);});
-  else if(currentStore==='soleil')list=list.filter(function(s){return s.store==='soleil'||RYOTEN_STORES.includes(s.store);});
+  if(currentStore==='ailes')list=list.filter(function(s){return getStoreForMonth(s,month)==='エルズ'||RYOTEN_STORES.includes(s.store);});
+  else if(currentStore==='soleil')list=list.filter(function(s){return getStoreForMonth(s,month)==='soleil'||RYOTEN_STORES.includes(s.store);});
 
   const alloc=allocationByMonth[month]||{ailes_pct:50,soleil_pct:50};
   const rows=salesDataAll[month]||{};
@@ -238,6 +243,7 @@ async function loadAll(){
   const {data}=await sb.from('students').select('*').order('created_at');
   students=(data||[]).filter(function(s){return s.is_active!==false&&!EXCLUDE_ROLES.includes(s.position);});
   renderYearSel();
+  assignHistory=await loadAssignmentHistory(sb);
   await loadYearData();
   renderCharts();
 }
