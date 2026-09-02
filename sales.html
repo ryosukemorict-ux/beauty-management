@@ -6,6 +6,7 @@
 <title>数値管理 | ailes group</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assignment-history.js"></script>
 <style>
 :root{--cream:#faf6f0;--gold:#c9a96e;--gold-light:#e8d5b0;--dark:#1a1410;--mid:#7a6a58;--soft:#c4b49e;--accent:#8b5e3c;--green:#4a7c59;--red:#c0392b;--blue:#2980b9;}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -287,6 +288,7 @@ const POS_ORDER=['代表','店長','チーフ','スタイリスト','Jrスタイ
 const EXCLUDE_ROLES=['管理者'];
 const TAX_RATE=0.10;
 let students=[],salesData={},currentMonth='',currentStore='all',months=[];
+let assignHistory=[];
 let sortField=null,sortAsc=true;
 let allocation={ailes_pct:50,soleil_pct:50};
 let materialRatio={ailes:null,soleil:null};
@@ -447,8 +449,8 @@ function switchStore(store){
 
 function getStaffList(){
   let list=students.slice();
-  if(currentStore==='ailes')list=list.filter(function(s){return s.store==='エルズ'||RYOTEN_STORES.includes(s.store);});
-  else if(currentStore==='soleil')list=list.filter(function(s){return s.store==='soleil'||RYOTEN_STORES.includes(s.store);});
+  if(currentStore==='ailes')list=list.filter(function(s){return getStoreForMonth(s,currentMonth)==='エルズ'||RYOTEN_STORES.includes(s.store);});
+else if(currentStore==='soleil')list=list.filter(function(s){return getStoreForMonth(s,currentMonth)==='soleil'||RYOTEN_STORES.includes(s.store);});
   list.sort(function(a,b){
     const ai=POS_ORDER.indexOf(a.position||'');
     const bi=POS_ORDER.indexOf(b.position||'');
@@ -461,6 +463,10 @@ function getKey(sid,store){
   const s=students.find(function(x){return x.id===sid;});
   if(s&&RYOTEN_STORES.includes(s.store)&&store)return currentMonth+'_'+sid+'_'+store;
   return currentMonth+'_'+sid;
+}
+function getStoreForMonth(s,month){
+  const v=valueAsOf(assignHistory,s.id,'store',monthToDate(month));
+  return v||s.store;
 }
 
 function sortBy(field,asc){
@@ -558,8 +564,8 @@ function renderTable(){
   
 function updateTotals(){
   let list=students.slice();
-  if(currentStore==='ailes')list=list.filter(function(s){return s.store==='エルズ'||RYOTEN_STORES.includes(s.store);});
-  else if(currentStore==='soleil')list=list.filter(function(s){return s.store==='soleil'||RYOTEN_STORES.includes(s.store);});
+  if(currentStore==='ailes')list=list.filter(function(s){return getStoreForMonth(s,currentMonth)==='エルズ'||RYOTEN_STORES.includes(s.store);});
+else if(currentStore==='soleil')list=list.filter(function(s){return getStoreForMonth(s,currentMonth)==='soleil'||RYOTEN_STORES.includes(s.store);});
   let target=0,result=0,meimei=0,free=0,clients=0,tanden=0;
   list.forEach(function(s){
     const isRyoten=RYOTEN_STORES.includes(s.store);
@@ -623,6 +629,7 @@ async function loadAll(){
   if(canEditMaterial())document.getElementById('btn-material').style.display='';
   const {data}=await sb.from('students').select('*').order('created_at');
   students=(data||[]).filter(function(s){return s.is_active!==false&&!EXCLUDE_ROLES.includes(s.position);});
+  assignHistory=await loadAssignmentHistory(sb);
   months=buildMonths();
   renderMonthSel();
   const today=new Date();
