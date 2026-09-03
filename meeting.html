@@ -523,6 +523,28 @@ const rowHtml=function(r){
 }
 /* ===== 代表管理 ===== */
 const REP_NOTE_ROLES=['代表','管理者'];
+  let rnInlineEditId=null;
+async function toggleRnEditRow(id){
+  rnInlineEditId=(rnInlineEditId===id)?null:id;
+  await renderRepNotes();
+  autoGrowAll();
+}
+function cancelRnInlineEdit(){
+  rnInlineEditId=null;
+  renderRepNotes();
+}
+async function saveRnInlineEdit(id){
+  const payload={
+    record_date:document.getElementById('rnedit-date-'+id).value,
+    category:document.getElementById('rnedit-category-'+id).value,
+    content:document.getElementById('rnedit-content-'+id).value
+  };
+  const {error}=await sb.from('rep_staff_notes').update(payload).eq('id',id);
+  if(error){alert('エラー: '+error.message);return;}
+  rnInlineEditId=null;
+  renderRepNotes();
+}
+
 function canViewRepNotes(){return ME&&REP_NOTE_ROLES.includes(ME.position);}
 const REPNOTE_ORDER=['店長','チーフ','スタイリスト','Jrスタイリスト','カラーリスト','アシスタント','レセプション'];
 function repNoteStudentOpts(){
@@ -588,10 +610,21 @@ async function renderRepNotes(){
     });
   }
   if(!data||!data.length){list.innerHTML='<div class="empty-msg">記録がありません</div>';return;}
-  list.innerHTML=data.map(function(r){
+      const CATEGORY_OPTS=['面談','雑談','LINE','電話','その他'];
+    list.innerHTML=data.map(function(r){
     const st=students.find(function(s){return s.id===r.student_id;});
     const name=st?st.name:(r.target_label||'（不明）');
+    if(rnInlineEditId===r.id){
+      return '<div class="iv-row">'
+        +'<div class="iv-row-head"><span class="iv-name">'+esc(name)+'</span></div>'
+        +'<div class="field"><label>日付</label><input class="inp" type="date" id="rnedit-date-'+r.id+'" value="'+esc(r.record_date||'')+'"></div>'
+        +'<div class="field"><label>種別</label><select class="sel" id="rnedit-category-'+r.id+'" style="width:100%">'+CATEGORY_OPTS.map(function(c){return '<option value="'+c+'"'+(c===r.category?' selected':'')+'>'+c+'</option>';}).join('')+'</select></div>'
+        +'<div class="field"><label>内容</label><textarea class="txt" id="rnedit-content-'+r.id+'">'+esc(r.content||'')+'</textarea></div>'
+        +'<div class="save-row"><button class="btn btn-outline" onclick="cancelRnInlineEdit()">キャンセル</button><button class="btn btn-dark" onclick="saveRnInlineEdit('+r.id+')">更新する</button></div>'
+        +'</div>';
+    }
     return '<div class="iv-row"><div class="iv-row-head"><span class="iv-name">'+esc(name)+'／'+esc(r.category||'')+'</span><span class="iv-meta">'+esc(r.record_date||'')+'　記録者：'+esc(r.created_by||'—')+'</span>'
+      +'<button class="btn btn-outline btn-xs" onclick="toggleRnEditRow('+r.id+')">編集</button>'
       +'<button class="btn btn-red btn-xs" onclick="delRepNote('+r.id+')">削除</button></div>'
       +'<div class="iv-body">'+esc(r.content||'')+'</div>'
       +'</div>';
