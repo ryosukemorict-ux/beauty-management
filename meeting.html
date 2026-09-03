@@ -489,7 +489,7 @@ const rowHtml=function(r){
     window.__ivRows[r.id]=r;
     const st=students.find(function(s){return s.id===r.student_id;});
     const name=st?st.name:'（不明）';
-    if(ivInlineEditId===r.id){
+        if(ivInlineEditId===r.id){
       return '<div class="iv-row">'
         +'<div class="iv-row-head"><span class="iv-name">'+esc(name)+'</span></div>'
         +'<div class="field"><label>面談担当者</label><select class="sel" id="ivedit-interviewer-'+r.id+'" style="width:100%">'+interviewerOptsForStore(r.store)+'</select></div>'
@@ -497,7 +497,7 @@ const rowHtml=function(r){
         +'<div class="field"><label>面談内容</label><textarea class="txt" id="ivedit-content-'+r.id+'">'+esc(r.content||'')+'</textarea></div>'
         +'<div class="field"><label>今後のアクション</label><textarea class="txt" id="ivedit-next-'+r.id+'">'+esc(r.next_action||'')+'</textarea></div>'
         +'<div class="field"><label>特記事項</label><textarea class="txt" id="ivedit-notes-'+r.id+'">'+esc(r.notes||'')+'</textarea></div>'
-<div class="save-row"><button class="btn btn-dark" id="iv-add-btn" onclick="addInterview()">追加する</button></div>
+        +'<div class="save-row"><button class="btn btn-outline" onclick="cancelIvInlineEdit()">キャンセル</button><button class="btn btn-dark" onclick="saveIvInlineEdit('+r.id+')">更新する</button></div>'
         +'</div>';
     }
     return '<div class="iv-row"><div class="iv-row-head"><span class="iv-name">'+esc(name)+'</span><span class="iv-meta">'+esc(r.interview_date||'')+'　担当：'+esc(r.interviewer||'—')+'</span>'
