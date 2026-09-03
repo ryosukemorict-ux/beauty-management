@@ -204,31 +204,27 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
 const ALLOWED_ROLES=['代表','管理者','店長','チーフ'];
 
 let students=[],ME=null;
-let ivEditId=null;
-function cancelIvEdit(){
-  ivEditId=null;
-  document.getElementById('iv-student').value='';
-  document.getElementById('iv-interviewer').value='';
-  document.getElementById('iv-date').value='';
-  document.getElementById('iv-content').value='';
-  document.getElementById('iv-next').value='';
-  document.getElementById('iv-notes').value='';
-  document.getElementById('iv-add-btn').textContent='追加する';
-  document.getElementById('iv-cancel-btn').style.display='none';
+let ivInlineEditId=null;
+function toggleIvEditRow(id){
+  ivInlineEditId=(ivInlineEditId===id)?null:id;
+  renderInterviewList();
 }
-function startIvEdit(r){
-  ivEditId=r.id;
-  document.getElementById('iv-store').value=r.store;
-  onIvStoreChange();
-  document.getElementById('iv-student').value=r.student_id;
-  document.getElementById('iv-interviewer').value=r.interviewer||'';
-  document.getElementById('iv-date').value=r.interview_date||'';
-  document.getElementById('iv-content').value=r.content||'';
-  document.getElementById('iv-next').value=r.next_action||'';
-  document.getElementById('iv-notes').value=r.notes||'';
-  document.getElementById('iv-add-btn').textContent='更新する';
-  document.getElementById('iv-cancel-btn').style.display='';
-  document.getElementById('iv-student').scrollIntoView({behavior:'smooth',block:'center'});
+function cancelIvInlineEdit(){
+  ivInlineEditId=null;
+  renderInterviewList();
+}
+async function saveIvInlineEdit(id){
+  const payload={
+    interviewer:document.getElementById('ivedit-interviewer-'+id).value,
+    interview_date:document.getElementById('ivedit-date-'+id).value,
+    content:document.getElementById('ivedit-content-'+id).value,
+    next_action:document.getElementById('ivedit-next-'+id).value,
+    notes:document.getElementById('ivedit-notes-'+id).value
+  };
+  const {error}=await sb.from('staff_interviews').update(payload).eq('id',id);
+  if(error){alert('エラー: '+error.message);return;}
+  ivInlineEditId=null;
+  renderInterviewList();
 }
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -488,13 +484,24 @@ async function renderInterviewList(){
   const {data}=await q;
   const list=document.getElementById('iv-list');
   if(!data||!data.length){list.innerHTML='<div class="empty-msg">面談記録がありません</div>';return;}
-  window.__ivRows={};
+window.__ivRows={};
 const rowHtml=function(r){
     window.__ivRows[r.id]=r;
     const st=students.find(function(s){return s.id===r.student_id;});
     const name=st?st.name:'（不明）';
+    if(ivInlineEditId===r.id){
+      return '<div class="iv-row">'
+        +'<div class="iv-row-head"><span class="iv-name">'+esc(name)+'</span></div>'
+        +'<div class="field"><label>面談担当者</label><select class="sel" id="ivedit-interviewer-'+r.id+'" style="width:100%">'+interviewerOptsForStore(r.store)+'</select></div>'
+        +'<div class="field"><label>面談日</label><input class="inp" type="date" id="ivedit-date-'+r.id+'" value="'+esc(r.interview_date||'')+'"></div>'
+        +'<div class="field"><label>面談内容</label><textarea class="txt" id="ivedit-content-'+r.id+'">'+esc(r.content||'')+'</textarea></div>'
+        +'<div class="field"><label>今後のアクション</label><textarea class="txt" id="ivedit-next-'+r.id+'">'+esc(r.next_action||'')+'</textarea></div>'
+        +'<div class="field"><label>特記事項</label><textarea class="txt" id="ivedit-notes-'+r.id+'">'+esc(r.notes||'')+'</textarea></div>'
+<div class="save-row"><button class="btn btn-dark" id="iv-add-btn" onclick="addInterview()">追加する</button></div>
+        +'</div>';
+    }
     return '<div class="iv-row"><div class="iv-row-head"><span class="iv-name">'+esc(name)+'</span><span class="iv-meta">'+esc(r.interview_date||'')+'　担当：'+esc(r.interviewer||'—')+'</span>'
-      +'<button class="btn btn-outline btn-xs" onclick="startIvEdit(window.__ivRows['+r.id+'])">編集</button>'
+      +'<button class="btn btn-outline btn-xs" onclick="toggleIvEditRow('+r.id+')">編集</button>'
       +'<button class="btn btn-red btn-xs" onclick="delInterview('+r.id+')">削除</button></div>'
       +(r.content?'<div class="iv-label">面談内容</div><div class="iv-body">'+esc(r.content)+'</div>':'')
       +(r.next_action?'<div class="iv-label">今後のアクション</div><div class="iv-body">'+esc(r.next_action)+'</div>':'')
