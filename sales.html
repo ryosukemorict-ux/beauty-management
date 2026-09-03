@@ -654,7 +654,7 @@ async function loadSalesData(){
   const {data}=await sb.from('sales_data').select('*').eq('month',currentMonth);
   if(data){
     data.forEach(function(row){
-      const key=currentMonth+'_'+row.student_id;
+const key=row.store?(currentMonth+'_'+row.student_id+'_'+row.store):(currentMonth+'_'+row.student_id);
       salesData[key]={
         target:row.target?Math.round(row.target):null,
         meimei_sales:row.meimei_sales?Math.round(row.meimei_sales):null,
