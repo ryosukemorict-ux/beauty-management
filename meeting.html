@@ -205,9 +205,9 @@ const ALLOWED_ROLES=['代表','管理者','店長','チーフ'];
 
 let students=[],ME=null;
 let ivInlineEditId=null;
-function toggleIvEditRow(id){
+async function toggleIvEditRow(id){
   ivInlineEditId=(ivInlineEditId===id)?null:id;
-  renderInterviewList();
+  await renderInterviewList();
   autoGrowAll();
 }
 function cancelIvInlineEdit(){
