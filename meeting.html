@@ -208,7 +208,7 @@ let ivInlineEditId=null;
 function toggleIvEditRow(id){
   ivInlineEditId=(ivInlineEditId===id)?null:id;
   renderInterviewList();
-  setTimeout(function(){autoGrowAll();},0);
+  autoGrowAll();
 }
 function cancelIvInlineEdit(){
   ivInlineEditId=null;
