@@ -455,14 +455,13 @@ async function addInterview(){
       next_action:document.getElementById('iv-next').value,
       notes:document.getElementById('iv-notes').value
     };
-    let error;
-    if(ivEditId){
-      ({error}=await sb.from('staff_interviews').update(payload).eq('id',ivEditId));
-    } else {
-      ({error}=await sb.from('staff_interviews').insert(payload));
-    }
+      const {error}=await sb.from('staff_interviews').insert(payload);
     if(error){alert('エラー: '+error.message);return;}
-    cancelIvEdit();
+    document.getElementById('iv-student').value='';
+    document.getElementById('iv-date').value='';
+    document.getElementById('iv-content').value='';
+    document.getElementById('iv-next').value='';
+    document.getElementById('iv-notes').value='';
     renderInterviewList();
   }finally{
     btn.disabled=false;
