@@ -131,11 +131,10 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
       </select>
       <select class="sel" id="iv-name-filter" onchange="renderInterviewList()">
         <option value="">全員</option>
-      </select>
-      <div class="month-nav">
-        <button class="month-nav-btn" onclick="shiftMonth('iv-month',-1,renderInterviewList)">◀</button>
-        <select class="sel" id="iv-month" onchange="renderInterviewList()"></select>
-        <button class="month-nav-btn" onclick="shiftMonth('iv-month',1,renderInterviewList)">▶</button>
+      </select>      <div class="month-nav">
+        <button class="month-nav-btn" onclick="shiftMonth('iv-month',-1,onIvMonthNav)">◀</button>
+        <select class="sel" id="iv-month" onchange="onIvMonthNav()"></select>
+        <button class="month-nav-btn" onclick="shiftMonth('iv-month',1,onIvMonthNav)">▶</button>
       </div>
     </div>
     <div class="card">
@@ -497,7 +496,20 @@ async function addInterview(){
     btn.disabled=false;
   }
 }
-
+function resetIvForm(){
+  document.getElementById('iv-student').value='';
+  document.getElementById('iv-interviewer').value='';
+  document.getElementById('iv-date').value='';
+  document.getElementById('iv-content').value='';
+  document.getElementById('iv-next').value='';
+  document.getElementById('iv-notes').value='';
+  const fileInput=document.getElementById('iv-attach');
+  if(fileInput)fileInput.value='';
+}
+function onIvMonthNav(){
+  resetIvForm();
+  renderInterviewList();
+}
 async function renderInterviewList(){
   const store=document.getElementById('iv-store').value;
   const nameFilter=document.getElementById('iv-name-filter').value;
