@@ -245,7 +245,9 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 async function uploadAttachments(fileList){
   const out=[];
   for(const file of fileList){
-    const path=Date.now()+'_'+Math.random().toString(36).slice(2)+'_'+file.name;
+    const extMatch=file.name.match(/\.[^.]+$/);
+    const ext=extMatch?extMatch[0]:'';
+    const path=Date.now()+'_'+Math.random().toString(36).slice(2)+ext;
     const {error}=await sb.storage.from('meeting-attachments').upload(path,file);
     if(error){alert('添付アップロードに失敗しました: '+error.message);continue;}
     const {data:urlData}=sb.storage.from('meeting-attachments').getPublicUrl(path);
