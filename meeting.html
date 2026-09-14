@@ -598,7 +598,7 @@ async function renderRepNotes(){
   const list=document.getElementById('rn-list');
   const STORE_FILTER={STORE_ERUZU:{store:'エルズ',label:'ailes全体'},STORE_SOLEIL:{store:'soleil',label:'soleil全体'}};
   let q=sb.from('rep_staff_notes').select('*').order('record_date',{ascending:false}).order('created_at',{ascending:false});
-  if(student_id&&!STORE_FILTER[student_id])q=q.eq('student_id',student_id);
+  if(student_id&&student_id!=='STORE_BOTH'&&!STORE_FILTER[student_id])q=q.eq('student_id',student_id);
   let {data}=await q;
   if(STORE_FILTER[student_id]){
     const sf=STORE_FILTER[student_id];
@@ -608,6 +608,7 @@ async function renderRepNotes(){
       return st&&st.store&&st.store.includes(sf.store);
     });
   }
+
   if(keyword){
     data=(data||[]).filter(function(r){
       const st=students.find(function(s){return s.id===r.student_id;});
