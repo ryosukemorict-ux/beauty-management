@@ -148,7 +148,8 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
       <div class="field"><label>特記事項</label><textarea class="txt" id="iv-notes"></textarea></div>
 <div class="save-row"><button class="btn btn-dark" id="iv-add-btn" onclick="addInterview()">追加する</button></div>
     </div>
-    <div class="card-title" style="margin:14px 4px 8px">店舗の面談履歴一覧</div>
+<div class="field"><label>添付ファイル</label><input type="file" class="inp" id="iv-attach" multiple></div>
+<div class="save-row"><button class="btn btn-dark" id="iv-add-btn" onclick="addInterview()">追加する</button></div>
     <div id="iv-list"></div>
   </div>
 
@@ -214,13 +215,26 @@ function cancelIvInlineEdit(){
   ivInlineEditId=null;
   renderInterviewList();
 }
+async function delIvAttachment(id,idx){
+  const r=window.__ivRows[id];
+  if(!r)return;
+  const atts=(r.attachments||[]).slice();
+  atts.splice(idx,1);
+  const {error}=await sb.from('staff_interviews').update({attachments:atts}).eq('id',id);
+  if(error){alert('エラー: '+error.message);return;}
+  renderInterviewList();
+}
 async function saveIvInlineEdit(id){
+  const fileInput=document.getElementById('ivedit-attach-new-'+id);
+  const newAttachments=fileInput.files.length?await uploadAttachments(fileInput.files):[];
+  const existing=(window.__ivRows[id]&&window.__ivRows[id].attachments)||[];
   const payload={
     interviewer:document.getElementById('ivedit-interviewer-'+id).value,
     interview_date:document.getElementById('ivedit-date-'+id).value,
     content:document.getElementById('ivedit-content-'+id).value,
     next_action:document.getElementById('ivedit-next-'+id).value,
-    notes:document.getElementById('ivedit-notes-'+id).value
+    notes:document.getElementById('ivedit-notes-'+id).value,
+    attachments:existing.concat(newAttachments)
   };
   const {error}=await sb.from('staff_interviews').update(payload).eq('id',id);
   if(error){alert('エラー: '+error.message);return;}
@@ -229,6 +243,17 @@ async function saveIvInlineEdit(id){
 }
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+async function uploadAttachments(fileList){
+  const out=[];
+  for(const file of fileList){
+    const path=Date.now()+'_'+Math.random().toString(36).slice(2)+'_'+file.name;
+    const {error}=await sb.storage.from('meeting-attachments').upload(path,file);
+    if(error){alert('添付アップロードに失敗しました: '+error.message);continue;}
+    const {data:urlData}=sb.storage.from('meeting-attachments').getPublicUrl(path);
+    out.push({name:file.name,url:urlData.publicUrl});
+  }
+  return out;
+}
 function storeLabel(v){return v==='エルズ'?'ailes':v;}
 function autoGrow(el){el.style.height='auto';el.style.height=(el.scrollHeight+2)+'px';}
 function autoGrowAll(root){(root||document).querySelectorAll('.txt').forEach(autoGrow);}
@@ -447,20 +472,25 @@ async function addInterview(){
   try{
     const store=document.getElementById('iv-store').value;
     const st=students.find(function(s){return s.id===student_id;});
+    const fileInput=document.getElementById('iv-attach');
+    const attachments=fileInput.files.length?await uploadAttachments(fileInput.files):[];
     const payload={
       student_id,store:(store==='両店'?(st?st.store:store):store),
       interviewer:document.getElementById('iv-interviewer').value,
       interview_date:document.getElementById('iv-date').value,
       content:document.getElementById('iv-content').value,
       next_action:document.getElementById('iv-next').value,
-      notes:document.getElementById('iv-notes').value
-    };    const {error}=await sb.from('staff_interviews').insert(payload);
+      notes:document.getElementById('iv-notes').value,
+      attachments
+    };
+    const {error}=await sb.from('staff_interviews').insert(payload);
     if(error){alert('エラー: '+error.message);return;}
     document.getElementById('iv-student').value='';
     document.getElementById('iv-date').value='';
     document.getElementById('iv-content').value='';
     document.getElementById('iv-next').value='';
     document.getElementById('iv-notes').value='';
+    fileInput.value='';
     renderInterviewList();
   }finally{
     btn.disabled=false;
@@ -494,8 +524,11 @@ const rowHtml=function(r){
         +'<div class="field"><label>面談担当者</label><select class="sel" id="ivedit-interviewer-'+r.id+'" style="width:100%">'+interviewerOptsForStore(r.store)+'</select></div>'
         +'<div class="field"><label>面談日</label><input class="inp" type="date" id="ivedit-date-'+r.id+'" value="'+esc(r.interview_date||'')+'"></div>'
         +'<div class="field"><label>面談内容</label><textarea class="txt" id="ivedit-content-'+r.id+'">'+esc(r.content||'')+'</textarea></div>'
-        +'<div class="field"><label>今後のアクション</label><textarea class="txt" id="ivedit-next-'+r.id+'">'+esc(r.next_action||'')+'</textarea></div>'
-        +'<div class="field"><label>特記事項</label><textarea class="txt" id="ivedit-notes-'+r.id+'">'+esc(r.notes||'')+'</textarea></div>'
+        +'<div class="field"><label>今後のアクション</label><textarea class="txt" id="ivedit-next-'+r.id+'">'+esc(r.next_action||'')+'</textarea></div>'        +'<div class="field"><label>特記事項</label><textarea class="txt" id="ivedit-notes-'+r.id+'">'+esc(r.notes||'')+'</textarea></div>'
+        +'<div class="field"><label>添付ファイル</label>'
+        +'<div id="ivedit-attach-list-'+r.id+'">'+(r.attachments||[]).map(function(a,i){return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><a href="'+esc(a.url)+'" target="_blank" style="color:var(--blue);text-decoration:underline">'+esc(a.name)+'</a><button type="button" class="btn btn-outline btn-xs" onclick="delIvAttachment('+r.id+','+i+')">削除</button></div>';}).join('')+'</div>'
+        +'<input type="file" class="inp" id="ivedit-attach-new-'+r.id+'" multiple>'
+        +'</div>'
         +'<div class="save-row"><button class="btn btn-outline" onclick="cancelIvInlineEdit()">キャンセル</button><button class="btn btn-dark" onclick="saveIvInlineEdit('+r.id+')">更新する</button></div>'
         +'</div>';
     }
@@ -505,6 +538,7 @@ const rowHtml=function(r){
       +(r.content?'<div class="iv-label">面談内容</div><div class="iv-body">'+esc(r.content)+'</div>':'')
       +(r.next_action?'<div class="iv-label">今後のアクション</div><div class="iv-body">'+esc(r.next_action)+'</div>':'')
       +(r.notes?'<div class="iv-label">特記事項</div><div class="iv-body">'+esc(r.notes)+'</div>':'')
+      +((r.attachments&&r.attachments.length)?('<div class="iv-label">添付ファイル</div><div class="iv-body">'+r.attachments.map(function(a){return '<a href="'+esc(a.url)+'" target="_blank" style="color:var(--blue);text-decoration:underline;margin-right:10px">'+esc(a.name)+'</a>';}).join('')+'</div>'):'')
       +'</div>';
   };
 
