@@ -318,9 +318,14 @@ function moBlockHtml(store){
     +'<div class="field"><label>ACTION(改善)</label><textarea class="txt" id="mo-cur-action-'+store+'"></textarea></div>'
     +'<div class="field"><label>その他報告</label><textarea class="txt" id="mo-cur-other-'+store+'"></textarea></div>'
     +'<div class="field"><label>その他権限要求</label><textarea class="txt" id="mo-cur-auth-'+store+'"></textarea></div>'
+    +'<div class="field"><label>添付ファイル</label>'
+    +'<div id="mo-attach-list-'+store+'"></div>'
+    +'<input type="file" class="inp" id="mo-attach-new-'+store+'" multiple>'
+    +'</div>'
       +'<div class="save-row"><button class="btn btn-dark" onclick="saveMonthly(\''+store+'\')">'+storeLabel(store)+'を保存</button></div>'
     +'</div>';
 }
+window.__moRows=window.__moRows||{};
 async function fillMonthlyBlock(store,month){
   const prev=prevMonthStr(month);
   document.getElementById('mo-prev-month-txt-'+store).textContent=monthLabel(prev);
@@ -341,6 +346,10 @@ async function fillMonthlyBlock(store,month){
   document.getElementById('mo-cur-action-'+store).value=curRow?curRow.action||'':'';
   document.getElementById('mo-cur-other-'+store).value=curRow?curRow.other_report||'':'';
   document.getElementById('mo-cur-auth-'+store).value=curRow?curRow.other_authority||'':'';
+  window.__moRows[store]=curRow||null;
+  const attachWrap=document.getElementById('mo-attach-list-'+store);
+  const atts=(curRow&&curRow.attachments)||[];
+  attachWrap.innerHTML=atts.map(function(a,i){return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><a href="'+esc(a.url)+'" target="_blank" style="color:var(--blue);text-decoration:underline">'+esc(a.name)+'</a><button type="button" class="btn btn-outline btn-xs" onclick="delMoAttachment(\''+store+'\','+i+')">削除</button></div>';}).join('');
 }
 async function loadMonthly(){
   const store=document.getElementById('mo-store').value;
@@ -361,6 +370,9 @@ function togglePrevMonth(store){
 }
 async function saveMonthly(store){
   const month=document.getElementById('mo-month').value;
+  const fileInput=document.getElementById('mo-attach-new-'+store);
+  const newAttachments=fileInput&&fileInput.files.length?await uploadAttachments(fileInput.files):[];
+  const existing=(window.__moRows[store]&&window.__moRows[store].attachments)||[];
   const payload={
     store,month,report_type:'monthly',
     plan:document.getElementById('mo-cur-plan-'+store).value,
@@ -369,11 +381,22 @@ async function saveMonthly(store){
     action:document.getElementById('mo-cur-action-'+store).value,
     other_report:document.getElementById('mo-cur-other-'+store).value,
     other_authority:document.getElementById('mo-cur-auth-'+store).value,
+    attachments:existing.concat(newAttachments),
     updated_at:new Date().toISOString()
   };
   const {error}=await sb.from('pdca_reports').upsert(payload,{onConflict:'store,month,report_type'});
   if(error){alert('エラー: '+error.message);return;}
   alert(storeLabel(store)+'を保存しました');
+  loadMonthly();
+}
+async function delMoAttachment(store,idx){
+  const r=window.__moRows[store];
+  if(!r||!r.id)return;
+  const atts=(r.attachments||[]).slice(); 
+  atts.splice(idx,1);
+  const {error}=await sb.from('pdca_reports').update({attachments:atts}).eq('id',r.id);
+  if(error){alert('エラー: '+error.message);return;}
+  loadMonthly();
 }
 
 /* ===== 店舗ミーティング報告 ===== */
