@@ -412,6 +412,9 @@ function smBlockHtml(store){
     +'<div class="field"><label>日時</label><input class="inp" type="text" id="sm-next-date-'+store+'" placeholder="例：2026年8月29日（土）"></div>'
     +'<div class="field"><label>議題案</label><input class="inp" type="text" id="sm-next-agenda-'+store+'"></div>'
     +'<div class="field"><label>進行役</label><input class="inp" type="text" id="sm-next-facilitator-'+store+'"></div></div>'
+    +'<div class="card"><div class="card-title">添付ファイル</div>'
+    +'<div id="sm-attach-list-'+store+'"></div>'
+    +'<input type="file" class="inp" id="sm-attach-new-'+store+'" multiple></div>'
       +'<div class="save-row"><button class="btn btn-dark" onclick="saveStoreMeeting(\''+store+'\')">'+storeLabel(store)+'を保存</button></div>';
 }
 function renderSmItems(store){
@@ -428,6 +431,7 @@ function renderSmItems(store){
 function updSmItem(store,el){smItemsByStore[store][el.dataset.i][el.dataset.f]=el.value;}
 function addStoreItem(store){smItemsByStore[store].push({title:'',detail:'',check:''});renderSmItems(store);}
 function removeStoreItem(store,i){smItemsByStore[store].splice(i,1);renderSmItems(store);}
+window.__smRows=window.__smRows||{};
 async function fillStoreBlock(store,month){
   const {data}=await sb.from('store_meetings').select('*').eq('store',store).eq('month',month).maybeSingle();
   document.getElementById('sm-purpose-'+store).value=data?data.purpose||'':'';
@@ -437,6 +441,10 @@ async function fillStoreBlock(store,month){
   document.getElementById('sm-next-facilitator-'+store).value=data?data.next_facilitator||'':'';
   smItemsByStore[store]=(data&&data.status_items&&data.status_items.length)?data.status_items:[{title:'',detail:'',check:''}];
   renderSmItems(store);
+  window.__smRows[store]=data||null;
+  const attachWrap=document.getElementById('sm-attach-list-'+store);
+  const atts=(data&&data.attachments)||[];
+  attachWrap.innerHTML=atts.map(function(a,i){return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><a href="'+esc(a.url)+'" target="_blank" style="color:var(--blue);text-decoration:underline">'+esc(a.name)+'</a><button type="button" class="btn btn-outline btn-xs" onclick="delSmAttachment(\''+store+'\','+i+')">削除</button></div>';}).join('');
 }
 async function loadStoreMeeting(){
   const store=document.getElementById('sm-store').value;
@@ -450,6 +458,9 @@ async function loadStoreMeeting(){
 }
 async function saveStoreMeeting(store){
   const month=document.getElementById('sm-month').value;
+  const fileInput=document.getElementById('sm-attach-new-'+store);
+  const newAttachments=fileInput&&fileInput.files.length?await uploadAttachments(fileInput.files):[];
+  const existing=(window.__smRows[store]&&window.__smRows[store].attachments)||[];
   const payload={
     store,month,
     purpose:document.getElementById('sm-purpose-'+store).value,
@@ -458,11 +469,23 @@ async function saveStoreMeeting(store){
     next_date:document.getElementById('sm-next-date-'+store).value,
     next_agenda:document.getElementById('sm-next-agenda-'+store).value,
     next_facilitator:document.getElementById('sm-next-facilitator-'+store).value,
+    attachments:existing.concat(newAttachments),
     updated_at:new Date().toISOString()
   };
   const {error}=await sb.from('store_meetings').upsert(payload,{onConflict:'store,month'});
   if(error){alert('エラー: '+error.message);return;}
   alert(storeLabel(store)+'を保存しました');
+  loadStoreMeeting();
+}
+async function delSmAttachment(store,idx){
+  const r=window.__smRows[store];
+  if(!r)return;
+  const atts=(r.attachments||[]).slice();
+  atts.splice(idx,1);
+  const month=document.getElementById('sm-month').value;
+  const {error}=await sb.from('store_meetings').update({attachments:atts}).eq('store',store).eq('month',month);
+  if(error){alert('エラー: '+error.message);return;}
+  loadStoreMeeting();
 }
 
 /* ===== 面談報告 ===== */
