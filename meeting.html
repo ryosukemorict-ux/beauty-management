@@ -391,10 +391,11 @@ async function saveMonthly(store){
 }
 async function delMoAttachment(store,idx){
   const r=window.__moRows[store];
-  if(!r||!r.id)return;
-  const atts=(r.attachments||[]).slice(); 
+  if(!r)return;
+  const atts=(r.attachments||[]).slice();
   atts.splice(idx,1);
-  const {error}=await sb.from('pdca_reports').update({attachments:atts}).eq('id',r.id);
+  const month=document.getElementById('mo-month').value;
+  const {error}=await sb.from('pdca_reports').update({attachments:atts}).eq('store',store).eq('month',month).eq('report_type','monthly');
   if(error){alert('エラー: '+error.message);return;}
   loadMonthly();
 }
