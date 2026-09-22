@@ -925,19 +925,27 @@ async function delExAttachment(idx){
     smInlineEditId=null;
     loadSeminar();
   }
-  async function saveSmInlineEdit(id){
+    async function saveSeminar(){
+    const studentId=document.getElementById('sm-student').value;
     const payload={
-      seminar_date:document.getElementById('smedit-date-'+id).value||null,
-      theme:document.getElementById('smedit-theme-'+id).value,
-      reason:document.getElementById('smedit-reason-'+id).value,
-      content:document.getElementById('smedit-content-'+id).value,
-      business_application:document.getElementById('smedit-application-'+id).value,
-      summary:document.getElementById('smedit-summary-'+id).value,
-      next_request:document.getElementById('smedit-next-'+id).value
+      student_id:studentId,
+      seminar_date:document.getElementById('sm-date').value||null,
+      theme:document.getElementById('sm-theme').value,
+      reason:document.getElementById('sm-reason').value,
+      content:document.getElementById('sm-content').value,
+      business_application:document.getElementById('sm-application').value,
+      summary:document.getElementById('sm-summary').value,
+      next_request:document.getElementById('sm-next').value
     };
-    const {error}=await sb.from('seminar_reports').update(payload).eq('id',id);
+    const {error}=await sb.from('seminar_reports').insert(payload);
     if(error){alert('エラー: '+error.message);return;}
-    smInlineEditId=null;
+    alert('保存しました');
+    document.getElementById('sm-theme').value='';
+    document.getElementById('sm-reason').value='';
+    document.getElementById('sm-content').value='';
+    document.getElementById('sm-application').value='';
+    document.getElementById('sm-summary').value='';
+    document.getElementById('sm-next').value='';
     loadSeminar();
   }
 
