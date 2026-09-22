@@ -85,7 +85,7 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
     <button class="tab-btn" data-tab="interview" onclick="switchTab('interview')">💬 面談報告</button>
     <button class="tab-btn" data-tab="repnote" onclick="switchTab('repnote')" id="tab-btn-repnote" style="display:none">🔒 代表管理</button>
     <button class="tab-btn" data-tab="exec" onclick="switchTab('exec')">🏛 幹部会議</button>
-            <button class="tab-btn" data-tab="seminar" onclick="switchTab('seminar')">🎤 セミナー報告</button>
+    <button class="tab-btn" data-tab="seminar" onclick="switchTab('seminar')">🎤 セミナー報告</button>
   </div>
 
   <!-- 月末報告 -->
@@ -199,6 +199,45 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
     <div class="save-row"><button class="btn btn-dark" onclick="saveExec()">保存</button></div>
   </div>
 </div>
+      <!-- セミナー報告 -->
+      <div class="panel" id="panel-seminar">
+        <div class="filter-row">
+          <select class="sel" id="sm-store" onchange="loadSeminar()">
+            <option value="両店" selected>両店</option>
+            <option value="エルズ">ailes</option>
+            <option value="soleil">soleil</option>
+          </select>
+        </div>
+        <div class="card">
+          <div class="card-title">セミナー報告を追加</div>
+          <div class="form-group"><label>対象者</label>
+            <select class="sel" id="sm-student"></select>
+          </div>
+          <div class="form-group"><label>受講日</label>
+            <input type="date" class="inp" id="sm-date">
+          </div>
+          <div class="form-group"><label>テーマ</label>
+            <input type="text" class="inp" id="sm-theme" placeholder="例：Hair Color Seminar / Clash color">
+          </div>
+          <div class="form-group"><label>選んだ理由</label>
+            <textarea class="form-txt" id="sm-reason"></textarea>
+          </div>
+          <div class="form-group"><label>内容</label>
+            <textarea class="form-txt" id="sm-content"></textarea>
+          </div>
+          <div class="form-group"><label>今後どのように営業に活かしていくか</label>
+            <textarea class="form-txt" id="sm-application"></textarea>
+          </div>
+          <div class="form-group"><label>みんなに共有するためのまとめ</label>
+            <textarea class="form-txt" id="sm-summary"></textarea>
+          </div>
+          <div class="form-group"><label>次はどのようなセミナーを受けたいか</label>
+            <textarea class="form-txt" id="sm-next"></textarea>
+          </div>
+          <div class="save-row"><button class="btn btn-dark" onclick="saveSeminar()">保存</button></div>
+        </div>
+        <div id="sm-list"></div>
+      </div>
 
 <div class="locked" id="locked-view" style="display:none">このページはチーフ以上のみ閲覧できます</div>
 
@@ -824,6 +863,77 @@ async function delExAttachment(idx){
   if(error){alert('エラー: '+error.message);return;}
   loadExec();
 }
+  function fillSeminarStudentSelect(){
+    const sel=document.getElementById('sm-student');
+    sel.innerHTML='';
+    const sorted=students.slice().sort(function(a,b){
+      const ai=POS_ORDER.indexOf(a.position),bi=POS_ORDER.indexOf(b.position);
+      return (ai===-1?99:ai)-(bi===-1?99:bi);
+    });
+    sorted.forEach(function(s){
+      const opt=document.createElement('option');
+      opt.value=s.id;
+      opt.textContent=s.name+'('+storeLabel(s.store)+')';
+      sel.appendChild(opt);
+    });
+    if(ME)sel.value=ME.id;
+  }
+
+  async function loadSeminar(){
+    fillSeminarStudentSelect();
+    const store=document.getElementById('sm-store').value;
+    const {data,error}=await sb.from('seminar_reports').select('*,students(name,store)').order('seminar_date',{ascending:false});
+    if(error){document.getElementById('sm-list').innerHTML='読み込みエラー: '+esc(error.message);return;}
+    let rows=data||[];
+    if(store!=='両店')rows=rows.filter(function(r){return r.students&&r.students.store===store;});
+    if(!rows.length){document.getElementById('sm-list').innerHTML='<div class="empty-msg">まだ報告がありません</div>';return;}
+    document.getElementById('sm-list').innerHTML=rows.map(function(r){
+      const name=r.students?r.students.name:'(不明)';
+      const st=r.students?storeLabel(r.students.store):'';
+      return '<div class="card">'
+        +'<div class="card-title">'+esc(r.theme||'(無題)')+' - '+esc(name)+'('+st+') '+esc(r.seminar_date||'')+'</div>'
+        +'<div><b>選んだ理由</b><br>'+esc(r.reason||'').replace(/\n/g,'<br>')+'</div>'
+        +'<div style="margin-top:8px"><b>内容</b><br>'+esc(r.content||'').replace(/\n/g,'<br>')+'</div>'
+        +'<div style="margin-top:8px"><b>今後どのように営業に活かしていくか</b><br>'+esc(r.business_application||'').replace(/\n/g,'<br>')+'</div>'
+        +'<div style="margin-top:8px"><b>みんなに共有するためのまとめ</b><br>'+esc(r.summary||'').replace(/\n/g,'<br>')+'</div>'
+        +'<div style="margin-top:8px"><b>次はどのようなセミナーを受けたいか</b><br>'+esc(r.next_request||'').replace(/\n/g,'<br>')+'</div>'
+        +'<div class="save-row"><button class="btn btn-outline btn-sm" onclick="deleteSeminar(\''+r.id+'\')">削除</button></div>'
+        +'</div>';
+    }).join('');
+  }
+
+  async function saveSeminar(){
+    const studentId=document.getElementById('sm-student').value;
+    const payload={
+      student_id:studentId,
+      seminar_date:document.getElementById('sm-date').value||null,
+      theme:document.getElementById('sm-theme').value,
+      reason:document.getElementById('sm-reason').value,
+      content:document.getElementById('sm-content').value,
+      business_application:document.getElementById('sm-application').value,
+      summary:document.getElementById('sm-summary').value,
+      next_request:document.getElementById('sm-next').value
+    };
+    const {error}=await sb.from('seminar_reports').insert(payload);
+    if(error){alert('エラー: '+error.message);return;}
+    alert('保存しました');
+    document.getElementById('sm-theme').value='';
+    document.getElementById('sm-reason').value='';
+    document.getElementById('sm-content').value='';
+    document.getElementById('sm-application').value='';
+    document.getElementById('sm-summary').value='';
+    document.getElementById('sm-next').value='';
+    loadSeminar();
+  }
+
+  async function deleteSeminar(id){
+    if(!confirm('削除しますか？'))return;
+    const {error}=await sb.from('seminar_reports').delete().eq('id',id);
+    if(error){alert('エラー: '+error.message);return;}
+    loadSeminar();
+  }
+
+
 /* ===== 起動 ===== */
 (async function(){
   const loginId=localStorage.getItem('logged_in_id');
