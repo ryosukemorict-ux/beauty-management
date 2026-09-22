@@ -85,6 +85,7 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
     <button class="tab-btn" data-tab="interview" onclick="switchTab('interview')">💬 面談報告</button>
     <button class="tab-btn" data-tab="repnote" onclick="switchTab('repnote')" id="tab-btn-repnote" style="display:none">🔒 代表管理</button>
     <button class="tab-btn" data-tab="exec" onclick="switchTab('exec')">🏛 幹部会議</button>
+            <button class="tab-btn" data-tab="seminar" onclick="switchTab('seminar')">🎤 セミナー報告</button>
   </div>
 
   <!-- 月末報告 -->
@@ -830,16 +831,23 @@ async function delExAttachment(idx){
   const {data:sData}=await sb.from('students').select('*');
   students=sData||[];
   ME=students.find(function(s){return s.id===loginId;})||null;
-  if(!ME||!ALLOWED_ROLES.includes(ME.position)){
-    document.getElementById('locked-view').style.display='block';
-    return;
-  }
-  document.getElementById('app-wrap').style.display='block';
-  monthOptions(document.getElementById('mo-month'),null);
-  monthOptions(document.getElementById('sm-month'),null);
-    monthOptions(document.getElementById('ex-month'),null);
-  if(canViewRepNotes())document.getElementById('tab-btn-repnote').style.display='';
-  loadMonthly();
+      if(!ME){
+      document.getElementById('locked-view').style.display='block';
+      return;
+    }
+    document.getElementById('app-wrap').style.display='block';
+    const isFullAccess=ALLOWED_ROLES.includes(ME.position);
+    if(!isFullAccess){
+      document.querySelectorAll('.tab-btn').forEach(function(b){if(b.dataset.tab!=='seminar')b.style.display='none';});
+      switchTab('seminar');
+    }else{
+      monthOptions(document.getElementById('mo-month'),null);
+      monthOptions(document.getElementById('sm-month'),null);
+      monthOptions(document.getElementById('ex-month'),null);
+      if(canViewRepNotes())document.getElementById('tab-btn-repnote').style.display='';
+      loadMonthly();
+    }
+    loadSeminar();
 })();
 </script>
 </body>
