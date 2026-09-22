@@ -907,12 +907,11 @@ async function delExAttachment(idx){
           +'</div>';
       }
       return '<div class="card">'
-        +'<div class="card-title">'+esc(r.theme||'(無題)')+' - '+esc(name)+'('+st+') '+esc(r.seminar_date||'')+'</div>'
-        +'<div><b>選んだ理由</b><br>'+esc(r.reason||'').replace(/\n/g,'<br>')+'</div>'
-        +'<div style="margin-top:8px"><b>内容</b><br>'+esc(r.content||'').replace(/\n/g,'<br>')+'</div>'
-        +'<div style="margin-top:8px"><b>今後どのように営業に活かしていくか</b><br>'+esc(r.business_application||'').replace(/\n/g,'<br>')+'</div>'
-        +'<div style="margin-top:8px"><b>みんなに共有するためのまとめ</b><br>'+esc(r.summary||'').replace(/\n/g,'<br>')+'</div>'
-        +'<div style="margin-top:8px"><b>次はどのようなセミナーを受けたいか</b><br>'+esc(r.next_request||'').replace(/\n/g,'<br>')+'</div>'
+        +'<div class="card-title">'+esc(r.theme||'(無題)')+' - '+esc(name)+'('+st+') '+esc(r.seminar_date||'')+'</div>'+'<div class="iv-label">選んだ理由</div><div class="iv-body">'+esc(r.reason||'').replace(/\n/g,'<br>')+'</div>'
++'<div class="iv-label">内容</div><div class="iv-body">'+esc(r.content||'').replace(/\n/g,'<br>')+'</div>'
++'<div class="iv-label">今後どのように営業に活かしていくか</div><div class="iv-body">'+esc(r.business_application||'').replace(/\n/g,'<br>')+'</div>'
++'<div class="iv-label">みんなに共有するためのまとめ</div><div class="iv-body">'+esc(r.summary||'').replace(/\n/g,'<br>')+'</div>'
++'<div class="iv-label">次はどのようなセミナーを受けたいか</div><div class="iv-body">'+esc(r.next_request||'').replace(/\n/g,'<br>')+'</div>'
         +'<div class="save-row"><button class="btn btn-outline btn-sm" onclick="toggleSmEditRow(\''+r.id+'\')">編集</button><button class="btn btn-red btn-sm" onclick="deleteSeminar(\''+r.id+'\')">削除</button></div>'
         +'</div>';
     }).join('');
