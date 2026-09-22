@@ -878,6 +878,8 @@ async function delExAttachment(idx){
     if(ME)sel.value=ME.id;
   }
 
+  let smInlineEditId=null;
+  window.__smSeminarRows=window.__smSeminarRows||{};
   async function loadSeminar(){
     fillSeminarStudentSelect();
     const store=document.getElementById('sem-store').value;
@@ -886,9 +888,24 @@ async function delExAttachment(idx){
     let rows=data||[];
     if(store!=='両店')rows=rows.filter(function(r){return r.students&&r.students.store===store;});
     if(!rows.length){document.getElementById('sm-list').innerHTML='<div class="empty-msg">まだ報告がありません</div>';return;}
+    window.__smSeminarRows={};
     document.getElementById('sm-list').innerHTML=rows.map(function(r){
+      window.__smSeminarRows[r.id]=r;
       const name=r.students?r.students.name:'(不明)';
       const st=r.students?storeLabel(r.students.store):'';
+      if(smInlineEditId===r.id){
+        return '<div class="card">'
+          +'<div class="card-title">'+esc(name)+'('+st+')</div>'
+          +'<div class="field"><label>受講日</label><input type="date" class="inp" id="smedit-date-'+r.id+'" value="'+esc(r.seminar_date||'')+'"></div>'
+          +'<div class="field"><label>テーマ</label><input type="text" class="inp" id="smedit-theme-'+r.id+'" value="'+esc(r.theme||'')+'"></div>'
+          +'<div class="field"><label>選んだ理由</label><textarea class="txt" id="smedit-reason-'+r.id+'">'+esc(r.reason||'')+'</textarea></div>'
+          +'<div class="field"><label>内容</label><textarea class="txt" id="smedit-content-'+r.id+'">'+esc(r.content||'')+'</textarea></div>'
+          +'<div class="field"><label>今後どのように営業に活かしていくか</label><textarea class="txt" id="smedit-application-'+r.id+'">'+esc(r.business_application||'')+'</textarea></div>'
+          +'<div class="field"><label>みんなに共有するためのまとめ</label><textarea class="txt" id="smedit-summary-'+r.id+'">'+esc(r.summary||'')+'</textarea></div>'
+          +'<div class="field"><label>次はどのようなセミナーを受けたいか</label><textarea class="txt" id="smedit-next-'+r.id+'">'+esc(r.next_request||'')+'</textarea></div>'
+          +'<div class="save-row"><button class="btn btn-outline" onclick="cancelSmInlineEdit()">キャンセル</button><button class="btn btn-dark" onclick="saveSmInlineEdit(\''+r.id+'\')">更新する</button></div>'
+          +'</div>';
+      }
       return '<div class="card">'
         +'<div class="card-title">'+esc(r.theme||'(無題)')+' - '+esc(name)+'('+st+') '+esc(r.seminar_date||'')+'</div>'
         +'<div><b>選んだ理由</b><br>'+esc(r.reason||'').replace(/\n/g,'<br>')+'</div>'
@@ -896,63 +913,31 @@ async function delExAttachment(idx){
         +'<div style="margin-top:8px"><b>今後どのように営業に活かしていくか</b><br>'+esc(r.business_application||'').replace(/\n/g,'<br>')+'</div>'
         +'<div style="margin-top:8px"><b>みんなに共有するためのまとめ</b><br>'+esc(r.summary||'').replace(/\n/g,'<br>')+'</div>'
         +'<div style="margin-top:8px"><b>次はどのようなセミナーを受けたいか</b><br>'+esc(r.next_request||'').replace(/\n/g,'<br>')+'</div>'
-        +'<div class="save-row"><button class="btn btn-outline btn-sm" onclick="deleteSeminar(\''+r.id+'\')">削除</button></div>'
+        +'<div class="save-row"><button class="btn btn-outline btn-sm" onclick="toggleSmEditRow(\''+r.id+'\')">編集</button><button class="btn btn-red btn-sm" onclick="deleteSeminar(\''+r.id+'\')">削除</button></div>'
         +'</div>';
     }).join('');
   }
-
-  async function saveSeminar(){
-    const studentId=document.getElementById('sm-student').value;
-    const payload={
-      student_id:studentId,
-      seminar_date:document.getElementById('sm-date').value||null,
-      theme:document.getElementById('sm-theme').value,
-      reason:document.getElementById('sm-reason').value,
-      content:document.getElementById('sm-content').value,
-      business_application:document.getElementById('sm-application').value,
-      summary:document.getElementById('sm-summary').value,
-      next_request:document.getElementById('sm-next').value
-    };
-    const {error}=await sb.from('seminar_reports').insert(payload);
-    if(error){alert('エラー: '+error.message);return;}
-    alert('保存しました');
-    document.getElementById('sm-theme').value='';
-    document.getElementById('sm-reason').value='';
-    document.getElementById('sm-content').value='';
-    document.getElementById('sm-application').value='';
-    document.getElementById('sm-summary').value='';
-    document.getElementById('sm-next').value='';
+  function toggleSmEditRow(id){
+    smInlineEditId=(smInlineEditId===id)?null:id;
     loadSeminar();
   }
-
-  async function deleteSeminar(id){
-    if(!confirm('削除しますか？'))return;
-    const {error}=await sb.from('seminar_reports').delete().eq('id',id);
-    if(error){alert('エラー: '+error.message);return;}
+  function cancelSmInlineEdit(){
+    smInlineEditId=null;
     loadSeminar();
   }
-
-  async function saveSeminar(){
-    const studentId=document.getElementById('sm-student').value;
+  async function saveSmInlineEdit(id){
     const payload={
-      student_id:studentId,
-      seminar_date:document.getElementById('sm-date').value||null,
-      theme:document.getElementById('sm-theme').value,
-      reason:document.getElementById('sm-reason').value,
-      content:document.getElementById('sm-content').value,
-      business_application:document.getElementById('sm-application').value,
-      summary:document.getElementById('sm-summary').value,
-      next_request:document.getElementById('sm-next').value
+      seminar_date:document.getElementById('smedit-date-'+id).value||null,
+      theme:document.getElementById('smedit-theme-'+id).value,
+      reason:document.getElementById('smedit-reason-'+id).value,
+      content:document.getElementById('smedit-content-'+id).value,
+      business_application:document.getElementById('smedit-application-'+id).value,
+      summary:document.getElementById('smedit-summary-'+id).value,
+      next_request:document.getElementById('smedit-next-'+id).value
     };
-    const {error}=await sb.from('seminar_reports').insert(payload);
+    const {error}=await sb.from('seminar_reports').update(payload).eq('id',id);
     if(error){alert('エラー: '+error.message);return;}
-    alert('保存しました');
-    document.getElementById('sm-theme').value='';
-    document.getElementById('sm-reason').value='';
-    document.getElementById('sm-content').value='';
-    document.getElementById('sm-application').value='';
-    document.getElementById('sm-summary').value='';
-    document.getElementById('sm-next').value='';
+    smInlineEditId=null;
     loadSeminar();
   }
 
