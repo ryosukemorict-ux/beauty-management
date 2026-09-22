@@ -202,7 +202,7 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
       <!-- セミナー報告 -->
       <div class="panel" id="panel-seminar">
         <div class="filter-row">
-          <select class="sel" id="sm-store" onchange="loadSeminar()">
+          <select class="sel" id="sem-store" onchange="loadSeminar()">
             <option value="両店" selected>両店</option>
             <option value="エルズ">ailes</option>
             <option value="soleil">soleil</option>
@@ -862,12 +862,12 @@ async function delExAttachment(idx){
   const {error}=await sb.from('executive_meetings').update({attachments:atts}).eq('month',month);
   if(error){alert('エラー: '+error.message);return;}
   loadExec();
-}
+}  const SEMINAR_POS_ORDER=['代表','管理者','店長','チーフ','スタイリスト','Jrスタイリスト','カラーリスト','アシスタント','レセプション'];
   function fillSeminarStudentSelect(){
     const sel=document.getElementById('sm-student');
     sel.innerHTML='';
     const sorted=students.slice().sort(function(a,b){
-      const ai=POS_ORDER.indexOf(a.position),bi=POS_ORDER.indexOf(b.position);
+      const ai=SEMINAR_POS_ORDER.indexOf(a.position),bi=SEMINAR_POS_ORDER.indexOf(b.position);
       return (ai===-1?99:ai)-(bi===-1?99:bi);
     });
     sorted.forEach(function(s){
@@ -881,7 +881,7 @@ async function delExAttachment(idx){
 
   async function loadSeminar(){
     fillSeminarStudentSelect();
-    const store=document.getElementById('sm-store').value;
+    const store=document.getElementById('sem-store').value;
     const {data,error}=await sb.from('seminar_reports').select('*,students(name,store)').order('seminar_date',{ascending:false});
     if(error){document.getElementById('sm-list').innerHTML='読み込みエラー: '+esc(error.message);return;}
     let rows=data||[];
@@ -900,6 +900,37 @@ async function delExAttachment(idx){
         +'<div class="save-row"><button class="btn btn-outline btn-sm" onclick="deleteSeminar(\''+r.id+'\')">削除</button></div>'
         +'</div>';
     }).join('');
+  }
+
+  async function saveSeminar(){
+    const studentId=document.getElementById('sm-student').value;
+    const payload={
+      student_id:studentId,
+      seminar_date:document.getElementById('sm-date').value||null,
+      theme:document.getElementById('sm-theme').value,
+      reason:document.getElementById('sm-reason').value,
+      content:document.getElementById('sm-content').value,
+      business_application:document.getElementById('sm-application').value,
+      summary:document.getElementById('sm-summary').value,
+      next_request:document.getElementById('sm-next').value
+    };
+    const {error}=await sb.from('seminar_reports').insert(payload);
+    if(error){alert('エラー: '+error.message);return;}
+    alert('保存しました');
+    document.getElementById('sm-theme').value='';
+    document.getElementById('sm-reason').value='';
+    document.getElementById('sm-content').value='';
+    document.getElementById('sm-application').value='';
+    document.getElementById('sm-summary').value='';
+    document.getElementById('sm-next').value='';
+    loadSeminar();
+  }
+
+  async function deleteSeminar(id){
+    if(!confirm('削除しますか？'))return;
+    const {error}=await sb.from('seminar_reports').delete().eq('id',id);
+    if(error){alert('エラー: '+error.message);return;}
+    loadSeminar();
   }
 
   async function saveSeminar(){
