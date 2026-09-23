@@ -393,7 +393,7 @@ async function fillMonthlyBlock(store,month){
   window.__moRows[store]=curRow||null;
   const attachWrap=document.getElementById('mo-attach-list-'+store);
   const atts=(curRow&&curRow.attachments)||[];
-  attachWrap.innerHTML=atts.map(function(a,i){return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><a href="'+esc(a.url)+'" target="_blank" style="color:var(--blue);text-decoration:underline">'+esc(a.name)+'</a><button type="button" class="btn btn-outline btn-xs" onclick="delMoAttachment(\''+store+'\','+i+')">削除</button></div>';}).join('');
+  attachWrap.innerHTML=atts.map(function(a,i){return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><a href="'+esc(a.url)+'" class="att-open" data-name="'+esc(a.name)+'" style="color:var(--blue);text-decoration:underline">'+esc(a.name)+'</a><button type="button" class="btn btn-outline btn-xs" onclick="delMoAttachment(\''+store+'\','+i+')">削除</button></div>';}).join('');
 }
 async function loadMonthly(){
   const store=document.getElementById('mo-store').value;
@@ -488,7 +488,7 @@ async function fillStoreBlock(store,month){
   window.__smRows[store]=data||null;
   const attachWrap=document.getElementById('sm-attach-list-'+store);
   const atts=(data&&data.attachments)||[];
-  attachWrap.innerHTML=atts.map(function(a,i){return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><a href="'+esc(a.url)+'" target="_blank" style="color:var(--blue);text-decoration:underline">'+esc(a.name)+'</a><button type="button" class="btn btn-outline btn-xs" onclick="delSmAttachment(\''+store+'\','+i+')">削除</button></div>';}).join('');
+  attachWrap.innerHTML=atts.map(function(a,i){return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><a href="'+esc(a.url)+'" class="att-open" data-name="'+esc(a.name)+'" style="color:var(--blue);text-decoration:underline">'+esc(a.name)+'</a><button type="button" class="btn btn-outline btn-xs" onclick="delSmAttachment(\''+store+'\','+i+')">削除</button></div>';}).join('');
 }
 async function loadStoreMeeting(){
   const store=document.getElementById('sm-store').value;
@@ -630,7 +630,7 @@ const rowHtml=function(r){
         +'<div class="field"><label>面談内容</label><textarea class="txt" id="ivedit-content-'+r.id+'">'+esc(r.content||'')+'</textarea></div>'
         +'<div class="field"><label>今後のアクション</label><textarea class="txt" id="ivedit-next-'+r.id+'">'+esc(r.next_action||'')+'</textarea></div>'        +'<div class="field"><label>特記事項</label><textarea class="txt" id="ivedit-notes-'+r.id+'">'+esc(r.notes||'')+'</textarea></div>'
         +'<div class="field"><label>添付ファイル</label>'
-        +'<div id="ivedit-attach-list-'+r.id+'">'+(r.attachments||[]).map(function(a,i){return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><a href="'+esc(a.url)+'" target="_blank" style="color:var(--blue);text-decoration:underline">'+esc(a.name)+'</a><button type="button" class="btn btn-outline btn-xs" onclick="delIvAttachment('+r.id+','+i+')">削除</button></div>';}).join('')+'</div>'
+        +'<div id="ivedit-attach-list-'+r.id+'">'+(r.attachments||[]).map(function(a,i){return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><a href="'+esc(a.url)+'" class="att-open" data-name="'+esc(a.name)+'" style="color:var(--blue);text-decoration:underline">'+esc(a.name)+'</a><button type="button" class="btn btn-outline btn-xs" onclick="delIvAttachment('+r.id+','+i+')">削除</button></div>';}).join('')+'</div>'
         +'<input type="file" class="inp" id="ivedit-attach-new-'+r.id+'" multiple>'
         +'</div>'
         +'<div class="save-row"><button class="btn btn-outline" onclick="cancelIvInlineEdit()">キャンセル</button><button class="btn btn-dark" onclick="saveIvInlineEdit('+r.id+')">更新する</button></div>'
@@ -642,7 +642,7 @@ const rowHtml=function(r){
       +(r.content?'<div class="iv-label">面談内容</div><div class="iv-body">'+esc(r.content)+'</div>':'')
       +(r.next_action?'<div class="iv-label">今後のアクション</div><div class="iv-body">'+esc(r.next_action)+'</div>':'')
       +(r.notes?'<div class="iv-label">特記事項</div><div class="iv-body">'+esc(r.notes)+'</div>':'')
-      +((r.attachments&&r.attachments.length)?('<div class="iv-label">添付ファイル</div><div class="iv-body">'+r.attachments.map(function(a){return '<a href="'+esc(a.url)+'" target="_blank" style="color:var(--blue);text-decoration:underline;margin-right:10px">'+esc(a.name)+'</a>';}).join('')+'</div>'):'')
+      +((r.attachments&&r.attachments.length)?('<div class="iv-label">添付ファイル</div><div class="iv-body">'+r.attachments.map(function(a){return '<a href="'+esc(a.url)+'" class="att-open" data-name="'+esc(a.name)+'" style="color:var(--blue);text-decoration:underline;margin-right:10px">'+esc(a.name)+'</a>';}).join('')+'</div>'):'')
       +'</div>';
   };
 
@@ -786,7 +786,7 @@ async function renderRepNotes(){
         +'<div class="field"><label>種別</label><select class="sel" id="rnedit-category-'+r.id+'" style="width:100%">'+CATEGORY_OPTS.map(function(c){return '<option value="'+c+'"'+(c===r.category?' selected':'')+'>'+c+'</option>';}).join('')+'</select></div>'
         +'<div class="field"><label>内容</label><textarea class="txt" id="rnedit-content-'+r.id+'">'+esc(r.content||'')+'</textarea></div>'
         +'<div class="field"><label>添付ファイル</label>'
-        +'<div id="rnedit-attach-list-'+r.id+'">'+(r.attachments||[]).map(function(a,i){return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><a href="'+esc(a.url)+'" target="_blank" style="color:var(--blue);text-decoration:underline">'+esc(a.name)+'</a><button type="button" class="btn btn-outline btn-xs" onclick="delRnAttachment('+r.id+','+i+')">削除</button></div>';}).join('')+'</div>'
+        +'<div id="rnedit-attach-list-'+r.id+'">'+(r.attachments||[]).map(function(a,i){return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><a href="'+esc(a.url)+'" class="att-open" data-name="'+esc(a.name)+'" style="color:var(--blue);text-decoration:underline">'+esc(a.name)+'</a><button type="button" class="btn btn-outline btn-xs" onclick="delRnAttachment('+r.id+','+i+')">削除</button></div>';}).join('')+'</div>'
         +'<input type="file" class="inp" id="rnedit-attach-new-'+r.id+'" multiple>'
         +'</div>'
         +'<div class="save-row"><button class="btn btn-outline" onclick="cancelRnInlineEdit()">キャンセル</button><button class="btn btn-dark" onclick="saveRnInlineEdit('+r.id+')">更新する</button></div>'
@@ -796,7 +796,7 @@ async function renderRepNotes(){
       +'<button class="btn btn-outline btn-xs" onclick="toggleRnEditRow('+r.id+')">編集</button>'
       +'<button class="btn btn-red btn-xs" onclick="delRepNote('+r.id+')">削除</button></div>'
       +'<div class="iv-body">'+esc(r.content||'')+'</div>'
-      +((r.attachments&&r.attachments.length)?('<div class="iv-label">添付ファイル</div><div class="iv-body">'+r.attachments.map(function(a){return '<a href="'+esc(a.url)+'" target="_blank" style="color:var(--blue);text-decoration:underline;margin-right:10px">'+esc(a.name)+'</a>';}).join('')+'</div>'):'')
+      +((r.attachments&&r.attachments.length)?('<div class="iv-label">添付ファイル</div><div class="iv-body">'+r.attachments.map(function(a){return '<a href="'+esc(a.url)+'" class="att-open" data-name="'+esc(a.name)+'" style="color:var(--blue);text-decoration:underline;margin-right:10px">'+esc(a.name)+'</a>';}).join('')+'</div>'):'')
       +'</div>';
   }).join('');
 }
@@ -840,7 +840,7 @@ async function loadExec(){
   window.__exRow=data||null;
   const attachWrap=document.getElementById('ex-attach-list');
   const atts=(data&&data.attachments)||[];
-  attachWrap.innerHTML=atts.map(function(a,i){return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><a href="'+esc(a.url)+'" target="_blank" style="color:var(--blue);text-decoration:underline">'+esc(a.name)+'</a><button type="button" class="btn btn-outline btn-xs" onclick="delExAttachment('+i+')">削除</button></div>';}).join('');
+  attachWrap.innerHTML=atts.map(function(a,i){return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><a href="'+esc(a.url)+'" class="att-open" data-name="'+esc(a.name)+'" style="color:var(--blue);text-decoration:underline">'+esc(a.name)+'</a><button type="button" class="btn btn-outline btn-xs" onclick="delExAttachment('+i+')">削除</button></div>';}).join('');
 }
 async function saveExec(silent){
   const month=document.getElementById('ex-month').value;
