@@ -153,6 +153,7 @@ td.wrap{white-space:normal;min-width:120px;}
 </div>
 
 <div class="modal-overlay" id="login-modal">
+
   <div class="modal">
     <div class="modal-title">ログイン</div>
     <div class="modal-sub">名前を選択してパスワードを入力</div>
@@ -502,10 +503,10 @@ function canAccessFunc(func){
   if(func.comingSoon) return false;
   if(func.id==='curriculum') return true;
   if(func.minRole==='staff_editor') return canEditStaff();
+  if(func.id==='meeting') return !!ME;
   if(func.minRole==='meeting_viewer') return !!ME && STAFF_EDITOR_ROLES.includes(ME.position);
   return !!ME;
 }
-
 function renderDashboard(){
   if(ME){
     document.getElementById('dash-name').textContent=ME.name;
