@@ -149,7 +149,7 @@ tbody tr:hover td:first-child{background:#fffbf7;}
 
 <div class="modal-overlay" id="productivity-modal">
   <div class="modal" style="max-width:360px">
-    <div class="modal-title">📊 人事生産性設定</div>
+    <div class="modal-title">📊 役職別基準値設定</div>
     <div style="font-size:12px;color:var(--mid);margin-bottom:16px;text-align:center">役職ごとの月間売上目標（税込）</div>
     <div id="productivity-fields"></div>
     <div class="modal-actions">
@@ -186,7 +186,7 @@ tbody tr:hover td:first-child{background:#fffbf7;}
     <button class="month-nav-btn" onclick="shiftMonth(1)">▶</button>
     <button onclick="showAddModal()" style="font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:6px 14px;border-radius:7px;border:1.5px solid var(--gold-light);background:white;color:var(--mid);cursor:pointer;">＋ 月を追加</button>
     <button onclick="showAllocModal()" style="font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:6px 14px;border-radius:7px;border:1.5px solid var(--gold-light);background:white;color:var(--mid);cursor:pointer;">⚙️ 按分設定</button>
-    <button id="btn-productivity" onclick="showProductivityModal()" style="display:none;font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:6px 14px;border-radius:7px;border:1.5px solid var(--gold-light);background:white;color:var(--mid);cursor:pointer;">📊 人事生産性</button>
+    <button id="btn-productivity" onclick="showProductivityModal()" style="display:none;font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:6px 14px;border-radius:7px;border:1.5px solid var(--gold-light);background:white;color:var(--mid);cursor:pointer;">📊 役職別基準値</button>
     <button id="btn-material" onclick="showMaterialModal()" style="display:none;font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:6px 14px;border-radius:7px;border:1.5px solid var(--gold-light);background:white;color:var(--mid);cursor:pointer;">🧾 材料比率</button>
   </div>
   <div class="store-tabs">
@@ -296,7 +296,7 @@ let materialRatio={ailes:null,soleil:null};
 // 両店スタッフのID（亀田代表）
 const RYOTEN_STORES=['両店'];
 
-// 人事生産性(役職ごとの月間売上目標・税込)・材料比率の編集権限
+// 役職別基準値(役職ごとの月間売上目標・税込)・材料比率の編集権限
 const PRODUCTIVITY_EDIT_ROLES=['代表','管理者','店長','チーフ'];
 let ME=null;
 let roleProductivity={};
