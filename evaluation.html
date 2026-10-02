@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>人事評価 | ailes group</title> 
+<title>人事評価 | ailes group</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -22,6 +22,9 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
 .store-tabs{display:flex;gap:8px;margin-bottom:12px;}
 .store-tab{font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:700;padding:8px 18px;border-radius:20px;border:2px solid var(--gold-light);background:white;color:var(--mid);cursor:pointer;}
 .store-tab.active{background:var(--gold);color:white;border-color:var(--gold);}
+.view-tabs{display:flex;gap:8px;margin-bottom:14px;}
+.view-tab{font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:700;padding:10px 22px;border-radius:9px;border:2px solid var(--gold);background:white;color:var(--gold);cursor:pointer;}
+.view-tab.active{background:var(--gold);color:white;}
 .btn{font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:600;padding:9px 16px;border-radius:8px;border:none;cursor:pointer;}
 .btn-dark{background:var(--dark);color:white;}
 .btn-gold{background:var(--gold);color:white;}
@@ -88,6 +91,33 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
 .admin-item{border:1px solid var(--gold-light);border-radius:10px;padding:10px;margin-bottom:8px;position:relative;background:#fdfaf6;}
 .admin-item .del{position:absolute;top:8px;right:8px;background:none;border:none;color:var(--soft);font-size:16px;cursor:pointer;}
 .save-row{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;}
+
+/* ===== 給与制度ページ ===== */
+.pay-title{font-size:18px;font-weight:700;color:#e53935;background:#c9daf6;padding:10px 14px;border-radius:10px;margin-bottom:10px;}
+.pay-lead{font-size:13px;line-height:1.8;color:var(--dark);margin-bottom:12px;}
+.pay-sec{background:white;border:1px solid var(--gold-light);border-radius:12px;padding:14px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.04);}
+.pay-h{display:inline-block;font-size:15px;font-weight:700;background:#c9daf6;padding:6px 16px;border-radius:8px;margin-bottom:10px;}
+.pay-desc{font-size:12.5px;line-height:1.8;color:var(--mid);margin-bottom:10px;}
+.pay-red{font-size:12.5px;font-weight:700;color:#d00000;line-height:1.8;margin-top:8px;}
+.pay-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.pay-tbl{border-collapse:collapse;width:100%;min-width:0;}
+.pay-tbl th,.pay-tbl td{border:1px solid #333;padding:7px 10px;text-align:center;font-size:13px;white-space:nowrap;}
+.pay-tbl th{background:#d5e3e3;font-weight:700;color:var(--dark);}
+.pay-tbl td.lbl{font-weight:700;}
+.pay-tbl td.left{text-align:left;white-space:normal;}
+.pay-tbl tr.c-peach td{background:#fce5cd;font-weight:700;}
+.pay-tbl tr.c-yellow td{background:#ffff00;font-weight:700;}
+.pay-tbl tr.c-gray td{background:#efefef;font-weight:700;}
+.pay-tbl tr.c-none td{font-weight:700;}
+.pay-two{display:flex;gap:14px;flex-wrap:wrap;}
+.pay-two>div{flex:1;min-width:200px;}
+.pay-sub{font-size:12px;font-weight:700;margin-bottom:6px;color:var(--dark);}
+.pay-list{list-style:none;}
+.pay-list li{display:flex;justify-content:space-between;gap:12px;padding:6px 10px;border-bottom:1px solid #f0e5d5;font-size:13.5px;font-weight:700;}
+.pay-list li:last-child{border-bottom:none;}
+.pay-list li.o{color:#f6a21e;}
+.pay-list li.r{color:#e53935;}
+.pay-list li.b{color:#2a7fb0;}
 </style>
 </head>
 <body>
@@ -101,31 +131,40 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
 </div>
 
 <div class="main" id="app-wrap" style="display:none">
-  <div class="panel">
-    <div class="top-controls" style="margin-bottom:10px">
-      <select class="sel" id="ev-year" onchange="loadListView()"></select>
-      <select class="sel" id="ev-quarter" onchange="loadListView()">
-        <option value="1">第1四半期（1〜3月）</option>
-        <option value="2">第2四半期（4〜6月）</option>
-        <option value="3">第3四半期（7〜9月）</option>
-        <option value="4">第4四半期（10〜12月）</option>
+  <div class="view-tabs">
+    <button class="view-tab active" id="vtab-eval" onclick="showView('eval')">⭐ 評価一覧</button>
+    <button class="view-tab" id="vtab-pay" onclick="showView('pay')">💴 給与制度</button>
+  </div>
+
+  <div id="eval-view">
+    <div class="panel">
+      <div class="top-controls" style="margin-bottom:10px">
+        <select class="sel" id="ev-year" onchange="loadListView()"></select>
+        <select class="sel" id="ev-quarter" onchange="loadListView()">
+          <option value="1">第1四半期（1〜3月）</option>
+          <option value="2">第2四半期（4〜6月）</option>
+          <option value="3">第3四半期（7〜9月）</option>
+          <option value="4">第4四半期（10〜12月）</option>
+        </select>
+      </div>
+      <div class="store-tabs">
+        <button class="store-tab active" id="tab-all" onclick="switchStore('all')">全店舗</button>
+        <button class="store-tab" id="tab-ailes" onclick="switchStore('エルズ')">ailes</button>
+        <button class="store-tab" id="tab-soleil" onclick="switchStore('soleil')">soleil</button>
+      </div>
+      <select class="sel" id="ev-pos-filter" onchange="loadListView()">
+        <option value="">すべての役職</option>
       </select>
     </div>
-      <div class="store-tabs">
-      <button class="store-tab active" id="tab-all" onclick="switchStore('all')">全店舗</button>
-      <button class="store-tab" id="tab-ailes" onclick="switchStore('エルズ')">ailes</button>
-      <button class="store-tab" id="tab-soleil" onclick="switchStore('soleil')">soleil</button>
+
+    <div class="admin-row" id="admin-row" style="display:none">
+      <button class="btn btn-outline btn-sm" onclick="openAdminModal()">⚙️ 評価項目を編集（役職ごと）</button>
     </div>
-    <select class="sel" id="ev-pos-filter" onchange="loadListView()">
-      <option value="">すべての役職</option>
-    </select>
+
+    <div class="row-list" id="row-list"></div>
   </div>
 
-  <div class="admin-row" id="admin-row" style="display:none">
-    <button class="btn btn-outline btn-sm" onclick="openAdminModal()">⚙️ 評価項目を編集（役職ごと）</button>
-  </div>
-
-  <div class="row-list" id="row-list"></div>
+  <div id="pay-view" style="display:none"></div>
 </div>
 
 <div class="locked" id="locked-view" style="display:none"></div>
@@ -165,7 +204,8 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
 const SUPABASE_URL='https://nrweporylfaorlqektsk.supabase.co';
 const SUPABASE_ANON='sb_publishable_a3X1ltKqAaTv6CyxHIReug_xEPqqCSS';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
-const ADMIN_ROLES=['代表','管理者','店長','チーフ'];
+/* 評価項目の編集権限：代表・管理者のみ（店長・チーフは閲覧のみ） */
+const ADMIN_ROLES=['代表','管理者'];
 /* 点数の公開設定：振れ幅が決まるまで true。全員に点数を見せるときは false に変更 */
 const HIDE_POINTS=true;
 const POINT_VISIBLE_ROLES=['代表','管理者'];
@@ -196,6 +236,122 @@ function isFutureMonth(year,m){
   const now=new Date();
   const ny=now.getFullYear(),nm=now.getMonth()+1;
   return year>ny||(year===ny&&m>nm);
+}
+
+/* ===== 画面切り替え（評価一覧／給与制度） ===== */
+function showView(v){
+  document.getElementById('eval-view').style.display=(v==='eval')?'':'none';
+  document.getElementById('pay-view').style.display=(v==='pay')?'':'none';
+  document.getElementById('vtab-eval').classList.toggle('active',v==='eval');
+  document.getElementById('vtab-pay').classList.toggle('active',v==='pay');
+}
+
+/* ===== 給与制度ページ（全員閲覧可・編集不可） ===== */
+/* 指名売上 → 手当（数字は変更しない）。c: o=オレンジ r=赤 b=青 */
+const PAY_MEIMEI=[
+  [200000,10000,'o'],[300000,20000,''],[500000,30000,''],[600000,40000,''],[700000,50000,''],
+  [800000,70000,'r'],[900000,80000,''],[1000000,100000,'b'],[1100000,120000,''],[1200000,140000,''],
+  [1300000,160000,''],[1400000,180000,''],[1500000,200000,'r'],[1600000,220000,''],[1700000,240000,''],
+  [1800000,260000,''],[1900000,280000,''],[2000000,300000,''],[2100000,320000,''],[2200000,340000,''],
+  [2300000,360000,''],[2400000,380000,''],[2500000,400000,''],[2600000,430000,''],[2700000,460000,''],
+  [2800000,490000,''],[2900000,520000,''],[3000000,550000,'']
+];
+/* 役職手当：[評価点, MG, 店長, チーフ] */
+const PAY_ROLE=[
+  [100,150000,100000,40000],[90,120000,80000,35000],[80,100000,70000,30000],[70,90000,60000,25000],
+  [60,80000,50000,20000],[50,70000,40000,15000],[40,60000,30000,10000],[30,50000,20000,0],
+  [20,10000,10000,0],[10,0,0,0]
+];
+/* 昇・降格条件：[役職, 昇格条件, 降格条件] */
+const PAY_PROMO=[
+  ['MG','','2四半期連続評価点30以下'],
+  ['店長','2四半期（半年）連続評価点80以上','2四半期連続評価点30以下'],
+  ['チーフ','2四半期（半年）連続評価点80以上','2四半期連続評価点30以下'],
+  ['スタイリスト','2四半期（半年）連続評価点80以上',''],
+  ['Jrスタイリスト','四半期（3ヶ月）連続指名技術売上30万以上',''],
+  ['カラーリスト','カリキュラム達成後、スタイリストチェック合格',''],
+  ['アシスタント','カリキュラム達成後、カラーリストチェック合格','']
+];
+/* 指名料：[区分, 金額, 条件] */
+const PAY_FEE=[
+  ['スタイリスト',0,'スタイリストチェック後スタイリストとしてデビュー'],
+  ['トップスタイリスト',500,'3ヶ月連続で技術指名売上3ヶ月連続100万以上でトップスタイリストデビュー'],
+  ['サロンクリエーター',1000,'3ヶ月連続で技術指名売上3ヶ月連続150万以上でサロンクリエーターデビュー']
+];
+/* 賞与還付：[評価点, トップスタイリスト以上(%), スタイリスト以下(円)] */
+const PAY_BONUS=[
+  [100,70,70000],[90,65,50000],[80,60,40000],[70,55,35000],[60,50,30000],
+  [50,45,25000],[40,40,20000],[30,35,15000],[20,30,10000],[10,25,5000]
+];
+/* 役職別基準値（万円） */
+const PAY_BASE=[['MG',110],['店長',130],['チーフ',110],['スタイリスト',90],['Jrスタイリスト',60],['カラーリスト',50],['アシスタント',40],['レセプション',10]];
+
+function yen(n){return '¥'+Number(n).toLocaleString();}
+function rowCls(score){return score>=80?'c-peach':(score===60?'c-yellow':(score<=30?'c-gray':'c-none'));}
+
+function renderPayroll(){
+  const wrap=document.getElementById('pay-view');
+  let h='';
+  h+='<div class="pay-title">スタッフの給与体制</div>';
+  h+='<div class="pay-lead">給与は「指名売上の歩合」＋「フリー売上の5%バック」で決まります。役職手当と賞与は、人事評価の点数に応じて変わります。</div>';
+
+  h+='<div class="pay-sec"><div class="pay-h">評価と給与・賞与の関係</div>';
+  h+='<div class="pay-desc">評価点は四半期（3か月）ごとに出ます。ただし、役職手当と賞与に反映されるのは半年ごとです。<br>・1〜6月の2四半期の評価点の平均 → 7月の給与・賞与から反映<br>・7〜12月の2四半期の評価点の平均 → 翌年1月の給与・賞与から反映</div></div>';
+
+  h+='<div class="pay-sec"><div class="pay-h">指名売上の歩合</div>';
+  h+='<div class="pay-desc">1か月の指名売上に応じた手当です。</div>';
+  h+='<ul class="pay-list">'+PAY_MEIMEI.map(function(r){
+    return '<li class="'+r[2]+'"><span>'+yen(r[0])+'</span><span>→ '+yen(r[1])+'</span></li>';
+  }).join('')+'</ul>';
+  h+='<div class="pay-red">・300万円以上は、指名売上10万円ごとに3万円ずつアップします。</div>';
+  h+='<div class="pay-red">・店販は指名・フリーに関わらず15％バック</div>';
+  h+='<div class="pay-red">・チケット1枚の販売につき、割引分の4,000円を売上から差し引きます。</div>';
+  h+='</div>';
+
+  h+='<div class="pay-sec"><div class="pay-h">役職手当</div>';
+  h+='<div class="pay-desc">2四半期（半年）の評価点の平均（10点刻み）に応じて、役職手当が決まります。評価を締めた翌月から、次の半年の評価が出るまでの間、その点数に合わせた手当になります。</div>';
+  h+='<div class="pay-scroll"><table class="pay-tbl"><thead><tr><th>評価点</th><th>MG</th><th>店長</th><th>チーフ</th></tr></thead><tbody>'
+    +PAY_ROLE.map(function(r){
+      return '<tr class="'+rowCls(r[0])+'"><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td><td>'+r[3]+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+  h+='</div>';
+
+  h+='<div class="pay-sec"><div class="pay-h">昇・降格条件</div>';
+  h+='<div class="pay-scroll"><table class="pay-tbl"><thead><tr><th>役職</th><th>昇格条件</th><th>降格条件</th></tr></thead><tbody>'
+    +PAY_PROMO.map(function(r){
+      return '<tr class="c-none"><td class="lbl">'+esc(r[0])+'</td><td class="left">'+esc(r[1])+'</td><td class="left">'+esc(r[2])+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+  h+='</div>';
+
+  h+='<div class="pay-sec"><div class="pay-h">指名料</div>';
+  h+='<div class="pay-scroll"><table class="pay-tbl"><thead><tr><th>区分</th><th>指名料</th><th>条件</th></tr></thead><tbody>'
+    +PAY_FEE.map(function(r){
+      return '<tr class="c-none"><td class="lbl">'+esc(r[0])+'</td><td>'+fmtNum(r[1])+'</td><td class="left">※'+esc(r[2])+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+  h+='<div class="pay-red">※指名料はトップスタイリストで500円、サロンクリエイターは500、1000円の選択可能</div>';
+  h+='</div>';
+
+  h+='<div class="pay-sec"><div class="pay-h">賞与還付テーブル</div>';
+  h+='<div class="pay-desc">2四半期（半年）の評価点の平均に応じて、賞与が変わります。<br>・トップスタイリスト以上：指名料をもらえるため、指名料のバック率（％）で決まります。<br>・スタイリスト以下：金額（円）で決まります。</div>';
+  h+='<div class="pay-two">'
+    +'<div><div class="pay-sub">トップスタイリスト以上</div><div class="pay-scroll"><table class="pay-tbl"><tbody>'
+    +PAY_BONUS.map(function(r){return '<tr class="'+rowCls(r[0])+'"><td>'+r[0]+'</td><td>'+r[1]+'%</td></tr>';}).join('')
+    +'</tbody></table></div></div>'
+    +'<div><div class="pay-sub">スタイリスト以下</div><div class="pay-scroll"><table class="pay-tbl"><tbody>'
+    +PAY_BONUS.map(function(r){return '<tr class="'+rowCls(r[0])+'"><td>'+r[0]+'</td><td>'+r[2]+'</td></tr>';}).join('')
+    +'</tbody></table></div></div>'
+    +'</div>';
+  h+='<div class="pay-red">・賞与の支払いは毎年1月、7月になります</div>';
+  h+='<div class="pay-red">・二四半期の評価点の平均で決定</div>';
+  h+='</div>';
+
+  h+='<div class="pay-sec"><div class="pay-h">役職別基準値</div>';
+  h+='<div class="pay-scroll"><table class="pay-tbl"><thead><tr><th>役職</th><th>基準値（万円）</th></tr></thead><tbody>'
+    +PAY_BASE.map(function(r){return '<tr class="c-none"><td class="lbl">'+esc(r[0])+'</td><td>'+r[1]+'</td></tr>';}).join('')
+    +'</tbody></table></div>';
+  h+='</div>';
+
+  wrap.innerHTML=h;
 }
 
 /* ===== 店舗単位の集計（数値管理と同じ計算。売上は税込） ===== */
@@ -565,6 +721,7 @@ function canEditAdmin(){return ME&&ADMIN_ROLES.includes(ME.position);}
 function positionList(){return POS_ORDER.slice();}
 
 function openAdminModal(){
+  if(!canEditAdmin())return;
   const sel=document.getElementById('admin-position');
   sel.innerHTML=positionList().map(function(p){return '<option value="'+esc(p)+'">'+esc(p)+'</option>';}).join('');
   renderAdminList();
@@ -650,6 +807,7 @@ function addAdminItem(){
 function removeAdminItem(i){adminItems.splice(i,1);renderAdminItemsHtml();}
 
 async function saveAdminItems(){
+  if(!canEditAdmin())return;
   const pos=document.getElementById('admin-position').value;
   for(let i=0;i<adminItems.length;i++){
     const it=adminItems[i];
@@ -678,6 +836,7 @@ async function saveAdminItems(){
   document.getElementById('ev-quarter').value=String(currentQuarterGuess());
   document.getElementById('ev-pos-filter').innerHTML='<option value="">すべての役職</option>'+POS_ORDER.map(function(p){return '<option value="'+esc(p)+'">'+esc(p)+'</option>';}).join('');
   if(canEditAdmin())document.getElementById('admin-row').style.display='';
+  renderPayroll();
   loadListView();
 })();
 </script>
