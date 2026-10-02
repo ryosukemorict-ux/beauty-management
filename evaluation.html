@@ -117,6 +117,15 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
 @media(max-width:480px){.pay-list{column-count:1;}}
 .pay-list li{break-inside:avoid;display:flex;justify-content:space-between;gap:10px;padding:7px 8px;border-bottom:1px solid #f0e5d5;font-size:13.5px;font-weight:700;}
 .pay-tbl.narrow{width:auto;min-width:340px;}
+.pay-tbl td.num{text-align:right;padding-left:24px;padding-right:24px;}
+.pay-tbl tr.m-o td{color:#f6a21e;font-weight:700;}
+.pay-tbl tr.m-r td{color:#e53935;font-weight:700;}
+.pay-tbl tr.m-b td{color:#2a7fb0;font-weight:700;}
+.pay-tbl tr.m-n td{font-weight:700;}
+.pay-flex{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;}
+.pay-flex-tbl{flex:0 0 auto;max-width:100%;}
+.pay-flex-note{flex:1;min-width:240px;}
+.pay-flex-note .pay-red:first-child{margin-top:0;}
 .pay-list li.o{color:#f6a21e;}
 .pay-list li.r{color:#e53935;}
 .pay-list li.b{color:#2a7fb0;}
@@ -302,12 +311,15 @@ function renderPayroll(){
 
   h+='<div class="pay-sec"><div class="pay-h">指名売上の歩合</div>';
   h+='<div class="pay-desc">1か月の指名売上に応じた手当です。</div>';
-  h+='<ul class="pay-list">'+PAY_MEIMEI.map(function(r){
-    return '<li class="'+r[2]+'"><span>'+yen(r[0])+'</span><span>→ '+yen(r[1])+'</span></li>';
-  }).join('')+'</ul>';
+  h+='<div class="pay-flex"><div class="pay-flex-tbl"><div class="pay-scroll"><table class="pay-tbl narrow"><thead><tr><th>指名売上</th><th>手当</th></tr></thead><tbody>'
+    +PAY_MEIMEI.map(function(r){
+      return '<tr class="m-'+(r[2]||'n')+'"><td class="num">'+yen(r[0])+'</td><td class="num">'+yen(r[1])+'</td></tr>';
+    }).join('')+'</tbody></table></div></div>';
+  h+='<div class="pay-flex-note">';
   h+='<div class="pay-red">・300万円以上は、指名売上10万円ごとに3万円ずつアップします。</div>';
   h+='<div class="pay-red">・店販は指名・フリーに関わらず15％バック</div>';
   h+='<div class="pay-red">・チケット1枚の販売につき、割引分の4,000円を売上から差し引きます。</div>';
+  h+='</div></div>';
   h+='</div>';
 
   h+='<div class="pay-sec"><div class="pay-h">役職手当</div>';
