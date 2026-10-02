@@ -112,9 +112,11 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
 .pay-two{display:flex;gap:14px;flex-wrap:wrap;}
 .pay-two>div{flex:1;min-width:200px;}
 .pay-sub{font-size:12px;font-weight:700;margin-bottom:6px;color:var(--dark);}
-.pay-list{list-style:none;}
-.pay-list li{display:flex;justify-content:space-between;gap:12px;padding:6px 10px;border-bottom:1px solid #f0e5d5;font-size:13.5px;font-weight:700;}
-.pay-list li:last-child{border-bottom:none;}
+.pay-list{list-style:none;column-count:3;column-gap:24px;}
+@media(max-width:760px){.pay-list{column-count:2;}}
+@media(max-width:480px){.pay-list{column-count:1;}}
+.pay-list li{break-inside:avoid;display:flex;justify-content:space-between;gap:10px;padding:7px 8px;border-bottom:1px solid #f0e5d5;font-size:13.5px;font-weight:700;}
+.pay-tbl.narrow{width:auto;min-width:340px;}
 .pay-list li.o{color:#f6a21e;}
 .pay-list li.r{color:#e53935;}
 .pay-list li.b{color:#2a7fb0;}
@@ -310,7 +312,7 @@ function renderPayroll(){
 
   h+='<div class="pay-sec"><div class="pay-h">役職手当</div>';
   h+='<div class="pay-desc">2四半期（半年）の評価点の平均（10点刻み）に応じて、役職手当が決まります。評価を締めた翌月から、次の半年の評価が出るまでの間、その点数に合わせた手当になります。</div>';
-  h+='<div class="pay-scroll"><table class="pay-tbl"><thead><tr><th>評価点</th><th>MG</th><th>店長</th><th>チーフ</th></tr></thead><tbody>'
+  h+='<div class="pay-scroll"><table class="pay-tbl narrow"><thead><tr><th>評価点</th><th>MG</th><th>店長</th><th>チーフ</th></tr></thead><tbody>'
     +PAY_ROLE.map(function(r){
       return '<tr class="'+rowCls(r[0])+'"><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td><td>'+r[3]+'</td></tr>';
     }).join('')+'</tbody></table></div>';
@@ -346,7 +348,7 @@ function renderPayroll(){
   h+='</div>';
 
   h+='<div class="pay-sec"><div class="pay-h">役職別基準値</div>';
-  h+='<div class="pay-scroll"><table class="pay-tbl"><thead><tr><th>役職</th><th>基準値（万円）</th></tr></thead><tbody>'
+  h+='<div class="pay-scroll"><table class="pay-tbl narrow"><thead><tr><th>役職</th><th>基準値（万円）</th></tr></thead><tbody>'
     +PAY_BASE.map(function(r){return '<tr class="c-none"><td class="lbl">'+esc(r[0])+'</td><td>'+r[1]+'</td></tr>';}).join('')
     +'</tbody></table></div>';
   h+='</div>';
