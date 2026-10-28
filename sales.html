@@ -155,9 +155,9 @@ tbody tr:hover td:first-child{background:#fffbf7;}
     <div class="modal-title">📊 役職別基準値設定</div>
     <div style="font-size:12px;color:var(--mid);margin-bottom:16px;text-align:center">役職ごとの月間売上目標（税込）</div>
     <div id="productivity-fields"></div>
+    <div id="prod-status" style="font-size:12px;color:var(--mid);text-align:center;min-height:18px;margin-bottom:8px">入力すると自動で保存されます</div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeProductivityModal()">キャンセル</button>
-      <button class="btn btn-dark" onclick="saveProductivity()">保存</button>
+      <button class="btn btn-dark" onclick="saveProductivity()">閉じる</button>
     </div>
   </div>
 </div>
@@ -168,15 +168,15 @@ tbody tr:hover td:first-child{background:#fffbf7;}
     <div style="font-size:12px;color:var(--mid);margin-bottom:16px;text-align:center">店舗ごとの月間材料費比率（%）</div>
     <div class="form-group" style="margin-bottom:12px">
       <label style="font-size:12px;color:var(--mid);display:block;margin-bottom:4px">ailes（%）</label>
-      <input type="number" id="material-ailes" step="0.1" placeholder="0.0" style="font-family:'Noto Sans JP',sans-serif;font-size:14px;padding:8px 12px;border-radius:8px;border:1.5px solid var(--gold-light);width:100%;outline:none;">
+      <input type="number" id="material-ailes" step="0.1" placeholder="0.0" onchange="autoSaveMaterial()" style="font-family:'Noto Sans JP',sans-serif;font-size:14px;padding:8px 12px;border-radius:8px;border:1.5px solid var(--gold-light);width:100%;outline:none;">
     </div>
     <div class="form-group" style="margin-bottom:16px">
       <label style="font-size:12px;color:var(--mid);display:block;margin-bottom:4px">soleil（%）</label>
-      <input type="number" id="material-soleil" step="0.1" placeholder="0.0" style="font-family:'Noto Sans JP',sans-serif;font-size:14px;padding:8px 12px;border-radius:8px;border:1.5px solid var(--gold-light);width:100%;outline:none;">
+      <input type="number" id="material-soleil" step="0.1" placeholder="0.0" onchange="autoSaveMaterial()" style="font-family:'Noto Sans JP',sans-serif;font-size:14px;padding:8px 12px;border-radius:8px;border:1.5px solid var(--gold-light);width:100%;outline:none;">
     </div>
+    <div id="material-status" style="font-size:12px;color:var(--mid);text-align:center;min-height:18px;margin-bottom:8px">入力すると自動で保存されます</div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeMaterialModal()">キャンセル</button>
-      <button class="btn btn-dark" onclick="saveMaterialRatio()">保存</button>
+      <button class="btn btn-dark" onclick="saveMaterialRatio()">閉じる</button>
     </div>
   </div>
 </div>
@@ -342,12 +342,44 @@ function showProductivityModal(){
   wrap.innerHTML=POS_ORDER.map(function(pos){
     const val=roleProductivity[pos]||'';
     return '<div style="margin-bottom:12px"><label style="font-size:12px;color:var(--mid);display:block;margin-bottom:4px">'+pos+'（税込・円）</label>'
-      +'<input type="number" class="prod-input" data-pos="'+pos+'" value="'+val+'" placeholder="0" style="font-family:\'Noto Sans JP\',sans-serif;font-size:14px;padding:8px 12px;border-radius:8px;border:1.5px solid var(--gold-light);width:100%;outline:none;">'
+      +'<input type="number" class="prod-input" data-pos="'+pos+'" value="'+val+'" placeholder="0" onchange="autoSaveProductivity(this)" style="font-family:\'Noto Sans JP\',sans-serif;font-size:14px;padding:8px 12px;border-radius:8px;border:1.5px solid var(--gold-light);width:100%;outline:none;">'
       +'</div>';
   }).join('');
   document.getElementById('productivity-modal').classList.add('show');
 }
 function closeProductivityModal(){document.getElementById('productivity-modal').classList.remove('show');}
+
+/* 自動保存：入力欄から指が離れた時点で1項目ずつ保存（閉じるボタンでも全項目を保存） */
+function flashStatus(id,text){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.textContent=text;
+  clearTimeout(el._t);
+  el._t=setTimeout(function(){el.textContent='入力すると自動で保存されます';},2000);
+}
+async function autoSaveProductivity(el){
+  if(!canEditProductivity())return;
+  const pos=el.dataset.pos;
+  const val=el.value===''?0:Number(el.value);
+  const {error}=await sb.from('role_productivity').upsert({month:currentMonth,position:pos,monthly_target:val,updated_at:new Date().toISOString()},{onConflict:'month,position'});
+  if(error){flashStatus('prod-status','保存できませんでした。もう一度入力してください');return;}
+  roleProductivity[pos]=val;
+  flashStatus('prod-status',pos+' を保存しました');
+  renderTable();
+}
+async function autoSaveMaterial(){
+  if(!canEditMaterial())return;
+  const aRaw=document.getElementById('material-ailes').value;
+  const sRaw=document.getElementById('material-soleil').value;
+  const aVal=aRaw===''?null:Number(aRaw);
+  const sVal=sRaw===''?null:Number(sRaw);
+  const r1=await sb.from('material_ratio').upsert({month:currentMonth,store:'ailes',ratio:aVal,updated_at:new Date().toISOString()},{onConflict:'month,store'});
+  const r2=await sb.from('material_ratio').upsert({month:currentMonth,store:'soleil',ratio:sVal,updated_at:new Date().toISOString()},{onConflict:'month,store'});
+  if(r1.error||r2.error){flashStatus('material-status','保存できませんでした。もう一度入力してください');return;}
+  materialRatio={ailes:aVal,soleil:sVal};
+  flashStatus('material-status','保存しました');
+  updateTotals();
+}
 
 async function saveProductivity(){
   const inputs=document.querySelectorAll('.prod-input');
