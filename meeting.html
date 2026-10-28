@@ -32,6 +32,8 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
 .sel{font-family:'Noto Sans JP',sans-serif;font-size:13px;padding:7px 26px 7px 10px;border-radius:8px;border:1.5px solid var(--gold-light);outline:none;cursor:pointer;background:white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a6a58'/%3E%3C/svg%3E") no-repeat right 8px center;appearance:none;-webkit-appearance:none;color:var(--dark);}
 .sel:focus{border-color:var(--gold);}
 .inp,.txt{font-family:'Noto Sans JP',sans-serif;font-size:14px;padding:9px 12px;border-radius:8px;border:1.5px solid var(--gold-light);outline:none;background:#fdfaf6;width:100%;}
+/* iPad・iPhoneのSafariで日付欄が枠からはみ出すのを防ぐ */
+input[type="date"].inp{-webkit-appearance:none;appearance:none;display:block;min-width:0;max-width:100%;min-height:42px;text-align:left;}
 .inp:focus,.txt:focus{border-color:var(--gold);}
 .txt{resize:vertical;min-height:64px;line-height:1.6;overflow:hidden;}
 .field{margin-bottom:12px;}
@@ -89,6 +91,7 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
     <button class="tab-btn" data-tab="repnote" onclick="switchTab('repnote')" id="tab-btn-repnote" style="display:none">🔒 代表管理</button>
     <button class="tab-btn" data-tab="exec" onclick="switchTab('exec')">🏛 幹部会議</button>
     <button class="tab-btn" data-tab="seminar" onclick="switchTab('seminar')">🎤 セミナー報告</button>
+    <button class="tab-btn" data-tab="other" onclick="switchTab('other')">📄 その他報告</button>
   </div>
 
   <!-- 月末報告 -->
@@ -240,6 +243,41 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
         </div>
         <div id="sm-list"></div>
       </div>
+      <!-- その他報告：全スタッフが入力できる。公開範囲は報告ごとに本人が選ぶ（4種類）。
+           編集・削除は本人とチーフ以上（見られる報告のみ）、公開範囲の変更は本人のみ -->
+      <div class="panel" id="panel-other">
+        <div class="filter-row">
+          <select class="sel" id="or-store" onchange="loadOther()">
+            <option value="両店" selected>両店</option>
+            <option value="エルズ">ailes</option>
+            <option value="soleil">soleil</option>
+          </select>
+        </div>
+        <div class="card">
+          <div class="card-title">その他の報告を追加</div>
+          <div class="field"><label>報告者</label>
+            <select class="sel" id="or-student"></select>
+          </div>
+          <div class="field"><label>日付</label>
+            <input type="date" class="inp" id="or-date">
+          </div>
+          <div class="field"><label>件名</label>
+            <input type="text" class="inp" id="or-title" placeholder="例：お客様からのご意見／備品の破損／外部イベント参加">
+          </div>
+          <div class="field"><label>内容</label>
+            <textarea class="txt" id="or-content"></textarea>
+          </div>
+          <div class="field"><label>添付ファイル（画像・書類）</label>
+            <input type="file" class="inp" id="or-attach-new" multiple>
+          </div>
+          <div class="field"><label>公開範囲（どれかを選んでください）</label>
+            <select class="sel" id="or-visibility" onchange="onOrVisChange('or')"></select>
+            <div id="or-people" style="display:none;margin-top:8px"></div>
+          </div>
+          <div class="save-row"><button class="btn btn-dark" onclick="saveOther()">保存</button></div>
+        </div>
+        <div id="or-list"></div>
+      </div>
   </div>
 <div class="locked" id="locked-view" style="display:none">このページはチーフ以上のみ閲覧できます</div>
 
@@ -342,6 +380,7 @@ function switchTab(name){
     if(name==='interview')onIvStoreChange();
   if(name==='repnote')onRepTabOpen();
   if(name==='exec')loadExec();
+  if(name==='other')loadOther();
 }
 
 /* ===== 月末報告 ===== */
@@ -959,6 +998,201 @@ async function delExAttachment(idx){
   }
 
 
+/* ===== その他報告 ===== */
+let orEditId=null;
+window.__orRows={};
+/* ===== 公開範囲 =====
+   all   ＝全員に公開（全スタッフ）
+   store ＝同じ店舗のスタッフに公開（報告者と同じ店舗のスタッフ＋代表・管理者）
+   exec  ＝チーフ以上（代表・管理者・店長・チーフ、全店舗）
+   people＝指定した人だけ（報告者が選んだ人だけ）
+   どの公開範囲でも、報告した本人は必ず見られる */
+const OR_VIS_OPTIONS=[
+  ['all','全員に公開（全スタッフが見られる）'],
+  ['store','同じ店舗のスタッフに公開（同じ店舗のスタッフと代表・管理者）'],
+  ['exec','チーフ以上だけ（代表・管理者・店長・チーフ）'],
+  ['people','指定した人だけ（下で選んだ人だけ）']
+];
+const OR_TOP_ROLES=['代表','管理者'];
+function orSameStore(a,b){
+  if(!a||!b)return false;
+  if(a==='両店'||b==='両店')return true;
+  return a===b;
+}
+function canViewOther(r){
+  if(!ME)return false;
+  if(r.student_id===ME.id)return true;
+  const v=r.visibility||'all';
+  if(v==='all')return true;
+  if(v==='store')return OR_TOP_ROLES.includes(ME.position)||orSameStore(ME.store,r.students&&r.students.store);
+  if(v==='exec')return ALLOWED_ROLES.includes(ME.position);
+  if(v==='people')return (r.viewers||[]).includes(ME.id);
+  return false;
+}
+function canEditOther(r){return !!ME&&canViewOther(r)&&(r.student_id===ME.id||ALLOWED_ROLES.includes(ME.position));}
+function orVisOptionsHtml(selected){
+  return (selected?'':'<option value="" selected>選んでください</option>')
+    +OR_VIS_OPTIONS.map(function(o){return '<option value="'+o[0]+'"'+(selected===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('');
+}
+/* 「指定した人だけ」のときの人選びチェックリスト（自分以外の在籍スタッフ） */
+function orPeopleHtml(prefix,checkedIds){
+  const sorted=students.filter(function(s){return s.is_active!==false&&(!ME||s.id!==ME.id);}).sort(function(a,b){
+    const ai=SEMINAR_POS_ORDER.indexOf(a.position),bi=SEMINAR_POS_ORDER.indexOf(b.position);
+    return (ai===-1?99:ai)-(bi===-1?99:bi);
+  });
+  return '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px;border:1.5px solid var(--gold-light);border-radius:8px;padding:10px;background:#fdfaf6">'
+    +sorted.map(function(s){
+      return '<label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" class="'+prefix+'-person" value="'+esc(s.id)+'"'+((checkedIds||[]).includes(s.id)?' checked':'')+'>'+esc(s.name)+'<span style="font-size:11px;color:var(--soft)">'+esc(s.position||'')+'</span></label>';
+    }).join('')+'</div>';
+}
+function onOrVisChange(prefix,id){
+  const sel=document.getElementById(id?prefix+'-vis-'+id:prefix+'-visibility');
+  const box=document.getElementById(id?prefix+'-people-'+id:prefix+'-people');
+  if(sel.value==='people'){
+    if(!box.innerHTML){
+      const r=id?window.__orRows[id]:null;
+      box.innerHTML=orPeopleHtml(id?prefix+'-'+id:prefix,r?r.viewers:[]);
+    }
+    box.style.display='';
+  } else box.style.display='none';
+}
+function orCheckedPeople(cls){
+  return Array.prototype.slice.call(document.querySelectorAll('.'+cls+'-person:checked')).map(function(el){return el.value;});
+}
+function fillOtherStudentSelect(){
+  const sel=document.getElementById('or-student');
+  const sorted=students.filter(function(s){return s.is_active!==false;}).sort(function(a,b){
+    const ai=SEMINAR_POS_ORDER.indexOf(a.position),bi=SEMINAR_POS_ORDER.indexOf(b.position);
+    return (ai===-1?99:ai)-(bi===-1?99:bi);
+  });
+  sel.innerHTML=sorted.map(function(s){return '<option value="'+esc(s.id)+'">'+esc(s.name)+'('+esc(storeLabel(s.store))+')</option>';}).join('');
+  if(ME)sel.value=ME.id;
+  const vis=document.getElementById('or-visibility');
+  if(!vis.options.length)vis.innerHTML=orVisOptionsHtml('');
+  /* チーフ以上でなければ本人以外は選べない */
+  sel.disabled=!(ME&&ALLOWED_ROLES.includes(ME.position));
+  const d=document.getElementById('or-date');
+  if(!d.value){const t=new Date();d.value=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');}
+}
+function orAttachLinks(atts,delFn){
+  return (atts||[]).map(function(a,i){
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><a href="'+esc(a.url)+'" class="att-open" data-name="'+esc(a.name)+'" style="color:var(--blue);text-decoration:underline">'+esc(a.name)+'</a>'
+      +(delFn?'<button type="button" class="btn btn-outline btn-xs" onclick="'+delFn+'('+i+')">削除</button>':'')+'</div>';
+  }).join('');
+}
+async function loadOther(){
+  fillOtherStudentSelect();
+  const store=document.getElementById('or-store').value;
+  const list=document.getElementById('or-list');
+  const {data,error}=await sb.from('other_reports').select('*,students(name,store)').order('report_date',{ascending:false}).order('created_at',{ascending:false});
+  if(error){list.innerHTML='<div class="empty-msg">読み込みエラー: '+esc(error.message)+'</div>';return;}
+  let rows=data||[];
+  if(store!=='両店')rows=rows.filter(function(r){return r.students&&r.students.store===store;});
+  rows=rows.filter(canViewOther);
+  if(!rows.length){list.innerHTML='<div class="empty-msg">まだ報告がありません</div>';return;}
+  window.__orRows={};
+  list.innerHTML=rows.map(function(r){
+    window.__orRows[r.id]=r;
+    const name=r.students?r.students.name:'(不明)';
+    const st=r.students?storeLabel(r.students.store):'';
+    if(orEditId===r.id){
+      return '<div class="card">'
+        +'<div class="card-title">'+esc(name)+'('+esc(st)+')</div>'
+        +'<div class="field"><label>日付</label><input type="date" class="inp" id="oredit-date-'+r.id+'" value="'+esc(r.report_date||'')+'"></div>'
+        +'<div class="field"><label>件名</label><input type="text" class="inp" id="oredit-title-'+r.id+'" value="'+esc(r.title||'')+'"></div>'
+        +'<div class="field"><label>内容</label><textarea class="txt" id="oredit-content-'+r.id+'">'+esc(r.content||'')+'</textarea></div>'
+        +'<div class="field"><label>添付ファイル</label>'+orAttachLinks(r.attachments,'delOrAttachment')
+        +'<input type="file" class="inp" id="oredit-attach-new-'+r.id+'" multiple></div>'
+        +(ME&&r.student_id===ME.id
+          ?'<div class="field"><label>公開範囲</label><select class="sel" id="oredit-vis-'+r.id+'" onchange="onOrVisChange(\'oredit\','+r.id+')">'+orVisOptionsHtml(r.visibility||'all')+'</select>'
+            +'<div id="oredit-people-'+r.id+'" style="'+((r.visibility==='people')?'':'display:none;')+'margin-top:8px">'+((r.visibility==='people')?orPeopleHtml('oredit-'+r.id,r.viewers):'')+'</div></div>'
+          :'')
+        +'<div class="save-row"><button class="btn btn-outline" onclick="cancelOrEdit()">キャンセル</button><button class="btn btn-dark" onclick="saveOrEdit('+r.id+')">更新する</button></div>'
+        +'</div>';
+    }
+    return '<div class="card">'
+      +'<div class="card-title">'+esc(r.title||'(件名なし)')+' - '+esc(name)+'('+esc(st)+') '+esc(r.report_date||'')+'</div>'
+      +'<div class="iv-label">内容</div><div class="iv-body">'+esc(r.content||'').replace(/\n/g,'<br>')+'</div>'
+      +((r.attachments&&r.attachments.length)?'<div class="iv-label">添付ファイル</div><div class="iv-body">'+orAttachLinks(r.attachments,null)+'</div>':'')
+      +(canEditOther(r)?'<div class="save-row"><button class="btn btn-outline btn-sm" onclick="toggleOrEdit('+r.id+')">編集</button><button class="btn btn-red btn-sm" onclick="deleteOther('+r.id+')">削除</button></div>':'')
+      +'</div>';
+  }).join('');
+  autoGrowAll(list);
+}
+function toggleOrEdit(id){orEditId=(orEditId===id)?null:id;loadOther();}
+function cancelOrEdit(){orEditId=null;loadOther();}
+async function saveOther(){
+  const title=document.getElementById('or-title').value.trim();
+  const content=document.getElementById('or-content').value;
+  if(!title&&!content.trim()){alert('件名か内容を入力してください');return;}
+  const visibility=document.getElementById('or-visibility').value;
+  if(!visibility){alert('公開範囲を選んでください');return;}
+  const viewers=visibility==='people'?orCheckedPeople('or'):[];
+  if(visibility==='people'&&!viewers.length){alert('見せる人を1人以上選んでください');return;}
+  const fileInput=document.getElementById('or-attach-new');
+  const attachments=fileInput.files.length?await uploadAttachments(fileInput.files):[];
+  const payload={
+    student_id:document.getElementById('or-student').value,
+    report_date:document.getElementById('or-date').value||null,
+    title:title,
+    content:content,
+    attachments:attachments,
+    visibility:visibility,
+    viewers:viewers
+  };
+  const {error}=await sb.from('other_reports').insert(payload);
+  if(error){alert('エラー: '+error.message);return;}
+  alert('保存しました');
+  document.getElementById('or-title').value='';
+  document.getElementById('or-content').value='';
+  document.getElementById('or-visibility').innerHTML=orVisOptionsHtml('');
+  document.getElementById('or-people').innerHTML='';
+  document.getElementById('or-people').style.display='none';
+  fileInput.value='';
+  loadOther();
+}
+async function saveOrEdit(id){
+  const r=window.__orRows[id];
+  if(!r||!canEditOther(r))return;
+  const fileInput=document.getElementById('oredit-attach-new-'+id);
+  const newAttachments=fileInput.files.length?await uploadAttachments(fileInput.files):[];
+  const payload={
+    report_date:document.getElementById('oredit-date-'+id).value||null,
+    title:document.getElementById('oredit-title-'+id).value,
+    content:document.getElementById('oredit-content-'+id).value,
+    attachments:(r.attachments||[]).concat(newAttachments),
+    updated_at:new Date().toISOString()
+  };
+  /* 公開範囲は報告した本人だけが変えられる */
+  const visEl=document.getElementById('oredit-vis-'+id);
+  if(visEl&&ME&&r.student_id===ME.id){
+    payload.visibility=visEl.value;
+    payload.viewers=visEl.value==='people'?orCheckedPeople('oredit-'+id):[];
+    if(visEl.value==='people'&&!payload.viewers.length){alert('見せる人を1人以上選んでください');return;}
+  }
+  const {error}=await sb.from('other_reports').update(payload).eq('id',id);
+  if(error){alert('エラー: '+error.message);return;}
+  orEditId=null;
+  loadOther();
+}
+async function delOrAttachment(idx){
+  const r=window.__orRows[orEditId];
+  if(!r)return;
+  const atts=(r.attachments||[]).slice();
+  atts.splice(idx,1);
+  const {error}=await sb.from('other_reports').update({attachments:atts}).eq('id',r.id);
+  if(error){alert('エラー: '+error.message);return;}
+  loadOther();
+}
+async function deleteOther(id){
+  const r=window.__orRows[id];
+  if(!r||!canEditOther(r))return;
+  if(!confirm('この報告を削除しますか？'))return;
+  const {error}=await sb.from('other_reports').delete().eq('id',id);
+  if(error){alert('エラー: '+error.message);return;}
+  loadOther();
+}
+
 /* ===== 起動 ===== */
 (async function(){
   const loginId=localStorage.getItem('logged_in_id');
@@ -973,7 +1207,7 @@ async function delExAttachment(idx){
     document.getElementById('app-wrap').style.display='block';
     const isFullAccess=ALLOWED_ROLES.includes(ME.position);
     if(!isFullAccess){
-      document.querySelectorAll('.tab-btn').forEach(function(b){if(b.dataset.tab!=='seminar')b.style.display='none';});
+      document.querySelectorAll('.tab-btn').forEach(function(b){if(b.dataset.tab!=='seminar'&&b.dataset.tab!=='other')b.style.display='none';});
       switchTab('seminar');
     }else{
       monthOptions(document.getElementById('mo-month'),null);
