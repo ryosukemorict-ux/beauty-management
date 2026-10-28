@@ -4,8 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>人事評価 | ailes group</title>
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<meta name="apple-mobile-web-app-title" content="ailes group">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assignment-history.js"></script>
 <style>
 :root{--cream:#faf6f0;--gold:#c9a96e;--gold-light:#e8d5b0;--dark:#1a1410;--mid:#7a6a58;--soft:#c4b49e;--accent:#8b5e3c;--green:#4a7c59;--red:#c0392b;--blue:#2980b9;}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -237,6 +241,7 @@ const DATA_SOURCES=[
 /* 「部下の評価点の平均」で部下として数える役職（店長・チーフは含めない） */
 const SUB_ROLES=['スタイリスト','Jrスタイリスト','カラーリスト','アシスタント','レセプション'];
 
+let assignHistory=[];
 let students=[],ME=null,allCriteria=[],currentCriteria=[],entries={},currentStore='all',currentSid=null,currentDetailSt=null,currentDetailYear=null,currentSalesMap={};
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -245,6 +250,17 @@ function storeShortCode(storeJP){return storeJP==='エルズ'?'ailes':'soleil';}
 function fmtNum(n){return Number(n||0).toLocaleString();}
 function taxIncl(x){return Math.floor(Number(x||0)*11/10);}
 function canSeePoints(){return !HIDE_POINTS||(ME&&POINT_VISIBLE_ROLES.includes(ME.position));}
+/* 異動履歴を見て「その月の所属店舗」を返す（履歴がなければ現在の店舗） */
+function storeAt(s,year,m){
+  const v=valueAsOf(assignHistory,s.id,'store',year+'-'+String(m).padStart(2,'0')+'-01');
+  return v||s.store;
+}
+/* 四半期の所属店舗＝その期でまだ来ていない月を除いた最後の月の店舗 */
+function quarterStore(s,year,months){
+  let m=months[0];
+  months.forEach(function(x){if(!isFutureMonth(year,x))m=x;});
+  return storeAt(s,year,m);
+}
 function isFutureMonth(year,m){
   const now=new Date();
   const ny=now.getFullYear(),nm=now.getMonth()+1;
@@ -381,7 +397,8 @@ function getStoreMonth(storeJP,year,month){
 }
 async function computeStoreMonth(storeJP,monthStr){
   const {data:allStudents}=await sb.from('students').select('id,position,store').eq('is_active',true);
-  const staffList=(allStudents||[]).filter(function(s){return (s.store===storeJP||s.store==='両店')&&s.position!=='管理者';});
+  const y=Number(monthStr.slice(0,4)),mo=Number(monthStr.slice(5,7));
+  const staffList=(allStudents||[]).filter(function(s){return (s.store==='両店'||storeAt(s,y,mo)===storeJP)&&s.position!=='管理者';});
   const staffIds=staffList.map(function(s){return s.id;});
   const {data:allocData}=await sb.from('sales_allocation').select('*').eq('month',monthStr).maybeSingle();
   const alloc=allocData||{ailes_pct:50,soleil_pct:50};
@@ -449,7 +466,9 @@ function switchStore(store){
 
 function sortedTargetStudents(){
   let list=students.filter(function(s){return EVAL_TARGET_ROLES.includes(s.position);});
-  if(currentStore!=='all')list=list.filter(function(s){return s.store===currentStore||s.store==='両店';});
+  const yy=Number(document.getElementById('ev-year').value);
+  const mm=QUARTER_MONTHS[Number(document.getElementById('ev-quarter').value)];
+  if(currentStore!=='all')list=list.filter(function(s){return s.store==='両店'||quarterStore(s,yy,mm)===currentStore;});
   const posF=document.getElementById('ev-pos-filter').value;
   if(posF)list=list.filter(function(s){return s.position===posF;});
   list.sort(function(a,b){
@@ -475,7 +494,7 @@ function getSubordinateAvg(storeJP,year,months){
   return subAvgCache[key];
 }
 async function computeSubordinateAvg(storeJP,year,months){
-  const subs=students.filter(function(s){return s.store===storeJP&&SUB_ROLES.includes(s.position);});
+  const subs=students.filter(function(s){return SUB_ROLES.includes(s.position)&&quarterStore(s,year,months)===storeJP;});
   const ids=subs.map(function(s){return s.id;});
   const list=[];
   if(!ids.length)return {avg:0,list:list,count:0};
@@ -531,7 +550,7 @@ async function evalCriterion(c,st,year,months,ctx){
 
   const cols=[];
   if(src==='sub_avg'){
-    const d=await getSubordinateAvg(st.store,year,months);
+    const d=await getSubordinateAvg(quarterStore(st,year,months),year,months);
     res.score=d.avg;
     res.resultSum=d.count;
     res.weighted=res.score*w;
@@ -570,7 +589,7 @@ async function evalCriterion(c,st,year,months,ctx){
     if(isFutureMonth(year,m)){cols.push(monthColHtml(m,'','',false,true));continue;}
     let tgt=(src==='store_sales')?null:base,val=0;
     if(src==='store_sales'||src==='store_clients'){
-      const d=await getStoreMonth(st.store,year,m);
+      const d=await getStoreMonth(storeAt(st,year,m),year,m);
       if(!d.hasData){cols.push(monthColHtml(m,'未入力','',false,true,'未入力'));continue;}
       if(src==='store_sales'){tgt=d.target;val=d.result;}
       else{val=d.clients;}
@@ -661,7 +680,7 @@ async function loadListView(){
     return '<div class="staff-row-wrap" onclick="openDetail(\''+s.id+'\')">'
       +'<div class="staff-row-body">'
       +'<div class="staff-row-left">'
-      +'<div class="staff-row-head"><div class="name">'+esc(s.name)+'</div><div class="pos">'+esc(s.position||'')+'</div><div class="store">'+esc(storeLabel(s.store))+'</div></div>'
+      +'<div class="staff-row-head"><div class="name">'+esc(s.name)+'</div><div class="pos">'+esc(s.position||'')+'</div><div class="store">'+esc(storeLabel(s.store==='両店'?s.store:quarterStore(s,year,months)))+'</div></div>'
       +lines.join('')
       +'</div>'
       +'<div class="score-cell">'+(showPts?total.toFixed(1):'—')+'</div>'
@@ -685,7 +704,8 @@ async function openDetail(sid){
   if(!st)return;
   currentDetailSt=st;
   document.getElementById('detail-name').textContent=st.name;
-  document.getElementById('detail-sub').textContent=(st.position||'')+'　'+storeLabel(st.store);
+  const dy=Number(document.getElementById('ev-year').value),dm=QUARTER_MONTHS[Number(document.getElementById('ev-quarter').value)];
+  document.getElementById('detail-sub').textContent=(st.position||'')+'　'+storeLabel(st.store==='両店'?st.store:quarterStore(st,dy,dm));
 
   const year=Number(document.getElementById('ev-year').value);
   const quarter=Number(document.getElementById('ev-quarter').value);
@@ -897,6 +917,7 @@ async function saveAdminItems(){
   if(!loginId){document.getElementById('locked-view').style.display='block';document.getElementById('locked-view').textContent='ログインが必要です';return;}
   const {data:sData}=await sb.from('students').select('*').order('created_at');
   students=(sData||[]).filter(function(s){return s.is_active!==false;});
+  assignHistory=await loadAssignmentHistory(sb);
   ME=(sData||[]).find(function(s){return s.id===loginId;})||null;
   if(!ME){document.getElementById('locked-view').style.display='block';document.getElementById('locked-view').textContent='ログインが必要です';return;}
   document.getElementById('app-wrap').style.display='block';
