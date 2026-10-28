@@ -220,9 +220,14 @@ const SUPABASE_ANON='sb_publishable_a3X1ltKqAaTv6CyxHIReug_xEPqqCSS';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
 /* 評価項目の編集権限：代表・管理者のみ（店長・チーフは閲覧のみ） */
 const ADMIN_ROLES=['代表','管理者'];
-/* 点数の公開設定：振れ幅が決まるまで true。全員に点数を見せるときは false に変更 */
-const HIDE_POINTS=true;
-const POINT_VISIBLE_ROLES=['代表','管理者'];
+/* ===== 評価点の公開範囲 =====
+   POINT_ALL_ROLES の役職 … 全員分の評価点を見られる
+   それ以外（スタイリスト以下）… 自分の分だけ見られる（一覧にも自分だけ表示）
+   全スタッフに全員分を見せるときは STAFF_SEE_ALL を true に変更 */
+const POINT_ALL_ROLES=['代表','管理者','マネージャー','店長','チーフ'];
+const STAFF_SEE_ALL=false;
+/* 給与制度の金額・条件を編集できる役職 */
+const PAY_EDIT_ROLES=['代表'];
 const MONTH_LABELS=['1月','2月','3月'];
 const QUARTER_MONTHS={1:[1,2,3],2:[4,5,6],3:[7,8,9],4:[10,11,12]};
 const EVAL_TARGET_ROLES=['店長','チーフ','スタイリスト','Jrスタイリスト','カラーリスト','アシスタント','レセプション'];
@@ -236,10 +241,10 @@ const DATA_SOURCES=[
   ['meimei_clients','指名入客数'],
   ['store_clients','所属店舗の総入客数'],
   ['late_count','遅刻数（3か月合計・0回で60点、1回ごとに−10点）'],
-  ['sub_avg','部下の評価点の平均（同じ店舗の店長・チーフ以外・自動）']
+  ['sub_avg','部下の評価点の平均（同じ店舗のチーフ以下・自動）']
 ];
-/* 「部下の評価点の平均」で部下として数える役職（店長・チーフは含めない） */
-const SUB_ROLES=['スタイリスト','Jrスタイリスト','カラーリスト','アシスタント','レセプション'];
+/* 「部下の評価点の平均」で部下として数える役職（チーフ以下。店長は含めない） */
+const SUB_ROLES=['チーフ','スタイリスト','Jrスタイリスト','カラーリスト','アシスタント','レセプション'];
 
 let assignHistory=[];
 let students=[],ME=null,allCriteria=[],currentCriteria=[],entries={},currentStore='all',currentSid=null,currentDetailSt=null,currentDetailYear=null,currentSalesMap={};
@@ -249,7 +254,8 @@ function storeLabel(v){return v==='エルズ'?'ailes':v;}
 function storeShortCode(storeJP){return storeJP==='エルズ'?'ailes':'soleil';}
 function fmtNum(n){return Number(n||0).toLocaleString();}
 function taxIncl(x){return Math.floor(Number(x||0)*11/10);}
-function canSeePoints(){return !HIDE_POINTS||(ME&&POINT_VISIBLE_ROLES.includes(ME.position));}
+function canSeeAll(){return !!ME&&(STAFF_SEE_ALL||POINT_ALL_ROLES.includes(ME.position));}
+function canSeePoints(st){return !!ME&&(canSeeAll()||(!!st&&st.id===ME.id));}
 /* 異動履歴を見て「その月の所属店舗」を返す（履歴がなければ現在の店舗） */
 function storeAt(s,year,m){
   const v=valueAsOf(assignHistory,s.id,'store',year+'-'+String(m).padStart(2,'0')+'-01');
@@ -275,9 +281,10 @@ function showView(v){
   document.getElementById('vtab-pay').classList.toggle('active',v==='pay');
 }
 
-/* ===== 給与制度ページ（全員閲覧可・編集不可） ===== */
-/* 指名売上 → 手当（数字は変更しない）。c: o=オレンジ r=赤 b=青 */
-const PAY_MEIMEI=[
+/* ===== 給与制度ページ（全員閲覧可・編集は PAY_EDIT_ROLES のみ） =====
+   下の数字は初期値。代表が画面から保存すると payroll_settings テーブルの内容が優先される */
+/* 指名売上 → 手当。c: o=オレンジ r=赤 b=青 */
+let PAY_MEIMEI=[
   [200000,10000,'o'],[300000,20000,''],[500000,30000,''],[600000,40000,''],[700000,50000,''],
   [800000,70000,'r'],[900000,80000,''],[1000000,100000,'b'],[1100000,120000,''],[1200000,140000,''],
   [1300000,160000,''],[1400000,180000,''],[1500000,200000,'r'],[1600000,220000,''],[1700000,240000,''],
@@ -286,13 +293,13 @@ const PAY_MEIMEI=[
   [2800000,490000,''],[2900000,520000,''],[3000000,550000,'']
 ];
 /* 役職手当：[評価点, MG, 店長, チーフ] */
-const PAY_ROLE=[
+let PAY_ROLE=[
   [100,150000,100000,40000],[90,120000,80000,35000],[80,100000,70000,30000],[70,90000,60000,25000],
   [60,80000,50000,20000],[50,70000,40000,15000],[40,60000,30000,10000],[30,50000,20000,0],
   [20,10000,10000,0],[10,0,0,0]
 ];
 /* 昇・降格条件：[役職, 昇格条件, 降格条件] */
-const PAY_PROMO=[
+let PAY_PROMO=[
   ['MG','','2四半期連続評価点30以下'],
   ['店長','2四半期（半年）連続評価点80以上','2四半期連続評価点30以下'],
   ['チーフ','2四半期（半年）連続評価点80以上','2四半期連続評価点30以下'],
@@ -302,25 +309,32 @@ const PAY_PROMO=[
   ['アシスタント','カリキュラム達成後、カラーリストチェック合格','']
 ];
 /* 指名料：[区分, 金額, 条件] */
-const PAY_FEE=[
+let PAY_FEE=[
   ['スタイリスト',0,'スタイリストチェック後スタイリストとしてデビュー'],
   ['トップスタイリスト',500,'3ヶ月連続で技術指名売上3ヶ月連続100万以上でトップスタイリストデビュー'],
   ['サロンクリエーター',1000,'3ヶ月連続で技術指名売上3ヶ月連続150万以上でサロンクリエーターデビュー']
 ];
 /* 賞与還付：[評価点, トップスタイリスト以上(%), スタイリスト以下(円)] */
-const PAY_BONUS=[
+let PAY_BONUS=[
   [100,70,70000],[90,65,50000],[80,60,40000],[70,55,35000],[60,50,30000],
   [50,45,25000],[40,40,20000],[30,35,15000],[20,30,10000],[10,25,5000]
 ];
 /* 役職別基準値（万円） */
-const PAY_BASE=[['MG',110],['店長',130],['チーフ',110],['スタイリスト',90],['Jrスタイリスト',60],['カラーリスト',50],['アシスタント',40],['レセプション',10]];
+let PAY_MEIMEI_NOTES=[
+  '300万円以上は、指名売上10万円ごとに3万円ずつアップします。',
+  '店販は指名・フリーに関わらず15％バック',
+  'チケット1枚の販売につき、割引分の4,000円を売上から差し引きます。'
+];
+let PAY_BASE=[['MG',110],['店長',130],['チーフ',110],['スタイリスト',90],['Jrスタイリスト',60],['カラーリスト',50],['アシスタント',40],['レセプション',10]];
 
 function yen(n){return '¥'+Number(n).toLocaleString();}
 function rowCls(score){return score>=80?'c-peach':(score===60?'c-yellow':(score<=30?'c-gray':'c-none'));}
 
 function renderPayroll(){
   const wrap=document.getElementById('pay-view');
+  if(payEditing){renderPayEditor();return;}
   let h='';
+  if(canEditPay())h+='<div class="admin-row" style="margin-bottom:10px"><button class="btn btn-outline btn-sm" onclick="startPayEdit()">✏️ 給与制度の金額・条件を編集</button>'+(payMeta?'<span style="font-size:11px;color:var(--soft);margin-left:8px">最終更新 '+esc(payMeta)+'</span>':'')+'</div>';
   h+='<div class="pay-title">スタッフの給与体制</div>';
   h+='<div class="pay-lead">給与は「指名売上の歩合」＋「フリー売上の5%バック」で決まります。役職手当と賞与は、人事評価の点数に応じて変わります。</div>';
 
@@ -336,9 +350,7 @@ function renderPayroll(){
       +'</tbody></table></div>';
   }
   h+='<div class="pay-two-tbl"><div>'+meimeiTbl(PAY_MEIMEI.slice(0,half))+'</div><div>'+meimeiTbl(PAY_MEIMEI.slice(half))+'</div></div>';
-  h+='<div class="pay-red">・300万円以上は、指名売上10万円ごとに3万円ずつアップします。</div>';
-  h+='<div class="pay-red">・店販は指名・フリーに関わらず15％バック</div>';
-  h+='<div class="pay-red">・チケット1枚の販売につき、割引分の4,000円を売上から差し引きます。</div>';
+  PAY_MEIMEI_NOTES.forEach(function(t){if(t)h+='<div class="pay-red">・'+esc(t)+'</div>';});
   h+='</div>';
 
   h+='<div class="pay-sec"><div class="pay-h">役職手当</div>';
@@ -385,6 +397,103 @@ function renderPayroll(){
   h+='</div>';
 
   wrap.innerHTML=h;
+}
+
+/* ===== 給与制度の保存・読み込み・編集画面 ===== */
+let payEditing=false,payDraft=null,payMeta='';
+function canEditPay(){return !!ME&&PAY_EDIT_ROLES.includes(ME.position);}
+function payCurrent(){
+  return {meimei:PAY_MEIMEI,meimei_notes:PAY_MEIMEI_NOTES,role:PAY_ROLE,promo:PAY_PROMO,fee:PAY_FEE,bonus:PAY_BONUS,base:PAY_BASE};
+}
+function applyPay(d){
+  if(!d)return;
+  if(Array.isArray(d.meimei))PAY_MEIMEI=d.meimei;
+  if(Array.isArray(d.meimei_notes))PAY_MEIMEI_NOTES=d.meimei_notes;
+  if(Array.isArray(d.role))PAY_ROLE=d.role;
+  if(Array.isArray(d.promo))PAY_PROMO=d.promo;
+  if(Array.isArray(d.fee))PAY_FEE=d.fee;
+  if(Array.isArray(d.bonus))PAY_BONUS=d.bonus;
+  if(Array.isArray(d.base))PAY_BASE=d.base;
+}
+async function loadPayroll(){
+  const {data,error}=await sb.from('payroll_settings').select('*').eq('id','main').maybeSingle();
+  if(error||!data)return;
+  applyPay(data.data);
+  if(data.updated_at){
+    const d=new Date(data.updated_at);
+    payMeta=d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+(data.updated_by?'（'+data.updated_by+'）':'');
+  }
+}
+function startPayEdit(){
+  if(!canEditPay())return;
+  payDraft=JSON.parse(JSON.stringify(payCurrent()));
+  payEditing=true;
+  renderPayroll();
+}
+function cancelPayEdit(){payEditing=false;payDraft=null;renderPayroll();}
+function payInp(key,r,c,val,type,width){
+  return '<input class="inp" type="'+(type==='num'?'number':'text')+'" style="width:'+(width||'100%')+';padding:6px 8px;font-size:13px" value="'+esc(val==null?'':val)+'" data-k="'+key+'" data-r="'+r+'" data-c="'+c+'" data-t="'+type+'" onchange="updPay(this)">';
+}
+function updPay(el){
+  const k=el.dataset.k,r=Number(el.dataset.r),c=el.dataset.c,t=el.dataset.t;
+  const v=t==='num'?(el.value===''?0:Number(el.value)):el.value;
+  if(c==='')payDraft[k][r]=v; else payDraft[k][r][Number(c)]=v;
+}
+function addPayRow(k){
+  if(k==='meimei'){const last=payDraft.meimei[payDraft.meimei.length-1]||[0,0,''];payDraft.meimei.push([Number(last[0])+100000,Number(last[1]),'']);}
+  if(k==='meimei_notes')payDraft.meimei_notes.push('');
+  renderPayEditor();
+}
+function delPayRow(k,r){payDraft[k].splice(r,1);renderPayEditor();}
+function renderPayEditor(){
+  const d=payDraft,wrap=document.getElementById('pay-view');
+  function sec(title,desc,body){return '<div class="pay-sec"><div class="pay-h">'+title+'</div>'+(desc?'<div class="pay-desc">'+desc+'</div>':'')+body+'</div>';}
+  function tbl(heads,rows){return '<div class="pay-scroll"><table class="pay-tbl"><thead><tr>'+heads.map(function(x){return '<th>'+x+'</th>';}).join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table></div>';}
+  let h='<div class="pay-title">給与制度を編集中</div>';
+  h+='<div class="pay-lead">数字を直して、一番下の「保存する」を押してください。保存するまでスタッフの画面は変わりません。</div>';
+  const colorSel=function(r,v){return '<select class="inp" style="padding:6px;font-size:12px" data-k="meimei" data-r="'+r+'" data-c="2" data-t="text" onchange="updPay(this)">'
+    +[['','なし'],['o','オレンジ'],['r','赤'],['b','青']].map(function(o){return '<option value="'+o[0]+'"'+((v||'')===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select>';};
+  h+=sec('指名売上の歩合','金額は円で入力します。文字色は表の見た目だけに使います。',
+    tbl(['指名売上（円）','手当（円）','文字色',''],d.meimei.map(function(r,i){
+      return '<tr><td>'+payInp('meimei',i,0,r[0],'num','120px')+'</td><td>'+payInp('meimei',i,1,r[1],'num','100px')+'</td><td>'+colorSel(i,r[2])+'</td><td><button class="btn btn-outline btn-sm" onclick="delPayRow(\'meimei\','+i+')">削除</button></td></tr>';
+    }))
+    +'<button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="addPayRow(\'meimei\')">＋ 行を追加</button>'
+    +'<div class="pay-sub" style="margin-top:14px">表の下の注意書き（赤字）</div>'
+    +d.meimei_notes.map(function(t,i){return '<div style="display:flex;gap:6px;margin-bottom:6px">'+payInp('meimei_notes',i,'',t,'text')+'<button class="btn btn-outline btn-sm" onclick="delPayRow(\'meimei_notes\','+i+')">削除</button></div>';}).join('')
+    +'<button class="btn btn-outline btn-sm" onclick="addPayRow(\'meimei_notes\')">＋ 注意書きを追加</button>');
+  h+=sec('役職手当','金額は円で入力します。',
+    tbl(['評価点','MG','店長','チーフ'],d.role.map(function(r,i){
+      return '<tr><td class="lbl">'+r[0]+'</td><td>'+payInp('role',i,1,r[1],'num','100px')+'</td><td>'+payInp('role',i,2,r[2],'num','100px')+'</td><td>'+payInp('role',i,3,r[3],'num','100px')+'</td></tr>';
+    })));
+  h+=sec('昇・降格条件','',
+    tbl(['役職','昇格条件','降格条件'],d.promo.map(function(r,i){
+      return '<tr><td class="lbl">'+esc(r[0])+'</td><td style="min-width:220px">'+payInp('promo',i,1,r[1],'text')+'</td><td style="min-width:180px">'+payInp('promo',i,2,r[2],'text')+'</td></tr>';
+    })));
+  h+=sec('指名料','',
+    tbl(['区分','指名料（円）','条件'],d.fee.map(function(r,i){
+      return '<tr><td class="lbl">'+esc(r[0])+'</td><td>'+payInp('fee',i,1,r[1],'num','90px')+'</td><td style="min-width:260px">'+payInp('fee',i,2,r[2],'text')+'</td></tr>';
+    })));
+  h+=sec('賞与還付テーブル','',
+    tbl(['評価点','トップスタイリスト以上（%）','スタイリスト以下（円）'],d.bonus.map(function(r,i){
+      return '<tr><td class="lbl">'+r[0]+'</td><td>'+payInp('bonus',i,1,r[1],'num','80px')+'</td><td>'+payInp('bonus',i,2,r[2],'num','100px')+'</td></tr>';
+    })));
+  h+=sec('役職別基準値','万円で入力します。',
+    tbl(['役職','基準値（万円）'],d.base.map(function(r,i){
+      return '<tr><td class="lbl">'+esc(r[0])+'</td><td>'+payInp('base',i,1,r[1],'num','90px')+'</td></tr>';
+    })));
+  h+='<div class="save-row" style="margin-bottom:24px"><button class="btn btn-outline" onclick="cancelPayEdit()">やめる</button><button class="btn btn-dark" onclick="savePay()">保存する</button></div>';
+  wrap.innerHTML=h;
+}
+async function savePay(){
+  if(!canEditPay())return;
+  const {error}=await sb.from('payroll_settings').upsert({id:'main',data:payDraft,updated_at:new Date().toISOString(),updated_by:ME.name||''},{onConflict:'id'});
+  if(error){alert('保存できませんでした：'+error.message);return;}
+  applyPay(payDraft);
+  const d=new Date();
+  payMeta=d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+'（'+(ME.name||'')+'）';
+  payEditing=false;payDraft=null;
+  renderPayroll();
+  alert('給与制度を保存しました');
 }
 
 /* ===== 店舗単位の集計（数値管理と同じ計算。売上は税込） ===== */
@@ -466,6 +575,7 @@ function switchStore(store){
 
 function sortedTargetStudents(){
   let list=students.filter(function(s){return EVAL_TARGET_ROLES.includes(s.position);});
+  if(!canSeeAll())return list.filter(function(s){return ME&&s.id===ME.id;});
   const yy=Number(document.getElementById('ev-year').value);
   const mm=QUARTER_MONTHS[Number(document.getElementById('ev-quarter').value)];
   if(currentStore!=='all')list=list.filter(function(s){return s.store==='両店'||quarterStore(s,yy,mm)===currentStore;});
@@ -555,7 +665,7 @@ async function evalCriterion(c,st,year,months,ctx){
     res.resultSum=d.count;
     res.weighted=res.score*w;
     if(!d.count){res.note='対象の部下の評価データがありません';res.html='<div class="month-col"><div class="month-col-result">対象なし</div></div>';return res;}
-    const show=canSeePoints();
+    const show=canSeeAll();
     d.list.forEach(function(x){
       cols.push('<div class="month-col"><div class="month-col-label">'+esc(x.s.name)+'</div><div class="month-col-target">'+esc(x.s.position)+'</div><div class="month-col-result">'+(x.total==null?esc(x.reason):(show?x.total+'点':'対象'))+'</div></div>');
     });
@@ -635,7 +745,6 @@ async function loadListView(){
   const quarter=Number(document.getElementById('ev-quarter').value);
   const months=QUARTER_MONTHS[quarter];
   const list=sortedTargetStudents();
-  const showPts=canSeePoints();
 
   const {data:critData}=await sb.from('eval_criteria').select('*').eq('is_active',true).order('sort_order');
   allCriteria=critData||[];
@@ -651,13 +760,14 @@ async function loadListView(){
   const salesMap=await loadSalesMap(ids,year,months);
 
   const wrap=document.getElementById('row-list');
-  if(!list.length){wrap.innerHTML='<div class="empty-msg">対象スタッフがいません</div>';return;}
+  if(!list.length){wrap.innerHTML='<div class="empty-msg">'+(canSeeAll()?'対象スタッフがいません':'あなたの評価はまだありません')+'</div>';return;}
   const rowsHtml=await Promise.all(list.map(async function(s){
     const crit=allCriteria.filter(function(c){return c.position===s.position;});
     const ctx={
       getEntry:function(cid,m){return entryMap[s.id+'_'+cid+'_'+m];},
       getRow:function(sid,m){return getRowFrom(salesMap,sid,year,m);}
     };
+    const showPts=canSeePoints(s);
     let total=0;
     const lines=[];
     for(const c of crit){
@@ -699,6 +809,7 @@ function detailCtx(){
 }
 
 async function openDetail(sid){
+  if(!canSeeAll()&&!(ME&&sid===ME.id))return;
   currentSid=sid;
   const st=students.find(function(s){return s.id===sid;});
   if(!st)return;
@@ -731,7 +842,7 @@ async function renderCritList(months){
     document.getElementById('hero-score').textContent='—';
     return;
   }
-  const showPts=canSeePoints();
+  const showPts=canSeePoints(currentDetailSt);
   const ctx=detailCtx();
   let total=0;
   const cardsHtml=[];
@@ -925,6 +1036,11 @@ async function saveAdminItems(){
   document.getElementById('ev-quarter').value=String(currentQuarterGuess());
   document.getElementById('ev-pos-filter').innerHTML='<option value="">すべての役職</option>'+POS_ORDER.map(function(p){return '<option value="'+esc(p)+'">'+esc(p)+'</option>';}).join('');
   if(canEditAdmin())document.getElementById('admin-row').style.display='';
+  if(!canSeeAll()){
+    document.querySelector('.store-tabs').style.display='none';
+    document.getElementById('ev-pos-filter').style.display='none';
+  }
+  await loadPayroll();
   renderPayroll();
   loadListView();
 })();
