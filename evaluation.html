@@ -75,6 +75,14 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;align-items:center;justify-content:center;}
 .modal-overlay.show{display:flex;}
 .modal{background:white;border-radius:16px;padding:22px;max-width:460px;width:92%;max-height:88vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.2);}
+/* 評価項目の閲覧画面は横幅を広げて、尺度を一目で見られるようにする */
+.modal.wide{max-width:900px;}
+.scale-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-top:8px;}
+.scale-cell{border:1px solid var(--gold-light);border-radius:6px;text-align:center;padding:4px 2px;background:white;min-width:0;}
+.scale-cell.base{background:#fdf3df;border-color:var(--gold);}
+.scale-pt{font-size:11px;color:var(--mid);}
+.scale-pct{font-size:13px;font-weight:700;color:var(--dark);}
+@media(max-width:600px){.scale-grid{grid-template-columns:repeat(5,1fr);}}
 .modal-title{font-size:16px;font-weight:700;margin-bottom:4px;text-align:center;}
 .modal-sub{font-size:12px;color:var(--mid);margin-bottom:14px;text-align:center;}
 .score-hero{background:var(--dark);border-radius:14px;padding:16px;color:white;text-align:center;margin-bottom:14px;}
@@ -203,7 +211,7 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
 </div>
 
 <div class="modal-overlay" id="admin-modal">
-  <div class="modal">
+  <div class="modal" id="admin-modal-box">
     <div class="modal-title" id="admin-modal-title">評価項目を編集</div>
     <div class="field"><label>対象役職</label>
       <select class="inp" id="admin-position" onchange="renderAdminList()"></select>
@@ -928,6 +936,7 @@ function positionList(){return POS_ORDER.slice();}
 function openAdminModal(mode){
   adminMode=(mode==='edit'&&canEditAdmin())?'edit':'view';
   const edit=adminMode==='edit';
+  document.getElementById('admin-modal-box').classList.toggle('wide',!edit);
   const sel=document.getElementById('admin-position');
   sel.innerHTML=positionList().map(function(p){return '<option value="'+esc(p)+'">'+esc(p)+'</option>';}).join('');
   /* 閲覧のみの人は自分の役職を最初に表示 */
@@ -970,7 +979,9 @@ function renderCriteriaReadonly(){
     else how='1か月あたりの基準値'+(it.base_value!=null?'<b>'+fmtNum(it.base_value)+'</b>':'（未設定）')+'を100%として、3か月合計の達成率で点数が決まります。';
     const showScale=src!=='late_count'&&src!=='sub_avg';
     const scale=(it.scale_json||[]).slice().sort(function(a,b){return a[1]-b[1];});
-    const scaleHtml=showScale&&scale.length?'<div class="pay-scroll" style="margin-top:8px"><table class="pay-tbl"><thead><tr><th>点数</th>'+scale.map(function(p){return '<th>'+p[1]+'</th>';}).join('')+'</tr></thead><tbody><tr><td class="lbl">達成率</td>'+scale.map(function(p){return '<td>'+(Math.round(p[0]*1000)/10)+'%</td>';}).join('')+'</tr></tbody></table></div>':'';
+    const scaleHtml=showScale&&scale.length?'<div class="scale-grid">'+scale.map(function(p){
+      return '<div class="scale-cell'+(p[1]===60?' base':'')+'"><div class="scale-pt">'+p[1]+'点</div><div class="scale-pct">'+(Math.round(p[0]*1000)/10)+'%</div></div>';
+    }).join('')+'</div><div style="font-size:11px;color:var(--mid);margin-top:4px">色付きの60点が基準（目標100%達成）です。</div>':'';
     return '<div class="admin-item">'
       +'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="font-size:14px;font-weight:700">'+esc(it.name)+'</div><div class="w-tag">重み '+Math.round(Number(it.weight||0)*100)+'%</div></div>'
       +'<div style="font-size:11.5px;color:var(--mid);margin-top:4px">数字の取得元：'+esc(srcLabel(src))+'</div>'
