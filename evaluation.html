@@ -174,7 +174,7 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
     </div>
 
     <div class="admin-row" id="admin-row" style="display:none">
-      <button class="btn btn-outline btn-sm" onclick="openAdminModal()">⚙️ 評価項目を編集（役職ごと）</button>
+      <button class="btn btn-outline btn-sm" id="admin-open-btn" onclick="openAdminModal()">⚙️ 評価項目を編集（役職ごと）</button>
     </div>
 
     <div class="row-list" id="row-list"></div>
@@ -208,10 +208,10 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
       <select class="inp" id="admin-position" onchange="renderAdminList()"></select>
     </div>
     <div id="admin-list"></div>
-    <button class="btn btn-outline btn-sm" onclick="addAdminItem()">＋ 項目を追加</button>
+    <button class="btn btn-outline btn-sm" id="admin-add-btn" onclick="addAdminItem()">＋ 項目を追加</button>
     <div class="save-row">
       <button class="btn btn-outline" onclick="closeAdminModal()">閉じる</button>
-      <button class="btn btn-dark" onclick="saveAdminItems()">項目を保存</button>
+      <button class="btn btn-dark" id="admin-save-btn" onclick="saveAdminItems()">項目を保存</button>
     </div>
   </div>
 </div>
@@ -220,7 +220,7 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
 const SUPABASE_URL='https://nrweporylfaorlqektsk.supabase.co';
 const SUPABASE_ANON='sb_publishable_a3X1ltKqAaTv6CyxHIReug_xEPqqCSS';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
-/* 評価項目の編集権限：代表・管理者のみ（店長・チーフは閲覧のみ） */
+/* 評価項目の編集権限：代表・管理者のみ。それ以外のスタッフは「評価項目を見る」で閲覧のみ（今期使う項目だけ表示） */
 const ADMIN_ROLES=['代表','管理者'];
 /* ===== 評価点の公開範囲 =====
    POINT_ALL_ROLES の役職 … 全員分の評価点を見られる
@@ -925,9 +925,14 @@ function canEditAdmin(){return ME&&ADMIN_ROLES.includes(ME.position);}
 function positionList(){return POS_ORDER.slice();}
 
 function openAdminModal(){
-  if(!canEditAdmin())return;
+  const edit=canEditAdmin();
   const sel=document.getElementById('admin-position');
   sel.innerHTML=positionList().map(function(p){return '<option value="'+esc(p)+'">'+esc(p)+'</option>';}).join('');
+  /* 閲覧のみの人は自分の役職を最初に表示 */
+  if(!edit&&ME&&positionList().includes(ME.position))sel.value=ME.position;
+  document.getElementById('admin-modal-title').textContent=edit?'評価項目を編集':'評価項目（閲覧のみ）';
+  document.getElementById('admin-add-btn').style.display=edit?'':'none';
+  document.getElementById('admin-save-btn').style.display=edit?'':'none';
   renderAdminList();
   document.getElementById('admin-modal').classList.add('show');
 }
@@ -947,7 +952,34 @@ function scaleToPctMap(scaleJson){
   (scaleJson||[]).forEach(function(pair){map[pair[1]]=Math.round(pair[0]*1000)/10;});
   return map;
 }
+/* 閲覧のみの表示（今期使う項目だけ） */
+function srcLabel(v){const d=DATA_SOURCES.find(function(x){return x[0]===(v||'manual');});return d?d[1]:v;}
+function renderCriteriaReadonly(){
+  const wrap=document.getElementById('admin-list');
+  const items=adminItems.filter(function(it){return it.is_active!==false;});
+  if(!items.length){wrap.innerHTML='<div class="empty-msg">この役職の評価項目はまだ設定されていません</div>';return;}
+  wrap.innerHTML=items.map(function(it){
+    const src=it.data_source||'manual';
+    let how='';
+    if(src==='late_count')how='3か月の遅刻数の合計で決まります。0回で60点、1回ごとに10点下がります。';
+    else if(src==='sub_avg')how='同じ店舗の部下（チーフ以下）の、四半期の合計評価点の平均がそのまま点数になります。';
+    else if(src==='store_sales')how='店舗全体の総売（税込）を、店舗の売上目標と比べた達成率で点数が決まります。';
+    else if(src==='manual')how='毎月の目標と結果を入力し、3か月合計の達成率で点数が決まります。'+(it.calc_type==='inverse_count'?'（数値が少ないほど高評価）':'');
+    else how='1か月あたりの基準値'+(it.base_value!=null?'<b>'+fmtNum(it.base_value)+'</b>':'（未設定）')+'を100%として、3か月合計の達成率で点数が決まります。';
+    const showScale=src!=='late_count'&&src!=='sub_avg';
+    const scale=(it.scale_json||[]).slice().sort(function(a,b){return a[1]-b[1];});
+    const scaleHtml=showScale&&scale.length?'<div class="pay-scroll" style="margin-top:8px"><table class="pay-tbl"><thead><tr><th>点数</th>'+scale.map(function(p){return '<th>'+p[1]+'</th>';}).join('')+'</tr></thead><tbody><tr><td class="lbl">達成率</td>'+scale.map(function(p){return '<td>'+(Math.round(p[0]*1000)/10)+'%</td>';}).join('')+'</tr></tbody></table></div>':'';
+    return '<div class="admin-item">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="font-size:14px;font-weight:700">'+esc(it.name)+'</div><div class="w-tag">重み '+Math.round(Number(it.weight||0)*100)+'%</div></div>'
+      +'<div style="font-size:11.5px;color:var(--mid);margin-top:4px">数字の取得元：'+esc(srcLabel(src))+'</div>'
+      +'<div style="font-size:12.5px;line-height:1.7;margin-top:6px">'+how+'</div>'
+      +scaleHtml
+      +'</div>';
+  }).join('')
+  +'<div style="font-size:11.5px;color:var(--mid);margin-top:6px">合計点＝各項目の点数×重みの合計です。</div>';
+}
 function renderAdminItemsHtml(){
+  if(!canEditAdmin()){renderCriteriaReadonly();return;}
   const wrap=document.getElementById('admin-list');
   wrap.innerHTML=adminItems.map(function(it,i){
     const checked=it.is_active!==false?'checked':'';
@@ -1040,7 +1072,8 @@ async function saveAdminItems(){
   yearOptions();
   document.getElementById('ev-quarter').value=String(currentQuarterGuess());
   document.getElementById('ev-pos-filter').innerHTML='<option value="">すべての役職</option>'+POS_ORDER.map(function(p){return '<option value="'+esc(p)+'">'+esc(p)+'</option>';}).join('');
-  if(canEditAdmin())document.getElementById('admin-row').style.display='';
+  document.getElementById('admin-row').style.display='';
+  if(!canEditAdmin())document.getElementById('admin-open-btn').textContent='📋 評価項目を見る（役職ごと）';
   if(!canSeeAll()){
     document.querySelector('.store-tabs').style.display='none';
     document.getElementById('ev-pos-filter').style.display='none';
