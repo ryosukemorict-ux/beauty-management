@@ -174,7 +174,8 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
     </div>
 
     <div class="admin-row" id="admin-row" style="display:none">
-      <button class="btn btn-outline btn-sm" id="admin-open-btn" onclick="openAdminModal()">⚙️ 評価項目を編集（役職ごと）</button>
+      <button class="btn btn-outline btn-sm" onclick="openAdminModal('view')">📋 評価項目を見る（役職ごと）</button>
+      <button class="btn btn-outline btn-sm" id="admin-open-btn" style="display:none" onclick="openAdminModal('edit')">⚙️ 評価項目を編集（役職ごと）</button>
     </div>
 
     <div class="row-list" id="row-list"></div>
@@ -220,7 +221,7 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
 const SUPABASE_URL='https://nrweporylfaorlqektsk.supabase.co';
 const SUPABASE_ANON='sb_publishable_a3X1ltKqAaTv6CyxHIReug_xEPqqCSS';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
-/* 評価項目の編集権限：代表・管理者のみ。それ以外のスタッフは「評価項目を見る」で閲覧のみ（今期使う項目だけ表示） */
+/* 評価項目：「評価項目を見る」（閲覧のみ・今期使う項目だけ）は全員。「評価項目を編集」は代表・管理者のみ */
 const ADMIN_ROLES=['代表','管理者'];
 /* ===== 評価点の公開範囲 =====
    POINT_ALL_ROLES の役職 … 全員分の評価点を見られる
@@ -919,13 +920,14 @@ async function saveAllEntries(){
 }
 
 /* ===== 管理者：評価項目編集 ===== */
-let adminItems=[];
+let adminItems=[],adminMode='view';
 function canEditAdmin(){return ME&&ADMIN_ROLES.includes(ME.position);}
 
 function positionList(){return POS_ORDER.slice();}
 
-function openAdminModal(){
-  const edit=canEditAdmin();
+function openAdminModal(mode){
+  adminMode=(mode==='edit'&&canEditAdmin())?'edit':'view';
+  const edit=adminMode==='edit';
   const sel=document.getElementById('admin-position');
   sel.innerHTML=positionList().map(function(p){return '<option value="'+esc(p)+'">'+esc(p)+'</option>';}).join('');
   /* 閲覧のみの人は自分の役職を最初に表示 */
@@ -979,7 +981,7 @@ function renderCriteriaReadonly(){
   +'<div style="font-size:11.5px;color:var(--mid);margin-top:6px">合計点＝各項目の点数×重みの合計です。</div>';
 }
 function renderAdminItemsHtml(){
-  if(!canEditAdmin()){renderCriteriaReadonly();return;}
+  if(adminMode!=='edit'){renderCriteriaReadonly();return;}
   const wrap=document.getElementById('admin-list');
   wrap.innerHTML=adminItems.map(function(it,i){
     const checked=it.is_active!==false?'checked':'';
@@ -1073,7 +1075,7 @@ async function saveAdminItems(){
   document.getElementById('ev-quarter').value=String(currentQuarterGuess());
   document.getElementById('ev-pos-filter').innerHTML='<option value="">すべての役職</option>'+POS_ORDER.map(function(p){return '<option value="'+esc(p)+'">'+esc(p)+'</option>';}).join('');
   document.getElementById('admin-row').style.display='';
-  if(!canEditAdmin())document.getElementById('admin-open-btn').textContent='📋 評価項目を見る（役職ごと）';
+  if(canEditAdmin())document.getElementById('admin-open-btn').style.display='';
   if(!canSeeAll()){
     document.querySelector('.store-tabs').style.display='none';
     document.getElementById('ev-pos-filter').style.display='none';
