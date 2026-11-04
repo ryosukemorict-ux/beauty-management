@@ -245,17 +245,19 @@ const EVAL_TARGET_ROLES=['店長','チーフ','スタイリスト','Jrスタイ�
 const POS_ORDER=['店長','チーフ','スタイリスト','Jrスタイリスト','カラーリスト','アシスタント','レセプション'];
 const DATA_SOURCES=[
   ['manual','手入力（目標・結果を入力）'],
-  ['store_sales','店舗全体の総売（数値管理・税込）'],
-  ['total_sales','個人の総売（指名＋フリー＋店販・税込）'],
-  ['meimei_sales','指名技術売上（税込）'],
-  ['tanden','店販売上（税込）'],
+  ['store_sales','店舗全体の総売（数値管理・税抜）'],
+  ['total_sales','個人の総売（指名＋フリー＋店販・税抜）'],
+  ['meimei_sales','指名技術売上（税抜）'],
+  ['meimei_free40','指名技術売上＋フリー売上の40%（税抜）'],
+  ['tanden','店販売上（税抜）'],
   ['meimei_clients','指名入客数'],
   ['store_clients','所属店舗の総入客数'],
   ['late_count','遅刻数（3か月合計・0回で60点、1回ごとに−10点）'],
-  ['sub_avg','部下の評価点の平均（同じ店舗のチーフ以下・自動）']
+  ['sub_avg','部下の評価点の平均（同じ店舗のチーフ以下・レセプション除く・自動）'],
+  ['curr_delay','カリキュラムの遅れ（練習開始予定日から1か月過ぎて未合格の項目数・自動）']
 ];
-/* 「部下の評価点の平均」で部下として数える役職（チーフ以下。店長は含めない） */
-const SUB_ROLES=['チーフ','スタイリスト','Jrスタイリスト','カラーリスト','アシスタント','レセプション'];
+/* 「部下の評価点の平均」で部下として数える役職（チーフ以下。店長とレセプションは含めない） */
+const SUB_ROLES=['チーフ','スタイリスト','Jrスタイリスト','カラーリスト','アシスタント'];
 
 let assignHistory=[];
 let students=[],ME=null,allCriteria=[],currentCriteria=[],entries={},currentStore='all',currentSid=null,currentDetailSt=null,currentDetailYear=null,currentSalesMap={};
@@ -265,6 +267,8 @@ function storeLabel(v){return v==='エルズ'?'ailes':v;}
 function storeShortCode(storeJP){return storeJP==='エルズ'?'ailes':'soleil';}
 function fmtNum(n){return Number(n||0).toLocaleString();}
 function taxIncl(x){return Math.floor(Number(x||0)*11/10);}
+/* 評価の売上はすべて税抜（数値管理に入力した税抜の値をそのまま使う） */
+function taxExcl(x){return Math.floor(Number(x||0));}
 function canSeeAll(){return !!ME&&(STAFF_SEE_ALL||POINT_ALL_ROLES.includes(ME.position));}
 function canSeePoints(st){return !!ME&&(canSeeAll()||(!!st&&st.id===ME.id));}
 /* 異動履歴を見て「その月の所属店舗」を返す（履歴がなければ現在の店舗） */
@@ -507,7 +511,7 @@ async function savePay(){
   alert('給与制度を保存しました');
 }
 
-/* ===== 店舗単位の集計（数値管理と同じ計算。売上は税込） ===== */
+/* ===== 店舗単位の集計（数値管理と同じ計算。目標・結果とも税抜） ===== */
 let storeCache={};
 function getStoreMonth(storeJP,year,month){
   const monthStr=year+'-'+String(month).padStart(2,'0');
@@ -545,7 +549,7 @@ async function computeStoreMonth(storeJP,monthStr){
       clients+=Number(row.meimei_clients||0)+Number(row.free_clients||0);
     }
   });
-  return {target:Math.floor(target),result:taxIncl(resultExcl),clients:clients,hasData:hasData};
+  return {target:Math.floor(target),result:taxExcl(resultExcl),clients:clients,hasData:hasData};
 }
 
 /* ===== スタッフ個人の売上データ（sales_data・DBは税抜） ===== */
@@ -605,6 +609,33 @@ function scoreForRate(rate,scaleJson){
   let pts=0;
   for(const pair of scale){if(rate>=pair[0])pts=pair[1];}
   return pts;
+}
+
+/* ===== カリキュラムの遅れ =====
+   練習開始予定日から1か月過ぎても「合格」になっていない項目の数で点数を決める。
+   基準日＝その四半期の最終日（四半期の途中なら今日）。合格でも試験日が基準日より後なら、その時点では未合格として数える */
+const CURR_DELAY_POINTS=[100,50,40,30,20,10];  /* 遅れ0件=100点、1件=50点 … 5件=10点、6件以上=0点 */
+let currCache={},currMaster=null;
+function getCurrRows(sid){
+  if(!currCache[sid])currCache[sid]=(async function(){
+    if(!currMaster){const {data}=await sb.from('curriculum_master').select('id,name');currMaster={};(data||[]).forEach(function(c){currMaster[c.id]=c.name;});}
+    const {data}=await sb.from('progress').select('*').eq('student_id',sid);
+    return data||[];
+  })();
+  return currCache[sid];
+}
+function addMonthsStr(d,n){
+  const [y,m,dd]=d.split('-').map(Number);
+  const lastDay=new Date(y,m+n,0).getDate();  /* 1/31の1か月後は2/28（月末にそろえる） */
+  const dt=new Date(y,m-1+n,Math.min(dd,lastDay));
+  return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+}
+function quarterRefDate(year,months){
+  const last=months.at(-1);
+  const end=new Date(year,last,0);
+  const now=new Date();
+  const ref=end<now?end:now;
+  return ref.getFullYear()+'-'+String(ref.getMonth()+1).padStart(2,'0')+'-'+String(ref.getDate()).padStart(2,'0');
 }
 
 /* ===== 部下の評価点の平均（店長の「スタッフ育成」用） ===== */
@@ -684,6 +715,31 @@ async function evalCriterion(c,st,year,months,ctx){
     res.html=cols.join('');
     return res;
   }
+  if(src==='curr_delay'){
+    const rows=await getCurrRows(st.id);
+    const ref=quarterRefDate(year,months);
+    const named=rows.filter(function(r){return r.curriculum_id&&currMaster[r.curriculum_id];});
+    const noPlan=named.filter(function(r){return !r.planned_start_date&&r.status!=='合格';});
+    const delayed=named.filter(function(r){
+      if(!r.planned_start_date)return false;
+      if(addMonthsStr(r.planned_start_date,1)>=ref)return false;
+      const passed=r.status==='合格'&&(!r.exam_date||r.exam_date<=ref);
+      return !passed;
+    });
+    const n=delayed.length;
+    res.resultSum=n;
+    res.score=n<CURR_DELAY_POINTS.length?CURR_DELAY_POINTS.at(n):0;
+    res.weighted=res.score*w;
+    res.note=noPlan.length?('練習開始予定日が未入力の項目が'+noPlan.length+'件あります（遅れの判定に入りません）'):'';
+    const cols=delayed.map(function(r){
+      return '<div class="month-col"><div class="month-col-label">予定 '+esc(r.planned_start_date)+'</div><div class="month-col-target">'+esc(r.status||'')+'</div><div class="month-col-result">'+esc(currMaster[r.curriculum_id])+'</div></div>';
+    });
+    if(!n)cols.push('<div class="month-col hit"><div class="month-col-result">遅れなし</div></div>');
+    if(noPlan.length)cols.push('<div class="month-col"><div class="month-col-label">予定日未入力</div><div class="month-col-result">'+noPlan.length+'件</div></div>');
+    cols.push('<div class="total-col"><div class="total-col-label">遅れ</div><div class="total-col-nums">'+n+'件</div><div class="total-col-rate">'+esc(ref)+'時点</div></div>');
+    res.html=cols.join('');
+    return res;
+  }
   if(src==='late_count'){
     let sum=0,has=false;
     months.forEach(function(m){
@@ -702,7 +758,7 @@ async function evalCriterion(c,st,year,months,ctx){
     return res;
   }
 
-  const isMoney=(src==='total_sales'||src==='meimei_sales'||src==='tanden'||src==='store_sales');
+  const isMoney=(src==='total_sales'||src==='meimei_sales'||src==='meimei_free40'||src==='tanden'||src==='store_sales');
   const base=(c.base_value!=null&&c.base_value!=='')?Number(c.base_value):null;
   const hasBase=(src==='store_sales')||base!=null;
   let tSum=0,rSum=0;
@@ -717,9 +773,11 @@ async function evalCriterion(c,st,year,months,ctx){
     } else {
       const row=ctx.getRow(st.id,m);
       if(!rowHasData(row)){cols.push(monthColHtml(m,'','',false,true,'未入力'));continue;}
-      if(src==='total_sales')val=taxIncl(Number(row.meimei_sales||0)+Number(row.free_sales||0)+Number(row.tanden||0));
-      else if(src==='meimei_sales')val=taxIncl(row.meimei_sales);
-      else if(src==='tanden')val=taxIncl(row.tanden);
+      if(src==='total_sales')val=taxExcl(Number(row.meimei_sales||0)+Number(row.free_sales||0)+Number(row.tanden||0));
+      else if(src==='meimei_sales')val=taxExcl(row.meimei_sales);
+      /* 指名技術売上にフリー売上の40%を足す */
+      else if(src==='meimei_free40')val=taxExcl(Number(row.meimei_sales||0)+Number(row.free_sales||0)*0.4);
+      else if(src==='tanden')val=taxExcl(row.tanden);
       else if(src==='meimei_clients')val=Number(row.meimei_clients||0);
     }
     if(tgt!=null)tSum+=tgt;
@@ -743,6 +801,7 @@ async function evalCriterion(c,st,year,months,ctx){
 function scoreText(res,showPts){
   if(showPts)return res.score+'点';
   if(res.src==='late_count')return res.resultSum+'回';
+  if(res.src==='curr_delay')return '遅れ'+res.resultSum+'件';
   if(res.src==='sub_avg')return '—';
   if(res.src!=='manual'&&res.noBase)return '—';
   if(res.c.calc_type==='inverse_count')return '—';
@@ -751,7 +810,7 @@ function scoreText(res,showPts){
 
 /* ===== 一覧 ===== */
 async function loadListView(){
-  storeCache={};subAvgCache={};
+  storeCache={};subAvgCache={};currCache={};currMaster=null;
   const year=Number(document.getElementById('ev-year').value);
   const quarter=Number(document.getElementById('ev-quarter').value);
   const months=QUARTER_MONTHS[quarter];
@@ -973,11 +1032,12 @@ function renderCriteriaReadonly(){
     const src=it.data_source||'manual';
     let how='';
     if(src==='late_count')how='3か月の遅刻数の合計で決まります。0回で60点、1回ごとに10点下がります。';
-    else if(src==='sub_avg')how='同じ店舗の部下（チーフ以下）の、四半期の合計評価点の平均がそのまま点数になります。';
-    else if(src==='store_sales')how='店舗全体の総売（税込）を、店舗の売上目標と比べた達成率で点数が決まります。';
+    else if(src==='curr_delay')how='カリキュラムの練習開始予定日から1か月過ぎても合格していない項目の数で決まります。0件で100点、1件50点、2件40点、3件30点、4件20点、5件10点、6件以上は0点です。予定日が入っていない項目は判定に入らないので、必ず入力してください。';
+    else if(src==='sub_avg')how='同じ店舗の部下（チーフ以下、レセプションを除く）の、四半期の合計評価点の平均がそのまま点数になります。';
+    else if(src==='store_sales')how='店舗全体の総売（税抜）を、店舗の売上目標と比べた達成率で点数が決まります。';
     else if(src==='manual')how='毎月の目標と結果を入力し、3か月合計の達成率で点数が決まります。'+(it.calc_type==='inverse_count'?'（数値が少ないほど高評価）':'');
     else how='1か月あたりの基準値'+(it.base_value!=null?'<b>'+fmtNum(it.base_value)+'</b>':'（未設定）')+'を100%として、3か月合計の達成率で点数が決まります。';
-    const showScale=src!=='late_count'&&src!=='sub_avg';
+    const showScale=src!=='late_count'&&src!=='sub_avg'&&src!=='curr_delay';
     const scale=(it.scale_json||[]).slice().sort(function(a,b){return a[1]-b[1];});
     const scaleHtml=showScale&&scale.length?'<div class="scale-grid">'+scale.map(function(p){
       return '<div class="scale-cell'+(p[1]===60?' base':'')+'"><div class="scale-pt">'+p[1]+'点</div><div class="scale-pct">'+(Math.round(p[0]*1000)/10)+'%</div></div>';
@@ -1018,7 +1078,7 @@ function renderAdminItemsHtml(){
       +'<div class="field"><label>項目名</label><input class="inp" data-i="'+i+'" data-f="name" value="'+esc(it.name)+'" onchange="updAdminItem(this)"></div>'
       +'<div class="field"><label>重み（この項目が合計点に占める割合）</label><select class="inp" data-i="'+i+'" data-f="weight" onchange="updAdminItem(this)">'+weightOptsHtml+'</select></div>'
       +'<div class="field"><label>数字の取得元</label><select class="inp" data-i="'+i+'" data-f="data_source" onchange="updAdminItem(this)">'+srcOptsHtml+'</select></div>'
-      +'<div class="field"><label>基準値（60点になる1か月あたりの数字。売上は税込。手入力・店舗全体の総売・遅刻数では使いません）</label><input class="inp" type="number" data-i="'+i+'" data-f="base_value" value="'+(it.base_value!=null?it.base_value:'')+'" onchange="updAdminItem(this)"></div>'
+      +'<div class="field"><label>基準値（60点になる1か月あたりの数字。売上は税抜。手入力・店舗全体の総売・遅刻数では使いません）</label><input class="inp" type="number" data-i="'+i+'" data-f="base_value" value="'+(it.base_value!=null?it.base_value:'')+'" onchange="updAdminItem(this)"></div>'
       +'<div class="field"><label>評価の向き（手入力の項目のみ）</label>'
       +'<select class="inp" data-i="'+i+'" data-f="calc_type" onchange="updAdminItem(this)">'
       +'<option value="ratio"'+(it.calc_type==='ratio'?' selected':'')+'>数値が多いほど高評価（売上・件数など）</option>'
