@@ -274,7 +274,7 @@ input[type="date"].inp{-webkit-appearance:none;appearance:none;display:block;min
             <select class="sel" id="or-visibility" onchange="onOrVisChange('or')"></select>
             <div id="or-people" style="display:none;margin-top:8px"></div>
           </div>
-          <div class="save-row"><button class="btn btn-dark" onclick="saveOther()">保存</button></div>
+          <div class="save-row"><button class="btn btn-dark" id="or-save-btn" onclick="saveOther()">保存</button></div>
         </div>
         <div id="or-list"></div>
       </div>
@@ -332,8 +332,16 @@ async function uploadAttachments(fileList){
     const extMatch=file.name.match(/\.[^.]+$/);
     const ext=extMatch?extMatch[0]:'';
     const path=Date.now()+'_'+Math.random().toString(36).slice(2)+ext;
-    const {error}=await sb.storage.from('meeting-attachments').upload(path,file);
-    if(error){alert('添付アップロードに失敗しました: '+error.message);continue;}
+    /* 通信が止まったまま固まらないよう、1ファイル90秒で打ち切る。例外も必ずメッセージで知らせる */
+    let error=null;
+    try{
+      const res=await Promise.race([
+        sb.storage.from('meeting-attachments').upload(path,file,{contentType:file.type||undefined}),
+        new Promise(function(_,reject){setTimeout(function(){reject(new Error('時間切れ（90秒）'));},90000);})
+      ]);
+      error=res&&res.error;
+    }catch(e){error=e;}
+    if(error){alert('「'+file.name+'」のアップロードに失敗しました: '+(error.message||error));continue;}
     const {data:urlData}=sb.storage.from('meeting-attachments').getPublicUrl(path);
     out.push({name:file.name,url:urlData.publicUrl});
   }
@@ -1121,7 +1129,17 @@ async function loadOther(){
 }
 function toggleOrEdit(id){orEditId=(orEditId===id)?null:id;loadOther();}
 function cancelOrEdit(){orEditId=null;loadOther();}
+/* 保存中はボタンを押せなくして「保存中…」と表示する（二重保存と固まって見えるのを防ぐ） */
 async function saveOther(){
+  const btn=document.getElementById('or-save-btn');
+  if(btn.disabled)return;
+  const label=btn.textContent;
+  btn.disabled=true;btn.textContent=document.getElementById('or-attach-new').files.length?'アップロード中…':'保存中…';
+  try{await saveOtherInner();}
+  catch(e){alert('保存できませんでした: '+(e&&e.message||e));}
+  finally{btn.disabled=false;btn.textContent=label;}
+}
+async function saveOtherInner(){
   const title=document.getElementById('or-title').value.trim();
   const content=document.getElementById('or-content').value;
   if(!title&&!content.trim()){alert('件名か内容を入力してください');return;}
@@ -1131,6 +1149,8 @@ async function saveOther(){
   if(visibility==='people'&&!viewers.length){alert('見せる人を1人以上選んでください');return;}
   const fileInput=document.getElementById('or-attach-new');
   const attachments=fileInput.files.length?await uploadAttachments(fileInput.files):[];
+  /* 添付が1つでも失敗したら保存しない（ファイルが抜けたまま保存されるのを防ぐ） */
+  if(attachments.length<fileInput.files.length){alert('添付ファイルがアップロードできなかったので、まだ保存していません。通信の良い場所でもう一度「保存」を押してください。');return;}
   const payload={
     student_id:document.getElementById('or-student').value,
     report_date:document.getElementById('or-date').value||null,
@@ -1152,6 +1172,10 @@ async function saveOther(){
   loadOther();
 }
 async function saveOrEdit(id){
+  try{await saveOrEditInner(id);}
+  catch(e){alert('更新できませんでした: '+(e&&e.message||e));}
+}
+async function saveOrEditInner(id){
   const r=window.__orRows[id];
   if(!r||!canEditOther(r))return;
   const fileInput=document.getElementById('oredit-attach-new-'+id);
