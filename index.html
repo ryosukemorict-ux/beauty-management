@@ -80,6 +80,8 @@ td.wrap{white-space:normal;min-width:120px;}
 .num-inp,.date-inp{font-family:'Noto Sans JP',sans-serif;padding:4px 5px;border-radius:6px;border:1.5px solid var(--soft);background:white;}
 .num-inp{width:58px;text-align:center;font-size:13px;}.date-inp{width:126px;font-size:12px;}
 .num-inp:focus,.date-inp:focus{outline:none;border-color:var(--gold);}
+/* 練習開始予定日が未入力（未合格の項目）は赤枠で知らせる */
+.date-inp.need{border-color:#c0392b;background:#fdf0ee;}
 .ce{outline:none;border-radius:4px;padding:4px 6px;display:block;min-width:60px;cursor:text;}
 .ce:hover{background:#f5ede4;}.ce:focus{background:#fffbf7;box-shadow:0 0 0 2px var(--gold);}
 .del-btn{background:none;border:none;color:var(--soft);font-size:18px;cursor:pointer;padding:2px 7px;border-radius:4px;line-height:1;}
@@ -924,7 +926,8 @@ const selfEditable=!editable&&canEditSelf(CID);
     const goalH=getGoalHours(r.curriculum_id);
     const cc=CAT_COLORS[catName]||'#f0ece8';
     const catBadge='<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:500;background:'+cc+'">'+esc(catName)+'</span>';
-    const plannedCell=(editable||selfEditable)?'<div style="display:flex;align-items:center;gap:3px"><input type="date" class="date-inp" data-id="'+r.id+'" data-f="planned_start_date" value="'+esc(r.planned_start_date||'')+'">'+( r.planned_start_date?'<button onclick="clearDate(\''+r.id+'\',\'planned_start_date\',this)" style="background:none;border:none;color:#c4b49e;cursor:pointer;font-size:14px;padding:0 2px">×</button>':'')+'</div>':'<span class="plain">'+esc(r.planned_start_date||'—')+'</span>';
+    const needPlan=!r.planned_start_date&&r.status!=='合格';
+    const plannedCell=(editable||selfEditable)?'<div style="display:flex;align-items:center;gap:3px"><input type="date" class="date-inp'+(needPlan?' need':'')+'" data-id="'+r.id+'" data-f="planned_start_date" value="'+esc(r.planned_start_date||'')+'">'+( r.planned_start_date?'<button onclick="clearDate(\''+r.id+'\',\'planned_start_date\',this)" style="background:none;border:none;color:#c4b49e;cursor:pointer;font-size:14px;padding:0 2px">×</button>':'')+'</div>':'<span class="plain">'+esc(r.planned_start_date||'—')+'</span>';
     const startCell=(editable||selfEditable)?'<div style="display:flex;align-items:center;gap:3px"><input type="date" class="date-inp" data-id="'+r.id+'" data-f="start_date" value="'+esc(r.start_date||'')+'">'+( r.start_date?'<button onclick="clearDate(\''+r.id+'\',\'start_date\',this)" style="background:none;border:none;color:#c4b49e;cursor:pointer;font-size:14px;padding:0 2px">×</button>':'')+'</div>':'<span class="plain">'+esc(r.start_date||'—')+'</span>';
     const examCell=(editable||selfEditable)?'<div style="display:flex;align-items:center;gap:3px"><input type="date" class="date-inp" data-id="'+r.id+'" data-f="exam_date" value="'+esc(r.exam_date||'')+'">'+( r.exam_date?'<button onclick="clearDate(\''+r.id+'\',\'exam_date\',this)" style="background:none;border:none;color:#c4b49e;cursor:pointer;font-size:14px;padding:0 2px">×</button>':'')+'</div>':'<span class="plain">'+esc(r.exam_date||'—')+'</span>';
     const countCell=(editable||selfEditable)?'<select class="tbl-sel" data-id="'+r.id+'" data-f="exam_count">'+countOpts(r.exam_count)+'</select>':'<span class="plain">'+(r.exam_count||0)+'</span>';
@@ -949,7 +952,7 @@ const selfEditable=!editable&&canEditSelf(CID);
       });
     });
     tb.querySelectorAll('input[type="number"],input[type="date"]').forEach(function(el){
-      el.addEventListener('change',function(){updateProgress(el.dataset.id,el.dataset.f,el.value||null);});
+      el.addEventListener('change',function(){if(el.value)el.classList.remove('need');updateProgress(el.dataset.id,el.dataset.f,el.value||null);});
     });
     tb.querySelectorAll('.del-btn').forEach(function(b){
       b.addEventListener('click',function(){
@@ -1117,6 +1120,15 @@ async function addCur(){
   const {data,error}=await sb.from('curriculum_master').insert({category_id:catId,name,goal_hours,sort_order:curricula.filter(function(c){return c.category_id===catId;}).length+1}).select().single();
   if(error){alert(error.message);return;}
   curricula.push(data);inp.value='';hInp.value='';renderCurList();
+  /* 追加した項目を、カリキュラム対象の在籍スタッフ全員の進捗表にも追加する（これがないと一覧に出てこない） */
+  const targets=nonAdminStudents().filter(function(s){return s.is_active!==false;});
+  if(targets.length){
+    const rows=targets.map(function(s){return {student_id:s.id,curriculum_id:data.id,goal_hours:'',teacher:'',planned_start_date:null,start_date:null,exam_date:null,exam_count:0,status:'未着手',score:null,memo:''};});
+    const {data:prData,error:prErr}=await sb.from('progress').insert(rows).select();
+    if(prErr){alert('項目は追加しましたが、スタッフの進捗表への追加に失敗しました: '+prErr.message);return;}
+    if(prData)progressRows.push(...prData);
+    renderCurrTable();
+  }
 }
 document.getElementById('cur-add-inp').addEventListener('keydown',function(e){if(e.key==='Enter')addCur();});
 function askDelCur(id,name){
