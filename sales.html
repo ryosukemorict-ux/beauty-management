@@ -153,7 +153,7 @@ tbody tr:hover td:first-child{background:#fffbf7;}
 <div class="modal-overlay" id="productivity-modal">
   <div class="modal" style="max-width:360px">
     <div class="modal-title">📊 役職別基準値設定</div>
-    <div style="font-size:12px;color:var(--mid);margin-bottom:16px;text-align:center">役職ごとの月間売上目標（税抜）</div>
+    <div style="font-size:12px;color:var(--mid);margin-bottom:16px;text-align:center">役職ごとの月間目標（指名＋フリー40%・税抜）</div>
     <div id="productivity-fields"></div>
     <div id="prod-status" style="font-size:12px;color:var(--mid);text-align:center;min-height:18px;margin-bottom:8px">入力すると自動で保存されます</div>
     <div class="modal-actions">
@@ -200,7 +200,7 @@ tbody tr:hover td:first-child{background:#fffbf7;}
   <div class="total-panel">
     <div class="total-panel-label">✦ 店舗合計</div>
     <div class="total-grid">
-      <div class="total-item"><div class="total-item-label">総売目標（税抜）</div><div class="total-item-val" id="tot-target">—</div><div class="total-item-sub" id="tot-target-sub"></div></div>
+      <div class="total-item"><div class="total-item-label">目標（指名＋フリー40%・税抜）</div><div class="total-item-val" id="tot-target">—</div><div class="total-item-sub" id="tot-target-sub"></div></div>
       <div class="total-item"><div class="total-item-label">総売結果（税抜）</div><div class="total-item-val" id="tot-result">—</div><div class="total-item-sub" id="tot-result-sub"></div></div>
       <div class="total-item"><div class="total-item-label">指名技術売上</div><div class="total-item-val" id="tot-meimei">—</div><div class="total-item-sub" id="tot-meimei-sub"></div></div>
       <div class="total-item"><div class="total-item-label">フリー売上</div><div class="total-item-val" id="tot-free">—</div><div class="total-item-sub" id="tot-free-sub"></div></div>
@@ -221,7 +221,7 @@ tbody tr:hover td:first-child{background:#fffbf7;}
           </div></th>
           <th><div class="th-inner">
             <button class="sb-asc" id="sb-target-asc" onclick="sortBy('target',true)">▲</button>
-            <span class="th-label">総売目標</span>
+            <span class="th-label">目標（指名＋フリー40%）</span>
             <button class="sb-desc" id="sb-target-desc" onclick="sortBy('target',false)">&#9660;</button>
           </div></th>
           <th><div class="th-inner">
@@ -287,7 +287,7 @@ tbody tr:hover td:first-child{background:#fffbf7;}
 const SUPABASE_URL='https://nrweporylfaorlqektsk.supabase.co';
 const SUPABASE_ANON='sb_publishable_a3X1ltKqAaTv6CyxHIReug_xEPqqCSS';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
-const POS_ORDER=['代表','店長','チーフ','スタイリスト','Jrスタイリスト','カラーリスト','アシスタント','レセプション'];
+const POS_ORDER=['代表','マネージャー','店長','チーフ','スタイリスト','Jrスタイリスト','カラーリスト','アシスタント','レセプション'];
 const EXCLUDE_ROLES=['管理者'];
 const TAX_RATE=0.10;
 let students=[],salesData={},currentMonth='',currentStore='all',months=[];
@@ -299,7 +299,7 @@ let materialRatio={ailes:null,soleil:null};
 // 両店スタッフのID（亀田代表）
 const RYOTEN_STORES=['両店'];
 
-// 役職別基準値(役職ごとの月間売上目標・税抜)・材料比率の編集権限
+// 役職別基準値(役職ごとの月間目標＝指名技術売上＋フリー売上の40%・税抜)・材料比率の編集権限
 // 金額の表示は税抜がメイン。結果（売上）にだけ小さく税込を添える。税率が変わったら TAX_RATE だけ直す
 const PRODUCTIVITY_EDIT_ROLES=['代表','管理者','店長','チーフ'];
 let ME=null;
@@ -546,6 +546,11 @@ function numOpts(max,val,step){
 function calcResult(d){
   return Number(d.meimei_sales||0)+Number(d.free_sales||0)+Number(d.tanden||0);
 }
+/* 目標と比べる実績＝指名技術売上＋フリー売上の40%（税抜） */
+function calc40(d){
+  return Math.round(Number(d.meimei_sales||0)+Number(d.free_sales||0)*0.4);
+}
+function pctText(v,t){return t?Math.round(v/t*100)+'%':'';}
 
 function renderTable(){
   const list=getSortedList();
@@ -565,7 +570,8 @@ function renderTable(){
             :currentStore==='soleil'?(allocation.soleil_pct||50)/100:1)
           :1;
         var rt=Math.round((roleProductivity[s.position]||0)*targetPct);
-        return '<td><span class="auto-val">'+(rt?rt.toLocaleString():'—')+'</span></td>';
+        var r40=isRyotenAll?calc40(salesData[getKey(s.id,'ailes')]||{})+calc40(salesData[getKey(s.id,'soleil')]||{}):calc40(d);
+        return '<td><span class="auto-val">'+(rt?rt.toLocaleString():'—')+'</span><span class="auto-val-sub" id="r40-'+s.id+'">'+(rt&&r40?'実績 '+r40.toLocaleString()+'（'+pctText(r40,rt)+'）':'')+'</span></td>';
       })()
       +'<td><span class="auto-val" id="result-'+s.id+'">'+(result?Math.round(result).toLocaleString():'—')+'</span>'
       +'<span class="auto-val-sub" id="result-sub-'+s.id+'">'+(result?'(税込 '+Math.round(result*(1+TAX_RATE)).toLocaleString()+')':'')+'</span></td>'
@@ -591,6 +597,14 @@ function renderTable(){
       if(el2)el2.textContent=result?Math.round(result).toLocaleString():'—';
       const el3=document.getElementById('result-sub-'+sid);
       if(el3)el3.textContent=result?'(税込 '+Math.round(result*(1+TAX_RATE)).toLocaleString()+')':'';
+      const el4=document.getElementById('r40-'+sid);
+      if(el4){
+        const st=students.find(function(x){return x.id===sid;});
+        const pct=st&&RYOTEN_STORES.includes(st.store)?((currentStore==='ailes'?(allocation.ailes_pct||50):(allocation.soleil_pct||50))/100):1;
+        const rt=Math.round((roleProductivity[st?st.position:'']||0)*pct);
+        const r40=calc40(salesData[key]);
+        el4.textContent=rt&&r40?'実績 '+r40.toLocaleString()+'（'+pctText(r40,rt)+'）':'';
+      }
       updateTotals();
           saveSalesData(sid,field,val,currentStore);
     });
@@ -602,7 +616,7 @@ function updateTotals(){
   let list=students.slice();
   if(currentStore==='ailes')list=list.filter(function(s){return getStoreForMonth(s,currentMonth)==='エルズ'||RYOTEN_STORES.includes(s.store);});
 else if(currentStore==='soleil')list=list.filter(function(s){return getStoreForMonth(s,currentMonth)==='soleil'||RYOTEN_STORES.includes(s.store);});
-  let target=0,result=0,meimei=0,free=0,clients=0,tanden=0;
+  let target=0,result=0,meimei=0,free=0,clients=0,tanden=0,r40=0;
   list.forEach(function(s){
     const isRyoten=RYOTEN_STORES.includes(s.store);
     const targetPct=isRyoten
@@ -616,6 +630,7 @@ else if(currentStore==='soleil')list=list.filter(function(s){return getStoreForM
     else dList=[salesData[getKey(s.id)]||{}];
     dList.forEach(function(d){
       result+=Math.round(calcResult(d));
+      r40+=calc40(d);
       meimei+=Math.round(Number(d.meimei_sales||0));
       free+=Math.round(Number(d.free_sales||0));
       clients+=Math.round(Number(d.meimei_clients||0)+Number(d.free_clients||0));
@@ -623,7 +638,7 @@ else if(currentStore==='soleil')list=list.filter(function(s){return getStoreForM
     });
   });
   document.getElementById('tot-target').textContent=target?'¥'+target.toLocaleString():'—';
-  document.getElementById('tot-target-sub').textContent='';
+  document.getElementById('tot-target-sub').textContent=target&&r40?'実績 ¥'+r40.toLocaleString()+'（'+pctText(r40,target)+'）':'';
   /* 結果は税抜がメイン、（ ）内に小さく税込 */
   const incl=function(v){return v?'(税込 ¥'+Math.round(v*(1+TAX_RATE)).toLocaleString()+')':'';};
   document.getElementById('tot-result').textContent=result?'¥'+result.toLocaleString():'—';
