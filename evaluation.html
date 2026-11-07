@@ -245,7 +245,7 @@ const EVAL_TARGET_ROLES=['店長','チーフ','スタイリスト','Jrスタイ�
 const POS_ORDER=['店長','チーフ','スタイリスト','Jrスタイリスト','カラーリスト','アシスタント','レセプション'];
 const DATA_SOURCES=[
   ['manual','手入力（目標・結果を入力）'],
-  ['store_sales','店舗全体の総売（数値管理・税抜）'],
+  ['store_sales','店舗全体の指名＋フリー40%（数値管理の目標と比べる・税抜）'],
   ['total_sales','個人の総売（指名＋フリー＋店販・税抜）'],
   ['meimei_sales','指名技術売上（税抜）'],
   ['meimei_free40','指名技術売上＋フリー売上の40%（税抜）'],
@@ -405,9 +405,15 @@ function renderPayroll(){
   h+='<div class="pay-red">・二四半期の評価点の平均で決定</div>';
   h+='</div>';
 
+  /* 役職別基準値は、数値管理の「役職別基準値」（今月の目標）をそのまま表示する。ここでは編集しない */
   h+='<div class="pay-sec"><div class="pay-h">役職別基準値</div>';
+  h+='<div class="pay-desc">1か月の目標です。指名技術売上＋フリー売上の40%（税抜）で数えます。数値管理の「役職別基準値」と同じ数字です。</div>';
   h+='<div class="pay-scroll"><table class="pay-tbl narrow"><thead><tr><th>役職</th><th>基準値（万円）</th></tr></thead><tbody>'
-    +PAY_BASE.map(function(r){return '<tr class="c-none"><td class="lbl">'+esc(r[0])+'</td><td>'+r[1]+'</td></tr>';}).join('')
+    +PAY_BASE.map(function(r){
+      const key=r[0]==='MG'?'マネージャー':r[0];
+      const v=(key in payRoleTargets)?payRoleTargets[key]/10000:r[1];
+      return '<tr class="c-none"><td class="lbl">'+esc(r[0])+'</td><td>'+(Math.round(v*10)/10).toLocaleString()+'</td></tr>';
+    }).join('')
     +'</tbody></table></div>';
   h+='</div>';
 
@@ -416,6 +422,15 @@ function renderPayroll(){
 
 /* ===== 給与制度の保存・読み込み・編集画面 ===== */
 let payEditing=false,payDraft=null,payMeta='';
+/* 数値管理の役職別基準値（今月までで一番新しい目標）を役職ごとに読む */
+let payRoleTargets={};
+async function loadPayRoleTargets(){
+  const now=new Date();
+  const ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const {data}=await sb.from('role_productivity').select('*').lte('month',ym).order('month',{ascending:false});
+  payRoleTargets={};
+  (data||[]).forEach(function(r){if(!(r.position in payRoleTargets))payRoleTargets[r.position]=Number(r.monthly_target)||0;});
+}
 function canEditPay(){return !!ME&&PAY_EDIT_ROLES.includes(ME.position);}
 function payCurrent(){
   return {meimei:PAY_MEIMEI,meimei_notes:PAY_MEIMEI_NOTES,role:PAY_ROLE,promo:PAY_PROMO,fee:PAY_FEE,bonus:PAY_BONUS,base:PAY_BASE};
@@ -492,10 +507,7 @@ function renderPayEditor(){
     tbl(['評価点','トップスタイリスト以上（%）','スタイリスト以下（円）'],d.bonus.map(function(r,i){
       return '<tr><td class="lbl">'+r[0]+'</td><td>'+payInp('bonus',i,1,r[1],'num','80px')+'</td><td>'+payInp('bonus',i,2,r[2],'num','100px')+'</td></tr>';
     })));
-  h+=sec('役職別基準値','万円で入力します。',
-    tbl(['役職','基準値（万円）'],d.base.map(function(r,i){
-      return '<tr><td class="lbl">'+esc(r[0])+'</td><td>'+payInp('base',i,1,r[1],'num','90px')+'</td></tr>';
-    })));
+  h+=sec('役職別基準値','数値管理の「役職別基準値」と連動しています。金額は数値管理の画面で変えてください。','');
   h+='<div class="save-row" style="margin-bottom:24px"><button class="btn btn-outline" onclick="cancelPayEdit()">やめる</button><button class="btn btn-dark" onclick="savePay()">保存する</button></div>';
   wrap.innerHTML=h;
 }
@@ -536,6 +548,7 @@ async function computeStoreMonth(storeJP,monthStr){
   }
   const shortCode=storeShortCode(storeJP);
   let target=0,resultExcl=0,clients=0,hasData=false;
+  /* 店舗の目標（役職別基準値の合計）は「指名＋フリー40%」の考え方なので、実績も同じ数え方で比べる */
   staffList.forEach(function(s){
     const isRyoten=s.store==='両店';
     const pct=isRyoten?((storeJP==='エルズ'?(alloc.ailes_pct||50):(alloc.soleil_pct||50))/100):1;
@@ -545,7 +558,7 @@ async function computeStoreMonth(storeJP,monthStr){
     else row=salesRows.find(function(r){return r.student_id===s.id&&!r.store;});
     if(rowHasData(row))hasData=true;
     if(row){
-      resultExcl+=Number(row.meimei_sales||0)+Number(row.free_sales||0)+Number(row.tanden||0);
+      resultExcl+=Number(row.meimei_sales||0)+Number(row.free_sales||0)*0.4;
       clients+=Number(row.meimei_clients||0)+Number(row.free_clients||0);
     }
   });
@@ -1034,7 +1047,7 @@ function renderCriteriaReadonly(){
     if(src==='late_count')how='3か月の遅刻数の合計で決まります。0回で60点、1回ごとに10点下がります。';
     else if(src==='curr_delay')how='カリキュラムの練習開始予定日から1か月過ぎても合格していない項目の数で決まります。0件で100点、1件50点、2件40点、3件30点、4件20点、5件10点、6件以上は0点です。予定日が入っていない項目は判定に入らないので、必ず入力してください。';
     else if(src==='sub_avg')how='同じ店舗の部下（チーフ以下、レセプションを除く）の、四半期の合計評価点の平均がそのまま点数になります。';
-    else if(src==='store_sales')how='店舗全体の総売（税抜）を、店舗の売上目標と比べた達成率で点数が決まります。';
+    else if(src==='store_sales')how='店舗全員の「指名技術売上＋フリー売上の40%」（税抜）の合計を、店舗の目標と比べた達成率で点数が決まります。';
     else if(src==='manual')how='毎月の目標と結果を入力し、3か月合計の達成率で点数が決まります。'+(it.calc_type==='inverse_count'?'（数値が少ないほど高評価）':'');
     else how='1か月あたりの基準値'+(it.base_value!=null?'<b>'+fmtNum(it.base_value)+'</b>':'（未設定）')+'を100%として、3か月合計の達成率で点数が決まります。';
     const showScale=src!=='late_count'&&src!=='sub_avg'&&src!=='curr_delay';
@@ -1152,6 +1165,7 @@ async function saveAdminItems(){
     document.getElementById('ev-pos-filter').style.display='none';
   }
   await loadPayroll();
+  await loadPayRoleTargets();
   renderPayroll();
   loadListView();
 })();
