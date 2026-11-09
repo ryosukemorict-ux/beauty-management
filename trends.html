@@ -125,6 +125,7 @@ function onYearChange(){
 function calcResult(d){
   return Number(d.meimei_sales||0)+Number(d.free_sales||0)+Number(d.tanden||0);
 }
+/* 異動履歴で「未配属」の月（入社・配属前）は、どの店舗にも、全店舗にも入れない */
 function getStoreForMonth(s,month){
   const v=valueAsOf(assignHistory,s.id,'store',month+'-01');
   return v||s.store;
@@ -160,6 +161,7 @@ function getMonthTotals(month){
   let list=students.slice();
   if(currentStore==='ailes')list=list.filter(function(s){return getStoreForMonth(s,month)==='エルズ'||RYOTEN_STORES.includes(s.store);});
   else if(currentStore==='soleil')list=list.filter(function(s){return getStoreForMonth(s,month)==='soleil'||RYOTEN_STORES.includes(s.store);});
+  else list=list.filter(function(s){return RYOTEN_STORES.includes(s.store)||getStoreForMonth(s,month)!=='未配属';});
 
   const alloc=allocationByMonth[month]||{ailes_pct:50,soleil_pct:50};
   const rows=salesDataAll[month]||{};
