@@ -221,6 +221,7 @@ function changeMonthRank(d){
   renderRanking();
 }
 
+/* 異動履歴で「未配属」の月（入社・配属前）は、どの店舗にも、全店舗にも入れない */
 function getStoreForDate(s,monthStr){
   const v=valueAsOf(assignHistory,s.id,'store',monthStr+'-01');
   return v||s.store;
@@ -230,6 +231,7 @@ function getStaff(filterId){
   const monthStr=currentYear+'-'+String(currentMonth).padStart(2,'0');
   return allStaff.filter(s=>{
     const st=getStoreForDate(s,monthStr);
+    if(st==='未配属')return false;
     if(f==='els')return st==='els'||st==='エルズ';
     if(f==='soleil')return st==='soleil'||st==='soleil by ailes';
     return true;
