@@ -33,6 +33,9 @@ body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--d
 .total-panel{background:var(--dark);border-radius:12px;padding:14px 16px;margin-bottom:12px;color:white;}
 .total-panel-label{font-size:10px;letter-spacing:3px;color:var(--gold);margin-bottom:10px;}
 .total-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;}
+/* 目標は説明が長いので2マス分の幅にして、1行で読めるようにする */
+.total-item.wide{grid-column:span 2;}
+.total-item.wide .total-item-label{white-space:nowrap;}
 .total-item{text-align:center;}
 .total-item-val{font-size:17px;font-weight:700;color:var(--gold-light);}
 .total-item-label{font-size:10px;color:var(--soft);margin-top:2px;}
@@ -200,7 +203,7 @@ tbody tr:hover td:first-child{background:#fffbf7;}
   <div class="total-panel">
     <div class="total-panel-label">✦ 店舗合計</div>
     <div class="total-grid">
-      <div class="total-item"><div class="total-item-label">目標（指名＋フリー40%・税抜）</div><div class="total-item-val" id="tot-target">—</div><div class="total-item-sub" id="tot-target-sub"></div></div>
+      <div class="total-item wide"><div class="total-item-label">目標（指名＋フリー40%・税抜）</div><div class="total-item-val" id="tot-target">—</div><div class="total-item-sub" id="tot-target-sub"></div></div>
       <div class="total-item"><div class="total-item-label">総売結果（税抜）</div><div class="total-item-val" id="tot-result">—</div><div class="total-item-sub" id="tot-result-sub"></div></div>
       <div class="total-item"><div class="total-item-label">指名技術売上</div><div class="total-item-val" id="tot-meimei">—</div><div class="total-item-sub" id="tot-meimei-sub"></div></div>
       <div class="total-item"><div class="total-item-label">フリー売上</div><div class="total-item-val" id="tot-free">—</div><div class="total-item-sub" id="tot-free-sub"></div></div>
@@ -487,6 +490,7 @@ function getStaffList(){
   let list=students.slice();
   if(currentStore==='ailes')list=list.filter(function(s){return getStoreForMonth(s,currentMonth)==='エルズ'||RYOTEN_STORES.includes(s.store);});
 else if(currentStore==='soleil')list=list.filter(function(s){return getStoreForMonth(s,currentMonth)==='soleil'||RYOTEN_STORES.includes(s.store);});
+  else list=list.filter(function(s){return RYOTEN_STORES.includes(s.store)||getStoreForMonth(s,currentMonth)!=='未配属';});
   list.sort(function(a,b){
     const ai=POS_ORDER.indexOf(a.position||'');
     const bi=POS_ORDER.indexOf(b.position||'');
@@ -500,6 +504,7 @@ function getKey(sid,store){
   if(s&&RYOTEN_STORES.includes(s.store)&&store)return currentMonth+'_'+sid+'_'+store;
   return currentMonth+'_'+sid;
 }
+/* 異動履歴で「未配属」の月（入社・配属前）は、どの店舗にも、全店舗にも入れない */
 function getStoreForMonth(s,month){
   const v=valueAsOf(assignHistory,s.id,'store',monthToDate(month));
   return v||s.store;
@@ -616,6 +621,7 @@ function updateTotals(){
   let list=students.slice();
   if(currentStore==='ailes')list=list.filter(function(s){return getStoreForMonth(s,currentMonth)==='エルズ'||RYOTEN_STORES.includes(s.store);});
 else if(currentStore==='soleil')list=list.filter(function(s){return getStoreForMonth(s,currentMonth)==='soleil'||RYOTEN_STORES.includes(s.store);});
+  else list=list.filter(function(s){return RYOTEN_STORES.includes(s.store)||getStoreForMonth(s,currentMonth)!=='未配属';});
   let target=0,result=0,meimei=0,free=0,clients=0,tanden=0,r40=0;
   list.forEach(function(s){
     const isRyoten=RYOTEN_STORES.includes(s.store);
