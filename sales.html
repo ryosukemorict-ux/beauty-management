@@ -194,6 +194,7 @@ tbody tr:hover td:first-child{background:#fffbf7;}
     <button onclick="showAllocModal()" style="font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:6px 14px;border-radius:7px;border:1.5px solid var(--gold-light);background:white;color:var(--mid);cursor:pointer;">⚙️ 按分設定</button>
     <button id="btn-productivity" onclick="showProductivityModal()" style="display:none;font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:6px 14px;border-radius:7px;border:1.5px solid var(--gold-light);background:white;color:var(--mid);cursor:pointer;">📊 役職別基準値</button>
     <button id="btn-material" onclick="showMaterialModal()" style="display:none;font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:6px 14px;border-radius:7px;border:1.5px solid var(--gold-light);background:white;color:var(--mid);cursor:pointer;">🧾 材料比率</button>
+    <button id="btn-import" onclick="location.href='import.html'" style="display:none;font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:6px 14px;border-radius:7px;border:1.5px solid var(--gold-light);background:white;color:var(--mid);cursor:pointer;">📥 CSV取り込み</button>
   </div>
   <div class="store-tabs">
     <button class="store-tab active" id="tab-all" onclick="switchStore('all')">全店舗</button>
@@ -686,6 +687,7 @@ async function loadAll(){
   }
   if(canEditProductivity())document.getElementById('btn-productivity').style.display='';
   if(canEditMaterial())document.getElementById('btn-material').style.display='';
+  if(canEditProductivity())document.getElementById('btn-import').style.display='';
   const {data}=await sb.from('students').select('*').order('created_at');
   students=(data||[]).filter(function(s){return s.is_active!==false&&!EXCLUDE_ROLES.includes(s.position);});
   assignHistory=await loadAssignmentHistory(sb);
@@ -693,13 +695,17 @@ async function loadAll(){
   renderMonthSel();
   const today=new Date();
   const thisMonth=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0');
-  currentMonth=months.includes(thisMonth)?thisMonth:months[0];
+  // CSV取り込み画面から戻ったときは、取り込んだ月・店舗を開く（例：sales.html?month=2026-10&store=ailes）
+  const qp=new URLSearchParams(location.search);
+  const qMonth=qp.get('month'),qStore=qp.get('store');
+  currentMonth=(qMonth&&months.includes(qMonth))?qMonth:(months.includes(thisMonth)?thisMonth:months[0]);
   document.getElementById('month-sel').value=currentMonth;
   await loadSalesData();
   await loadAllocation();
   await loadProductivity();
   await loadMaterialRatio();
   document.getElementById('loading').style.display='none';
+  if(qStore==='ailes'||qStore==='soleil'){switchStore(qStore);return;}
   renderTable();
 }
 
