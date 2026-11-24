@@ -574,12 +574,11 @@ function doLogin(){
   const pw=document.getElementById('login-pw').value;
   const s=students.find(function(s){return s.id===id;});
   if(!s){document.getElementById('login-err').textContent='ユーザーが見つかりません';return;}
-  const expectedHash=s.pw_hash||(hash('2026'));
+  // パスワードを設定済みの人は、そのパスワードでだけ入れる（初期パスワード「2026」は使えない）
+  // まだ設定していない人（pw_hashが空）は「2026」で入れる
+  const expectedHash=s.pw_hash||hash('2026');
   if(hash(pw)!==expectedHash&&pw!==s.pw_hash){
-    if(pw==='2026'||hash(pw)===hash('2026')||(!s.pw_hash&&pw==='2026')){
-    } else if(s.pw_hash&&hash(pw)!==s.pw_hash){
-      document.getElementById('login-err').textContent='パスワードが正しくありません';return;
-    }
+    document.getElementById('login-err').textContent='パスワードが正しくありません';return;
   }
   ME=s;
   localStorage.setItem('logged_in_id',s.id);
