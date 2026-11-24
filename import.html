@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSV取り込み | ailes group</title>
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<meta name="apple-mobile-web-app-title" content="ailes group">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assignment-history.js"></script>
+<style>
+:root{--cream:#faf6f0;--gold:#c9a96e;--gold-light:#e8d5b0;--dark:#1a1410;--mid:#7a6a58;--soft:#c4b49e;--accent:#8b5e3c;--green:#4a7c59;--red:#c0392b;--yellow:#fff6e5;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--cream);font-family:'Noto Sans JP',sans-serif;color:var(--dark);min-height:100vh;}
+.top-bar{background:var(--dark);color:var(--gold-light);padding:12px 20px;display:flex;align-items:center;gap:12px;}
+.top-bar-title{font-family:'Playfair Display',serif;font-size:18px;letter-spacing:2px;}
+.nav-bar{background:white;border-bottom:2px solid var(--gold-light);padding:0 16px;display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.nav-btn{font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:500;padding:12px 18px;border:none;background:none;color:var(--mid);cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;margin-bottom:-2px;}
+.nav-btn.active{color:var(--gold);border-bottom-color:var(--gold);font-weight:700;}
+.main{max-width:900px;margin:0 auto;padding:16px 12px 80px;}
+.card{background:white;border:1px solid var(--gold-light);border-radius:16px;padding:16px;margin-bottom:12px;}
+.card-title{font-size:14px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.step{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--dark);color:var(--gold-light);font-size:11px;font-weight:700;flex-shrink:0;}
+.card-sub{font-size:12px;color:var(--mid);margin-bottom:12px;line-height:1.7;}
+.row2{display:grid;grid-template-columns:1fr;gap:0 10px;}
+@media(min-width:600px){.row2{grid-template-columns:1fr 1fr;}}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:11px;color:var(--mid);font-weight:700;margin-bottom:5px;}
+.sel{width:100%;height:44px;font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:700;padding:0 34px 0 12px;border-radius:12px;border:1.5px solid var(--gold);outline:none;color:var(--dark);appearance:none;-webkit-appearance:none;background:white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7'%3E%3Cpath d='M0 0l6 7 6-7z' fill='%23c9a96e'/%3E%3C/svg%3E") no-repeat right 14px center;}
+.sel.need{border-color:var(--red);background-color:#fffafa;}
+.sel-sm{height:36px;font-size:13px;font-weight:500;border-width:1px;border-color:var(--gold-light);}
+.drop{display:block;border:2px dashed var(--gold-light);border-radius:14px;padding:22px 12px;text-align:center;cursor:pointer;background:#fdfbf8;}
+.drop b{display:block;font-size:14px;margin-bottom:4px;}
+.drop span{font-size:11px;color:var(--mid);}
+.drop input{display:none;}
+.msg{font-size:12px;padding:10px 12px;border-radius:10px;margin-bottom:10px;line-height:1.7;}
+.msg.warn{background:var(--yellow);color:#8a5a00;}
+.msg.err{background:#fbecea;color:var(--red);}
+.msg.ok{background:#eef5f0;color:#2f5a3c;}
+.map-grid{display:grid;grid-template-columns:1fr;gap:8px;}
+@media(min-width:600px){.map-grid{grid-template-columns:1fr 1fr;}}
+.map-item{border:1px solid #efe6da;border-radius:10px;padding:8px 10px;}
+.map-item label{display:block;font-size:12px;font-weight:700;margin-bottom:4px;}
+.map-item .ex{font-size:10px;color:var(--soft);margin-top:3px;min-height:14px;}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid #efe6da;border-radius:10px;}
+table{border-collapse:collapse;font-variant-numeric:tabular-nums;width:100%;}
+th{font-size:10px;color:var(--mid);font-weight:700;padding:6px 8px;border-bottom:1px solid #efe6da;white-space:nowrap;background:#fdfbf8;text-align:right;}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:white;z-index:1;}
+th:first-child{background:#fdfbf8;}
+td{font-size:13px;padding:7px 8px;border-bottom:1px solid #f5efe7;white-space:nowrap;text-align:right;vertical-align:top;}
+td .old{display:block;font-size:10px;color:var(--soft);}
+td.chg{background:#fff6e5;}
+td.chg b{color:var(--accent);}
+td.same{color:var(--soft);}
+tr.skip td{color:var(--soft);}
+.name-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f5efe7;flex-wrap:wrap;}
+.name-row .csv-name{font-size:13px;font-weight:700;min-width:110px;}
+.name-row .arrow{color:var(--soft);}
+.name-row .sel{flex:1;min-width:160px;}
+.badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap;}
+.badge.ok{background:#eef5f0;color:var(--green);}
+.badge.guess{background:var(--yellow);color:#8a5a00;}
+.badge.ng{background:#fbecea;color:var(--red);}
+.badge.off{background:#f0ebe5;color:var(--mid);}
+.note-small{font-size:11px;color:#8a5a00;width:100%;padding-left:2px;}
+.btn{font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:700;height:48px;border-radius:12px;border:none;cursor:pointer;width:100%;}
+.btn-dark{background:var(--dark);color:var(--gold-light);}
+.btn-dark:disabled{opacity:0.35;cursor:not-allowed;}
+.btn-ghost{background:white;border:1.5px solid var(--gold-light);color:var(--mid);height:40px;font-size:12px;margin-top:8px;}
+.btn-mini{font-family:'Noto Sans JP',sans-serif;font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;border:1.5px solid var(--gold-light);background:white;color:var(--mid);cursor:pointer;white-space:nowrap;}
+.btn-mini.red{border-color:#f0c8c3;color:var(--red);}
+.chk-line{display:flex;gap:8px;align-items:flex-start;font-size:13px;margin:10px 0;line-height:1.6;}
+.chk-line input{width:20px;height:20px;flex-shrink:0;margin-top:1px;}
+.log-item{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #f5efe7;font-size:12px;}
+.log-item .meta{color:var(--mid);line-height:1.6;}
+.log-item.done .meta{color:var(--soft);}
+.hidden{display:none !important;}
+</style>
+</head>
+<body>
+<div class="top-bar"><div class="top-bar-title">✦ ailes group</div></div>
+<div class="nav-bar">
+  <button class="nav-btn" onclick="location.href='index.html'">🏠 ホーム</button>
+  <button class="nav-btn" onclick="location.href='sales.html'">📊 数値管理</button>
+  <button class="nav-btn active">📥 CSV取り込み</button>
+</div>
+
+<div class="main" id="main">
+  <div class="card"><div class="card-sub" style="margin:0">読み込み中...</div></div>
+</div>
+
+<script>
+// ============================================
+// 数値管理 CSV取り込み（ailes group）
+// レジのCSV（スタッフ別の集計）を読み込み、sales_data に保存する
+// ・どのレジのCSVでも使えるよう「列の割り当て」を画面で選ぶ方式
+// ・保存前に「今の値 → 新しい値」を必ず確認する
+// ・取り込みごとに履歴を残し、あとから元に戻せる
+// ============================================
+const SUPABASE_URL='https://nrweporylfaorlqektsk.supabase.co';
+const SUPABASE_ANON='sb_publishable_a3X1ltKqAaTv6CyxHIReug_xEPqqCSS';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
+const TAX_RATE=0.10;
+const EDIT_ROLES=['代表','管理者','店長','チーフ'];   // 数値管理の役職別基準値と同じ
+const EXCLUDE_ROLES=['管理者'];
+const RYOTEN_STORES=['両店'];
+const STORES=[{id:'ailes',db:'エルズ',label:'ailes'},{id:'soleil',db:'soleil',label:'soleil'}];
+const SETTINGS_KEY='sales_csv_mapping';
+const ALIAS_KEY='sales_csv_name_alias';
+
+// 取り込める項目（遅刻数はレジにないので対象外）
+const FIELDS=[
+  {f:'meimei_sales',  label:'指名技術売上', type:'yen', kw:['指名技術','指名売上','指名']},
+  {f:'free_sales',    label:'フリー売上',   type:'yen', kw:['フリー技術','フリー売上','フリー']},
+  {f:'tanden',        label:'店販売上',     type:'yen', kw:['店販','物販','商品売上','商品']},
+  {f:'meimei_clients',label:'指名入客数',   type:'int', kw:['指名客数','指名人数','指名入客','指名']},
+  {f:'free_clients',  label:'フリー入客数', type:'int', kw:['フリー客数','フリー人数','フリー入客','フリー']},
+  {f:'unit_price',    label:'客単価',       type:'yen', kw:['客単価','単価']},
+  {f:'return_new',    label:'再来率新規',   type:'pct', kw:['新規再来']},
+  {f:'return_reg',    label:'再来率顧客',   type:'pct', kw:['顧客再来','固定再来','既存再来','再来率']}
+];
+const NAME_KW=['スタッフ名','スタイリスト名','担当者名','担当者','担当','スタッフ','スタイリスト','氏名','名前'];
+
+let ME=null,students=[],assignHistory=[];
+let csv=null;            // {fileName, rows:[[...]], headerIdx}
+let mapping={};          // mapping[field] = 列番号 / mapping.name = 列番号
+let taxMode='';          // 'incl' | 'excl'
+let pctTimes100={};      // pctTimes100[field]=true なら100倍
+let aliases={};          // aliases[CSVの名前(正規化)] = student_id or 'skip'
+let nameChoice={};       // nameChoice[行番号] = student_id or 'skip'
+let nameHow={};          // nameHow[行番号] = exact / alias / guess / none / skip / manual
+let plan=[];             // 保存する内容
+
+// ===== 共通 =====
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function norm(s){return String(s==null?'':s).normalize('NFKC').replace(/[\s　]/g,'');}
+function fmt(v,type){
+  if(v==null||v==='')return '—';
+  if(type==='pct')return Number(v).toFixed(1)+'%';
+  if(type==='int')return Math.round(v).toLocaleString()+'人';
+  return Math.round(v).toLocaleString();
+}
+function monthLabel(m){const p=m.split('-');return p[0]+'年'+Number(p[1])+'月';}
+function storeById(id){return STORES.find(function(s){return s.id===id;});}
+function selStore(){return document.getElementById('store-sel').value;}
+function selMonth(){return document.getElementById('month-sel').value;}
+
+// 数値を読む（空欄・「-」は「値なし」＝今の値を残す）
+function readNum(v){
+  const t=String(v==null?'':v).normalize('NFKC').replace(/[,¥￥円%％人名\s]/g,'');
+  if(t===''||t==='-'||t==='—')return {empty:true};
+  const n=Number(t);
+  if(isNaN(n))return {bad:true,raw:v};
+  return {n:n};
+}
+
+// ===== 設定の読み書き（app_settings テーブル） =====
+async function loadSetting(key){
+  const {data,error}=await sb.from('app_settings').select('value').eq('key',key).maybeSingle();
+  if(error){console.warn(error);return null;}
+  return data?data.value:null;
+}
+async function saveSetting(key,value){
+  const {error}=await sb.from('app_settings').upsert({key:key,value:value,updated_at:new Date().toISOString()},{onConflict:'key'});
+  return error;
+}
+
+// ===== CSVの読み込み =====
+async function readText(file){
+  const buf=await file.arrayBuffer();
+  try{return new TextDecoder('utf-8',{fatal:true}).decode(buf).replace(/^﻿/,'');}
+  catch(e){return new TextDecoder('shift_jis').decode(buf);}
+}
+function parseCSV(text){
+  // 区切り文字：タブが多ければタブ区切りとして読む
+  const firstLine=text.split(/\r?\n/)[0]||'';
+  const delim=(firstLine.split('\t').length>firstLine.split(',').length)?'\t':',';
+  const rows=[];let row=[],cell='',q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){
+      if(c==='"'){if(text[i+1]==='"'){cell+='"';i++;}else q=false;}
+      else cell+=c;
+    }else if(c==='"')q=true;
+    else if(c===delim){row.push(cell.trim());cell='';}
+    else if(c==='\n'||c==='\r'){
+      if(c==='\r'&&text[i+1]==='\n')i++;
+      row.push(cell.trim());cell='';
+      if(row.some(function(v){return v!=='';}))rows.push(row);
+      row=[];
+    }else cell+=c;
+  }
+  row.push(cell.trim());
+  if(row.some(function(v){return v!=='';}))rows.push(row);
+  return rows;
+}
+// 見出しの行を自動で探す（レジによっては1行目にタイトルや期間が入っている）
+function guessHeaderIdx(rows){
+  const lim=Math.min(rows.length,15);
+  for(let i=0;i<lim;i++){
+    const r=rows[i];
+    const filled=r.filter(function(v){return v!=='';}).length;
+    if(filled>=3&&r.some(function(v){const n=norm(v);return NAME_KW.some(function(k){return n.indexOf(k)!==-1;});}))return i;
+  }
+  let best=0,bestN=0;
+  for(let i=0;i<lim;i++){
+    const n=rows[i].filter(function(v){return v!==''&&isNaN(Number(String(v).replace(/,/g,'')));}).length;
+    if(n>bestN){bestN=n;best=i;}
+  }
+  return best;
+}
+function headers(){return csv?csv.rows[csv.headerIdx]:[];}
+function dataRows(){
+  if(!csv||mapping.name==null||mapping.name==='')return [];
+  const out=[];
+  for(let i=csv.headerIdx+1;i<csv.rows.length;i++){
+    const r=csv.rows[i];
+    const name=(r[mapping.name]||'').trim();
+    if(!name)continue;
+    const n=norm(name);
+    if(/^(合計|総計|小計|計|全体|店舗計|TOTAL)$/i.test(n)||n.indexOf('合計')!==-1)continue;
+    out.push({idx:i,name:name,cells:r});
+  }
+  return out;
+}
+
+// ===== 列の自動推定 =====
+function guessMapping(){
+  const h=headers().map(norm);
+  const used={};
+  const m={};
+  // 名前の列
+  for(const k of NAME_KW){
+    const i=h.findIndex(function(x){return x.indexOf(k)!==-1;});
+    if(i!==-1){m.name=i;used[i]=true;break;}
+  }
+  // 項目の列（売上系は「売上・金額」を含む列、人数系は「客・人・数」を含む列を優先）
+  FIELDS.forEach(function(fd){
+    for(const k of fd.kw){
+      let cands=h.map(function(x,i){return {x:x,i:i};}).filter(function(o){return !used[o.i]&&o.x.indexOf(k)!==-1;});
+      if(fd.type==='yen'&&fd.f!=='unit_price'){const c2=cands.filter(function(o){return /売上|金額|売|技術/.test(o.x)&&!/客数|人数|率/.test(o.x);});if(c2.length)cands=c2;else cands=cands.filter(function(o){return !/客数|人数|率/.test(o.x);});}
+      if(fd.type==='int'){const c2=cands.filter(function(o){return /客|人|数/.test(o.x)&&!/売上|金額|率/.test(o.x);});cands=c2;}
+      if(fd.type==='pct'){cands=cands.filter(function(o){return /率|%|％/.test(o.x)||k.indexOf('再来')!==-1;});}
+      if(cands.length){m[fd.f]=cands[0].i;used[cands[0].i]=true;break;}
+    }
+  });
+  return m;
+}
+// 保存してある割り当て（見出しの名前で覚えている）を今のCSVに当てはめる
+function applySavedMapping(saved){
+  if(!saved||!saved.cols)return null;
+  const h=headers();
+  const m={};let hit=0,need=0;
+  Object.keys(saved.cols).forEach(function(f){
+    const colName=saved.cols[f];
+    if(!colName)return;
+    need++;
+    const i=h.indexOf(colName);
+    if(i!==-1){m[f]=i;hit++;}
+  });
+  if(!need||hit<need)return null;     // 1列でも見つからなければ使わない（レジの形式が変わった可能性）
+  return {m:m,tax:saved.tax||'',pct:saved.pct||{}};
+}
+
+// ===== 名前の照合 =====
+function staffById(id){return students.find(function(s){return s.id===id;});}
+function storeOfStaff(s,month){return valueAsOf(assignHistory,s.id,'store',monthToDate(month))||s.store;}
+function matchName(csvName){
+  const n=norm(csvName);
+  if(aliases[n])return {id:aliases[n],how:aliases[n]==='skip'?'skip':'alias'};
+  const exact=students.filter(function(s){return norm(s.name)===n;});
+  if(exact.length===1)return {id:exact[0].id,how:'exact'};
+  // 姓だけ・名だけなど：片方がもう片方に含まれ、候補が1人だけのときは「推定」
+  if(n.length>=2){
+    const part=students.filter(function(s){const sn=norm(s.name);return sn.indexOf(n)!==-1||n.indexOf(sn)!==-1;});
+    if(part.length===1)return {id:part[0].id,how:'guess'};
+  }
+  return {id:'skip',how:'none'};
+}
+
+// ===== 画面 =====
+function renderShell(){
+  const now=new Date();
+  const prev=new Date(now.getFullYear(),now.getMonth()-1,1);   // 取り込みは締めた月（先月）が多いので先月を初期値に
+  const defMonth=prev.getFullYear()+'-'+String(prev.getMonth()+1).padStart(2,'0');
+  let mOpts='';
+  for(let y=2026;y<=2028;y++)for(let m=1;m<=12;m++){const v=y+'-'+String(m).padStart(2,'0');mOpts+='<option value="'+v+'"'+(v===defMonth?' selected':'')+'>'+y+'年'+m+'月</option>';}
+  document.getElementById('main').innerHTML=''
+  +'<div class="card"><div class="card-title"><span class="step">1</span>取り込む月と店舗</div>'
+  +'<div class="card-sub">レジのCSVには月や店舗が入っていないことが多いので、ここで選んでください。<b>CSVを出した月と同じ月</b>を選びます。</div>'
+  +'<div class="row2"><div class="field"><label>対象月</label><select class="sel" id="month-sel" onchange="onCondChange()">'+mOpts+'</select></div>'
+  +'<div class="field"><label>店舗</label><select class="sel" id="store-sel" onchange="onCondChange()">'+STORES.map(function(s){return '<option value="'+s.id+'">'+s.label+'</option>';}).join('')+'</select></div></div></div>'
+
+  +'<div class="card"><div class="card-title"><span class="step">2</span>CSVファイルを選ぶ</div>'
+  +'<div class="card-sub">レジから出した<b>スタッフ別（担当者別）の集計CSV</b>を選んでください。文字化けするCSV（Shift_JIS）にも対応しています。</div>'
+  +'<label class="drop"><b>📄 CSVファイルを選ぶ</b><span>.csv / .txt</span><input type="file" id="file-inp" accept=".csv,.txt,text/csv,text/plain" onchange="onFile(this.files[0])"></label>'
+  +'<div id="file-info" style="margin-top:10px"></div></div>'
+
+  +'<div class="card hidden" id="map-card"><div class="card-title"><span class="step">3</span>列の割り当て</div>'
+  +'<div class="card-sub">CSVのどの列を、数値管理のどの項目に入れるかを選びます。自動で予想していますが、<b>必ず目で確認</b>してください。使わない項目は「取り込まない」のままでOKです。</div>'
+  +'<div id="map-body"></div></div>'
+
+  +'<div class="card hidden" id="name-card"><div class="card-title"><span class="step">4</span>スタッフ名の確認</div>'
+  +'<div class="card-sub">CSVの名前を、システムのスタッフに結び付けます。<span class="badge guess">推定</span>は名前の一部が一致したもの、<span class="badge ng">未一致</span>は見つからなかったものです。選び直した結び付けは次回から自動で使われます。</div>'
+  +'<div id="name-body"></div></div>'
+
+  +'<div class="card hidden" id="prev-card"><div class="card-title"><span class="step">5</span>内容を確認して保存</div>'
+  +'<div class="card-sub"><b>黄色のマス</b>が変わる値です（上が新しい値、下の小さい数字が今の値）。CSVが空欄の項目は今の値をそのまま残します。保存後も「取り込み履歴」から元に戻せます。</div>'
+  +'<div id="prev-body"></div></div>'
+
+  +'<div class="card"><div class="card-title">取り込み履歴</div>'
+  +'<div class="card-sub">直近10件です。「元に戻す」を押すと、その取り込みで変えた値を取り込み前に戻します（取り込み後に手で直した項目はそのまま残します）。</div>'
+  +'<div id="log-body"><div class="card-sub">読み込み中...</div></div></div>'
+
+  +'<button class="btn btn-ghost" onclick="location.href=\'sales.html\'">数値管理に戻る</button>';
+}
+
+async function onFile(file){
+  if(!file)return;
+  const info=document.getElementById('file-info');
+  try{
+    const rows=parseCSV(await readText(file));
+    if(rows.length<2){info.innerHTML='<div class="msg err">CSVの中身が読み取れませんでした（行が2行未満です）。</div>';return;}
+    csv={fileName:file.name,rows:rows,headerIdx:guessHeaderIdx(rows)};
+  }catch(e){info.innerHTML='<div class="msg err">読み込みに失敗しました：'+esc(e.message)+'</div>';return;}
+  document.getElementById('file-inp').value='';
+  // 割り当て：保存済みがそのまま使えればそれを、なければ自動予想
+  const saved=applySavedMapping(await loadSetting(SETTINGS_KEY));
+  if(saved){mapping=saved.m;taxMode=saved.tax;pctTimes100=saved.pct;}
+  else{mapping=guessMapping();taxMode='';pctTimes100={};}
+  nameChoice={};nameHow={};
+  info.innerHTML='<div class="msg ok">✓ '+esc(csv.fileName)+'（'+(csv.rows.length-csv.headerIdx-1)+'行）'+(saved?'<br>前回保存した列の割り当てを使っています。':'')+'</div>';
+  renderAll();
+}
+function onCondChange(){if(csv)renderAll();}
+function onHeaderChange(v){csv.headerIdx=Number(v);mapping=guessMapping();nameChoice={};nameHow={};renderAll();}
+function onMapChange(f,v){
+  mapping[f]=(v===''?null:Number(v));
+  if(f==='name'){nameChoice={};nameHow={};}
+  renderAll();
+}
+function onTaxChange(v){taxMode=v;renderAll();}
+function onPctChange(f,on){pctTimes100[f]=on;renderAll();}
+function onNameChange(idx,v){nameChoice[idx]=v;nameHow[idx]='manual';renderNames();renderPreview();}
+
+function renderAll(){
+  ['map-card','name-card','prev-card'].forEach(function(id){document.getElementById(id).classList.toggle('hidden',!csv);});
+  if(!csv)return;
+  renderMapping();renderNames();renderPreview();
+}
+
+function colOptions(sel,allowNone){
+  const h=headers();
+  let o=allowNone?'<option value="">取り込まない</option>':'<option value="">選んでください</option>';
+  h.forEach(function(name,i){o+='<option value="'+i+'"'+(sel===i?' selected':'')+'>'+esc(name||('（見出しなし '+(i+1)+'列目）'))+'</option>';});
+  return o;
+}
+function sampleOf(col){
+  if(col==null||col==='')return '';
+  const vals=dataRows().slice(0,3).map(function(r){return r.cells[col]||'空欄';});
+  return vals.length?'例：'+vals.join(' / '):'';
+}
+function renderMapping(){
+  let h='<div class="field"><label>見出しの行（項目名が並んでいる行）</label><select class="sel sel-sm" onchange="onHeaderChange(this.value)">';
+  for(let i=0;i<Math.min(csv.rows.length,15);i++){
+    const txt=csv.rows[i].filter(function(v){return v!=='';}).slice(0,5).join('｜');
+    h+='<option value="'+i+'"'+(i===csv.headerIdx?' selected':'')+'>'+(i+1)+'行目：'+esc(txt.length>40?txt.slice(0,40)+'…':txt)+'</option>';
+  }
+  h+='</select></div>';
+  h+='<div class="map-grid">';
+  h+='<div class="map-item"><label>スタッフ名の列 <span style="color:var(--red)">*</span></label><select class="sel sel-sm'+(mapping.name==null?' need':'')+'" onchange="onMapChange(\'name\',this.value)">'+colOptions(mapping.name,false)+'</select><div class="ex">'+esc(sampleOf(mapping.name))+'</div></div>';
+  FIELDS.forEach(function(fd){
+    h+='<div class="map-item"><label>'+fd.label+'</label><select class="sel sel-sm" onchange="onMapChange(\''+fd.f+'\',this.value)">'+colOptions(mapping[fd.f]==null?null:mapping[fd.f],true)+'</select><div class="ex">'+esc(sampleOf(mapping[fd.f]))+'</div>';
+    if(fd.type==='pct'&&mapping[fd.f]!=null){
+      const vals=dataRows().map(function(r){return readNum(r.cells[mapping[fd.f]]);}).filter(function(x){return x.n!=null;});
+      const small=vals.length&&vals.every(function(x){return x.n<=1;})&&vals.some(function(x){return x.n>0;});
+      if(small&&pctTimes100[fd.f]==null)pctTimes100[fd.f]=true;
+      if(small||pctTimes100[fd.f])h+='<label class="chk-line" style="font-size:11px;margin:6px 0 0;font-weight:500"><input type="checkbox"'+(pctTimes100[fd.f]?' checked':'')+' onchange="onPctChange(\''+fd.f+'\',this.checked)">値が0.45のような小数なので100倍して45%にする</label>';
+    }
+    h+='</div>';
+  });
+  h+='</div>';
+  const usesYen=FIELDS.some(function(fd){return fd.type==='yen'&&mapping[fd.f]!=null;});
+  if(usesYen){
+    h+='<div class="field" style="margin-top:12px"><label>CSVの金額は税込？税抜？ <span style="color:var(--red)">*</span></label><select class="sel'+(taxMode?'':' need')+'" onchange="onTaxChange(this.value)">'
+      +'<option value=""'+(taxMode?'':' selected')+'>選んでください</option>'
+      +'<option value="incl"'+(taxMode==='incl'?' selected':'')+'>税込（1.1で割って税抜にして保存する）</option>'
+      +'<option value="excl"'+(taxMode==='excl'?' selected':'')+'>税抜（そのまま保存する）</option></select>'
+      +'<div class="card-sub" style="margin:6px 0 0">数値管理の金額は税抜で保存しています。レジの画面と同じ数字かどうかで判断してください。</div></div>';
+  }
+  h+='<button class="btn-mini" style="margin-top:4px" onclick="saveMapping()">💾 この割り当てを次回も使う</button> <span id="map-status" style="font-size:11px;color:var(--green)"></span>';
+  document.getElementById('map-body').innerHTML=h;
+}
+async function saveMapping(){
+  const h=headers();const cols={};
+  if(mapping.name!=null)cols.name=h[mapping.name];
+  FIELDS.forEach(function(fd){if(mapping[fd.f]!=null)cols[fd.f]=h[mapping[fd.f]];});
+  const err=await saveSetting(SETTINGS_KEY,{cols:cols,tax:taxMode,pct:pctTimes100});
+  document.getElementById('map-status').textContent=err?'保存できませんでした：'+err.message:'✓ 保存しました';
+}
+
+function renderNames(){
+  const body=document.getElementById('name-body');
+  if(mapping.name==null){body.innerHTML='<div class="msg warn">先に「スタッフ名の列」を選んでください。</div>';return;}
+  const rows=dataRows();
+  if(!rows.length){body.innerHTML='<div class="msg err">名前の入った行が見つかりません。見出しの行・スタッフ名の列を確認してください。</div>';return;}
+  const month=selMonth(),store=storeById(selStore());
+  // 選択肢：選んだ店舗のスタッフを先に
+  const inStore=students.filter(function(s){const st=storeOfStaff(s,month);return st===store.db||RYOTEN_STORES.includes(s.store);});
+  const others=students.filter(function(s){return inStore.indexOf(s)===-1;});
+  function opts(sel){
+    let o='<option value="skip"'+(sel==='skip'?' selected':'')+'>取り込まない</option><optgroup label="'+store.label+'のスタッフ">';
+    inStore.forEach(function(s){o+='<option value="'+s.id+'"'+(sel===s.id?' selected':'')+'>'+esc(s.name)+'（'+esc(s.position||'')+'）</option>';});
+    o+='</optgroup><optgroup label="ほかの店舗">';
+    others.forEach(function(s){o+='<option value="'+s.id+'"'+(sel===s.id?' selected':'')+'>'+esc(s.name)+'（'+esc(storeLabel(storeOfStaff(s,month)))+'）</option>';});
+    return o+'</optgroup>';
+  }
+  const count={};
+  rows.forEach(function(r){
+    if(nameChoice[r.idx]==null){const m=matchName(r.name);nameChoice[r.idx]=m.id;nameHow[r.idx]=m.how;}
+    r.how=nameHow[r.idx];
+    if(nameChoice[r.idx]!=='skip')count[nameChoice[r.idx]]=(count[nameChoice[r.idx]]||0)+1;
+  });
+  let h='';
+  rows.forEach(function(r){
+    const id=nameChoice[r.idx];
+    let badge;
+    if(id!=='skip'&&count[id]>1)badge='<span class="badge ng">重複</span>';
+    else if(id==='skip')badge=(r.how==='skip'||r.how==='manual')?'<span class="badge off">取り込まない</span>':'<span class="badge ng">未一致</span>';
+    else if(r.how==='guess')badge='<span class="badge guess">推定</span>';
+    else badge='<span class="badge ok">一致</span>';
+    h+='<div class="name-row"><span class="csv-name">'+esc(r.name)+'</span><span class="arrow">→</span><select class="sel sel-sm" onchange="onNameChange('+r.idx+',this.value)">'+opts(id)+'</select>'+badge;
+    if(id!=='skip'){
+      const s=staffById(id);
+      if(s&&count[id]>1)h+='<div class="note-small">⚠ 同じスタッフに2行以上が結び付いています。どちらか一方を「取り込まない」にしてください（このスタッフは保存しません）。</div>';
+      else if(s&&!RYOTEN_STORES.includes(s.store)&&storeOfStaff(s,month)!==store.db)h+='<div class="note-small">⚠ '+esc(s.name)+'さんは'+monthLabel(month)+'時点で「'+esc(storeLabel(storeOfStaff(s,month)))+'」所属です。ヘルプ分の可能性があります。保存すると本人の数字（店舗に関係なく1人1つ）が上書きされます。</div>';
+    }
+    h+='</div>';
+  });
+  h+='<button class="btn-mini" style="margin-top:10px" onclick="saveAliases()">💾 この名前の結び付けを次回も使う</button> <span id="alias-status" style="font-size:11px;color:var(--green)"></span>';
+  body.innerHTML=h;
+}
+function storeLabel(v){return v==='エルズ'?'ailes':(v||'未設定');}
+async function saveAliases(){
+  dataRows().forEach(function(r){
+    const id=nameChoice[r.idx];
+    const s=staffById(id);
+    // 名前がそのまま一致するものは覚えなくてよい
+    if(s&&norm(s.name)===norm(r.name))return;
+    aliases[norm(r.name)]=id;
+  });
+  const err=await saveSetting(ALIAS_KEY,aliases);
+  document.getElementById('alias-status').textContent=err?'保存できませんでした：'+err.message:'✓ 保存しました';
+}
+
+// ===== 保存する内容を作る =====
+async function buildPlan(){
+  const month=selMonth(),store=selStore();
+  const {data,error}=await sb.from('sales_data').select('*').eq('month',month);
+  if(error)return {error:error.message};
+  const rows=dataRows();
+  const count={};
+  rows.forEach(function(r){const id=nameChoice[r.idx];if(id&&id!=='skip')count[id]=(count[id]||0)+1;});
+  const out=[],problems=[];
+  rows.forEach(function(r){
+    const id=nameChoice[r.idx];
+    if(!id||id==='skip'||count[id]>1)return;
+    const s=staffById(id);if(!s)return;
+    const storeVal=RYOTEN_STORES.includes(s.store)?store:null;     // 両店の人（亀田代表）だけ店舗別に保存
+    const exist=(data||[]).filter(function(d){return d.student_id===id&&(d.store||null)===storeVal;});
+    if(exist.length>1){problems.push(s.name+'さんの'+monthLabel(month)+'のデータが2件あります。数値管理の画面で確認が必要なため、今回は保存しません。');return;}
+    const cur=exist[0]||null;
+    const item={student_id:id,name:s.name,store:storeVal,row_id:cur?cur.id:null,existed:!!cur,before:{},after:{},cells:{},bad:[]};
+    FIELDS.forEach(function(fd){
+      const col=mapping[fd.f];
+      if(col==null)return;
+      const rd=readNum(r.cells[col]);
+      const curVal=cur?cur[fd.f]:null;
+      if(rd.empty){item.cells[fd.f]={cur:curVal,keep:true};return;}
+      if(rd.bad){item.bad.push(fd.label+'「'+rd.raw+'」');item.cells[fd.f]={cur:curVal,keep:true};return;}
+      let v=rd.n;
+      if(fd.type==='yen')v=Math.round(taxMode==='incl'?v/(1+TAX_RATE):v);
+      if(fd.type==='int')v=Math.round(v);
+      if(fd.type==='pct'){if(pctTimes100[fd.f])v=v*100;v=Math.round(v*10)/10;}
+      const same=curVal!=null&&Number(curVal)===v;
+      item.cells[fd.f]={cur:curVal,val:v,same:same};
+      if(!same){item.before[fd.f]=curVal;item.after[fd.f]=v;}
+    });
+    out.push(item);
+  });
+  return {items:out,problems:problems};
+}
+
+let previewSeq=0;
+async function renderPreview(){
+  const body=document.getElementById('prev-body');
+  const seq=++previewSeq;
+  plan=[];
+  const blockers=[];
+  if(mapping.name==null)blockers.push('スタッフ名の列を選んでください。');
+  const anyField=FIELDS.some(function(fd){return mapping[fd.f]!=null;});
+  if(!anyField)blockers.push('取り込む項目を1つ以上選んでください。');
+  const usesYen=FIELDS.some(function(fd){return fd.type==='yen'&&mapping[fd.f]!=null;});
+  if(usesYen&&!taxMode)blockers.push('「CSVの金額は税込？税抜？」を選んでください。');
+  if(blockers.length){body.innerHTML='<div class="msg warn">'+blockers.map(esc).join('<br>')+'</div>';return;}
+  body.innerHTML='<div class="card-sub">確認中...</div>';
+  const res=await buildPlan();
+  if(seq!==previewSeq)return;          // 途中で条件が変わったら古い結果は捨てる
+  if(res.error){body.innerHTML='<div class="msg err">今のデータを読み込めませんでした：'+esc(res.error)+'</div>';return;}
+  plan=res.items;
+  const used=FIELDS.filter(function(fd){return mapping[fd.f]!=null;});
+  let h='<div class="msg ok">'+monthLabel(selMonth())+'　/　店舗：<b>'+esc(storeById(selStore()).label)+'</b>　/　金額：'+(usesYen?(taxMode==='incl'?'税込→税抜に変換':'税抜のまま'):'—')+'</div>';
+  res.problems.forEach(function(p){h+='<div class="msg err">'+esc(p)+'</div>';});
+  const bads=plan.filter(function(it){return it.bad.length;});
+  if(bads.length)h+='<div class="msg warn">数字として読めない値は取り込まずに今の値を残します：<br>'+bads.map(function(it){return esc(it.name)+'：'+esc(it.bad.join('、'));}).join('<br>')+'</div>';
+  if(!plan.length){body.innerHTML=h+'<div class="msg warn">保存するスタッフがいません（全員「取り込まない」になっています）。</div>';return;}
+  h+='<div class="tbl-wrap"><table><thead><tr><th>スタッフ</th>'+used.map(function(fd){return '<th>'+fd.label+'</th>';}).join('')+'</tr></thead><tbody>';
+  let changeCount=0,overwrite=0;
+  plan.forEach(function(it){
+    h+='<tr><td><b>'+esc(it.name)+'</b>'+(it.store?'<span class="old">'+esc(it.store)+'分</span>':'')+(it.existed?'':'<span class="old">新しく作成</span>')+'</td>';
+    used.forEach(function(fd){
+      const c=it.cells[fd.f]||{};
+      if(c.keep)h+='<td class="same">'+fmt(c.cur,fd.type)+'<span class="old">CSV空欄・そのまま</span></td>';
+      else if(c.same)h+='<td class="same">'+fmt(c.val,fd.type)+'<span class="old">変更なし</span></td>';
+      else{changeCount++;if(c.cur!=null)overwrite++;h+='<td class="chg"><b>'+fmt(c.val,fd.type)+'</b><span class="old">今 '+fmt(c.cur,fd.type)+'</span></td>';}
+    });
+    h+='</tr>';
+  });
+  h+='</tbody></table></div>';
+  h+='<div class="card-sub" style="margin:8px 0 0">変わる値：'+changeCount+'件（うち、すでに入っている値の上書き：'+overwrite+'件）</div>';
+  if(overwrite)h+='<label class="chk-line"><input type="checkbox" id="ow-chk" onchange="document.getElementById(\'save-btn\').disabled=!this.checked">すでに入っている値が'+overwrite+'件上書きされることを確認しました</label>';
+  h+='<button class="btn btn-dark" id="save-btn" onclick="doSave()"'+((!changeCount||overwrite)?' disabled':'')+'>'+(changeCount?'この内容で保存する':'変わる値がありません')+'</button>';
+  body.innerHTML=h;
+}
+
+async function doSave(){
+  const month=selMonth(),store=selStore();
+  const items=plan.filter(function(it){return Object.keys(it.after).length;});
+  if(!items.length)return;
+  if(!confirm(monthLabel(month)+'・'+storeById(store).label+'：'+items.length+'人分の数字を保存します。よろしいですか？'))return;
+  const btn=document.getElementById('save-btn');btn.disabled=true;btn.textContent='保存中...';
+  const done=[],errors=[];
+  for(const it of items){
+    const payload=Object.assign({},it.after,{updated_at:new Date().toISOString()});
+    if(it.row_id){
+      const {error}=await sb.from('sales_data').update(payload).eq('id',it.row_id);
+      if(error){errors.push(it.name+'：'+error.message);continue;}
+      done.push({student_id:it.student_id,name:it.name,store:it.store,row_id:it.row_id,existed:true,before:it.before,after:it.after});
+    }else{
+      const {data,error}=await sb.from('sales_data').insert(Object.assign({month:month,student_id:it.student_id,store:it.store},payload)).select().single();
+      if(error){errors.push(it.name+'：'+error.message);continue;}
+      done.push({student_id:it.student_id,name:it.name,store:it.store,row_id:data.id,existed:false,before:it.before,after:it.after});
+    }
+  }
+  // 履歴を残す（元に戻すときに使う）
+  if(done.length){
+    const {error}=await sb.from('sales_import_log').insert({month:month,store:store,file_name:csv.fileName,imported_by:ME?ME.name:null,items:done});
+    if(error)errors.push('取り込み履歴の保存に失敗しました（数字は保存されています）：'+error.message);
+  }
+  let msg=done.length+'人分を保存しました。';
+  if(errors.length)msg+='\n\nうまく保存できなかったもの：\n'+errors.join('\n');
+  alert(msg);
+  await renderPreview();
+  await renderLogs();
+  const b=document.getElementById('prev-body');
+  b.insertAdjacentHTML('afterbegin','<div class="msg ok">保存しました。<a href="sales.html?month='+month+'&store='+store+'" style="color:inherit;font-weight:700">→ 数値管理で確認する</a></div>');
+}
+
+// ===== 取り込み履歴・元に戻す =====
+let logs=[];
+async function renderLogs(){
+  const body=document.getElementById('log-body');
+  const {data,error}=await sb.from('sales_import_log').select('*').order('created_at',{ascending:false}).limit(10);
+  if(error){body.innerHTML='<div class="msg err">履歴を読み込めませんでした：'+esc(error.message)+'<br>（手順書の「テーブル作成SQL」が未実行の可能性があります）</div>';return;}
+  logs=data||[];
+  if(!logs.length){body.innerHTML='<div class="card-sub" style="margin:0">まだ取り込みはありません。</div>';return;}
+  body.innerHTML=logs.map(function(l){
+    const d=new Date(l.created_at);
+    const when=(d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+    const n=(l.items||[]).length;
+    return '<div class="log-item'+(l.reverted_at?' done':'')+'"><div class="meta"><b>'+monthLabel(l.month)+'・'+esc(storeById(l.store)?storeById(l.store).label:l.store)+'</b>　'+n+'人分<br>'+when+'　'+esc(l.imported_by||'')+'　'+esc(l.file_name||'')+(l.reverted_at?'<br>↩ 元に戻し済み':'')+'</div>'
+      +(l.reverted_at?'':'<button class="btn-mini red" onclick="revertLog(\''+l.id+'\')">元に戻す</button>')+'</div>';
+  }).join('');
+}
+async function revertLog(id){
+  const l=logs.find(function(x){return x.id===id;});if(!l)return;
+  if(!confirm(monthLabel(l.month)+'・'+l.store+'の取り込み（'+(l.items||[]).length+'人分）を元に戻します。よろしいですか？'))return;
+  const ids=(l.items||[]).map(function(it){return it.row_id;});
+  const {data,error}=await sb.from('sales_data').select('*').in('id',ids);
+  if(error){alert('読み込みに失敗しました：'+error.message);return;}
+  const skipped=[],errors=[];
+  for(const it of (l.items||[])){
+    const row=(data||[]).find(function(d){return d.id===it.row_id;});
+    if(!row){skipped.push(it.name+'：データが見つかりません');continue;}
+    const upd={};
+    Object.keys(it.after).forEach(function(f){
+      // 取り込み後に手で直された項目は触らない
+      if(row[f]!=null&&Number(row[f])===Number(it.after[f]))upd[f]=it.before[f]==null?null:it.before[f];
+      else skipped.push(it.name+'：'+((FIELDS.find(function(x){return x.f===f;})||{}).label||f)+'（取り込み後に変更あり）');
+    });
+    if(!Object.keys(upd).length)continue;
+    upd.updated_at=new Date().toISOString();
+    const r=await sb.from('sales_data').update(upd).eq('id',it.row_id);
+    if(r.error)errors.push(it.name+'：'+r.error.message);
+  }
+  if(!errors.length)await sb.from('sales_import_log').update({reverted_at:new Date().toISOString()}).eq('id',id);
+  let msg=errors.length?'一部、元に戻せませんでした：\n'+errors.join('\n'):'元に戻しました。';
+  if(skipped.length)msg+='\n\nそのまま残した項目：\n'+skipped.join('\n');
+  alert(msg);
+  await renderLogs();
+  if(csv)await renderPreview();
+}
+
+// ===== 起動 =====
+(async function(){
+  const savedLogin=localStorage.getItem('logged_in_id');
+  if(savedLogin){
+    const {data}=await sb.from('students').select('*').eq('id',savedLogin).maybeSingle();
+    if(data)ME=data;
+  }
+  if(!ME||!EDIT_ROLES.includes(ME.position)){
+    document.getElementById('main').innerHTML='<div class="card"><div class="card-title">この画面は使えません</div><div class="card-sub">CSV取り込みは、代表・管理者・店長・チーフだけが使えます。'+(ME?'':'先にホームからログインしてください。')+'</div><button class="btn btn-ghost" onclick="location.href=\'index.html\'">ホームへ</button></div>';
+    return;
+  }
+  const {data}=await sb.from('students').select('*').order('created_at');
+  students=(data||[]).filter(function(s){return s.is_active!==false&&!EXCLUDE_ROLES.includes(s.position);});
+  assignHistory=await loadAssignmentHistory(sb);
+  aliases=(await loadSetting(ALIAS_KEY))||{};
+  renderShell();
+  renderLogs();
+})();
+</script>
+</body>
+</html>
